@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Gestor de Obras Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .glass-header { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+    @keyframes bounce-custom {
+      0%, 100% { transform: scaleY(0.3); opacity: 0.5; }
+      50% { transform: scaleY(1); opacity: 1; }
+    }
+    .animate-box-bounce { animation: bounce-custom 1s infinite ease-in-out; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // URL de tu Apps Script (Debe ser la URL de ejecución /exec)
+    const API_URL = "https://script.google.com/macros/s/AKfycbxmPBIboe_Evn45ZHjtkjydbmlPRMuSax_sEiTc2iN8cqqi2i4-Pf_lOd6875cQXEd_yg/exec";
+
+    // --- COMPONENTES DE ICONOS (Inline SVG para máxima compatibilidad) ---
+    const IconBack = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>;
+    const IconEdit = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>;
+    const IconCopy = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>;
+    const IconSave = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
+    const IconPlus = () => <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>;
+    const IconSearch = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>;
+    const IconMap = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>;
+    const IconTrash = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>;
+
+    // --- COMPONENTE CARGADOR ---
+    const BoxLoader = ({ message = "Cargando datos..." }) => (
+      <div className="flex flex-col items-center justify-center p-12 space-y-6">
+        <div className="flex items-end justify-center space-x-2 h-10">
+          {[0, 0.15, 0.3, 0.45].map((delay, i) => (
+            <div key={i} className="w-3 bg-indigo-600 rounded-sm animate-box-bounce h-full" style={{ animationDelay: `${delay}s`, transformOrigin: 'bottom' }} />
+          ))}
+        </div>
+        <p className="text-slate-500 font-medium animate-pulse text-sm">{message}</p>
+      </div>
+    );
+
+    const Toast = ({ message, type, onClose }) => {
+      if (!message) return null;
+      useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [message]);
+      const color = type === 'error' ? 'bg-red-600' : 'bg-slate-800';
+      return (
+        <div className={`fixed bottom-6 left-4 right-4 ${color} text-white p-4 rounded-xl shadow-lg z-50 flex justify-between items-center`}>
+          <span className="text-sm font-medium">{message}</span>
+          <button onClick={onClose} className="text-xs font-bold opacity-70">CERRAR</button>
+        </div>
+      );
+    };
+
+    // --- APP PRINCIPAL ---
+    function App() {
+      const [view, setView] = useState("list");
+      const [loading, setLoading] = useState(true);
+      const [obras, setObras] = useState([]);
+      const [comisiones, setComisiones] = useState([]);
+      const [search, setSearch] = useState("");
+      const [currentObra, setCurrentObra] = useState(null);
+      const [toast, setToast] = useState({ message: '', type: '' });
+      const [saving, setSaving] = useState(false);
+
+      useEffect(() => { fetchAllData(); }, []);
+
+      const fetchAllData = async () => {
+        setLoading(true);
+        try {
+          const res = await fetch(API_URL);
+          const data = await res.json();
+          if (data.registrosObra) {
+            setObras(data.registrosObra);
+            setComisiones(data.comisiones || []);
+          }
+        } catch (e) { showToast("Error al conectar", "error"); }
+        finally { setTimeout(() => setLoading(false), 800); }
+      };
+
+      const showToast = (message, type = 'success') => setToast({ message, type });
+
+      const handleCopyInfo = () => {
+        const prov = comisiones.find(c => c.id === currentObra.provenance)?.provenance || currentObra.provenance || "No definida";
+        const textToCopy = `
+Ficha de Obra: ${currentObra.nombre_obra || 'N/A'}
+Clave: ${currentObra.clave || 'N/A'}
+Estatus: ${currentObra.estatus || 'N/A'}
+Ubicación: ${currentObra.ubicacion || 'N/A'}
+Precio Lista: $${(currentObra.precio_lista || 0).toLocaleString()}
+Provenance: ${prov}
+Observaciones: ${currentObra.observaciones || 'Ninguna'}
+        `.trim();
+
+        const textArea = document.createElement("textarea");
+        textArea.value = textToCopy;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          showToast("Información copiada al portapapeles");
+        } catch (err) {
+          showToast("Error al copiar", "error");
+        }
+        document.body.removeChild(textArea);
+      };
+
+      const handleSave = async (e) => {
+        e.preventDefault();
+        setSaving(true);
+        const isNew = !obras.find(o => o.id === currentObra.id);
+        const action = isNew ? 'registro_obra_add' : 'registro_obra_update';
+        try {
+          const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action, data: currentObra }) });
+          const result = await res.json();
+          if (result.result === 'success') {
+            showToast("Guardado correctamente");
+            await fetchAllData();
+            setView("list");
+          }
+        } catch (e) { showToast("Error al guardar", "error"); }
+        finally { setSaving(false); }
+      };
+
+      const formatCurrency = (v) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(v || 0);
+
+      const filtered = obras.filter(o => 
+        (o.nombre_obra || "").toLowerCase().includes(search.toLowerCase()) || 
+        (o.clave || "").toLowerCase().includes(search.toLowerCase())
+      );
+
+      // --- RENDERIZADO DE VISTAS ---
+
+      if (view === "list") return (
+        <div className="min-h-screen">
+          <header className="sticky top-0 z-10 glass-header p-4 border-b">
+            <h1 className="text-2xl font-bold text-slate-800 mb-4">Registro de Obra</h1>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><IconSearch /></span>
+              <input type="text" placeholder="Buscar por nombre o clave..." className="w-full pl-10 pr-4 py-3 bg-white border rounded-xl shadow-sm outline-none focus:ring-2 focus:ring-indigo-500" value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+          </header>
+          <main className="p-4 space-y-4">
+            {loading ? <BoxLoader message="Obteniendo registros..." /> : filtered.map(o => (
+              <div key={o.id} onClick={() => { setCurrentObra(o); setView("detail"); }} className="bg-white p-4 rounded-2xl shadow-sm border active:scale-95 transition-all">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-bold text-slate-800 leading-tight">{o.nombre_obra}</h3>
+                  <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded uppercase tracking-wider">{o.estatus}</span>
+                </div>
+                <p className="text-xs text-slate-400 font-mono mb-2">#{o.clave}</p>
+                <div className="flex items-center text-xs text-slate-500 mt-2">
+                   <IconMap /> <span className="ml-1 truncate">{o.ubicacion}</span>
+                </div>
+              </div>
+            ))}
+          </main>
+          <button onClick={() => { setCurrentObra({ id: Date.now().toString(), nombre_obra: '', estatus: 'Consolidación', clave: 'Pendiente' }); setView("form"); }} className="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-all"><IconPlus /></button>
+          <Toast {...toast} onClose={() => setToast({ message: '', type: '' })} />
+        </div>
+      );
+
+      if (view === "detail") return (
+        <div className="min-h-screen bg-slate-50 pb-20">
+          <nav className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10 shadow-sm">
+            <button onClick={() => setView("list")} className="p-2 text-slate-600"><IconBack /></button>
+            <h2 className="font-bold text-slate-800 truncate px-4">Vista de Obra</h2>
+            <div className="flex gap-1">
+              <button onClick={handleCopyInfo} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full" title="Copiar Información"><IconCopy /></button>
+              <button onClick={() => setView("form")} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full" title="Editar"><IconEdit /></button>
+            </div>
+          </nav>
+          <div className="p-4 space-y-4 max-w-lg mx-auto">
+             <div className="bg-white p-6 rounded-2xl border shadow-sm">
+               <div className="flex justify-between items-start mb-4">
+                 <div>
+                   <span className="text-xs font-bold text-indigo-500 uppercase tracking-widest">{currentObra.clave}</span>
+                   <h1 className="text-2xl font-black text-slate-900">{currentObra.nombre_obra}</h1>
+                 </div>
+                 <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase">{currentObra.estatus}</span>
+               </div>
+               <div className="space-y-3 pt-4 border-t">
+                 <div><p className="text-[10px] text-slate-400 font-bold uppercase">Ubicación</p><p className="text-sm text-slate-700">{currentObra.ubicacion || "No especificada"}</p></div>
+                 <div className="grid grid-cols-2 gap-4">
+                   <div><p className="text-[10px] text-slate-400 font-bold uppercase">Precio Lista</p><p className="text-lg font-black text-indigo-600">{formatCurrency(currentObra.precio_lista)}</p></div>
+                   <div><p className="text-[10px] text-slate-400 font-bold uppercase">Superficie</p><p className="text-sm font-medium text-slate-700">{currentObra.superficie} m²</p></div>
+                 </div>
+               </div>
+             </div>
+             <div className="bg-white p-6 rounded-2xl border shadow-sm">
+               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Información Extra</h3>
+               <div className="space-y-4">
+                 <div><p className="text-[10px] text-slate-400 font-bold uppercase">Provenance</p><p className="text-sm text-slate-700">{comisiones.find(c => c.id === currentObra.provenance)?.provenance || currentObra.provenance || "-"}</p></div>
+                 <div><p className="text-[10px] text-slate-400 font-bold uppercase">Observaciones</p><p className="text-sm text-slate-700 whitespace-pre-wrap">{currentObra.observaciones || "Sin observaciones."}</p></div>
+               </div>
+             </div>
+             {currentObra.adjuntos && currentObra.adjuntos.length > 0 && (
+               <div className="bg-white p-6 rounded-2xl border shadow-sm">
+                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Adjuntos</h3>
+                 <div className="grid grid-cols-2 gap-2">
+                   {currentObra.adjuntos.map(a => (
+                     <a key={a.id} href={a.url} target="_blank" className="p-2 bg-slate-50 border rounded-xl overflow-hidden">
+                       {a.mimeType?.includes('image') && <img src={`https://drive.google.com/thumbnail?id=${a.id}&sz=w200`} className="w-full h-20 object-cover rounded mb-1" />}
+                       <p className="text-[9px] truncate font-medium">{a.name}</p>
+                     </a>
+                   ))}
+                 </div>
+               </div>
+             )}
+          </div>
+          <Toast {...toast} onClose={() => setToast({ message: '', type: '' })} />
+        </div>
+      );
+
+      if (view === "form") return (
+        <div className="min-h-screen bg-white">
+          <nav className="sticky top-0 bg-indigo-600 text-white p-4 flex justify-between items-center z-10 shadow-lg">
+            <button onClick={() => setView(obras.find(o => o.id === currentObra.id) ? "detail" : "list")} className="p-2"><IconBack /></button>
+            <h2 className="font-bold">Formulario de Obra</h2>
+            <div className="w-8"></div>
+          </nav>
+          <form onSubmit={handleSave} className="p-4 space-y-6 max-w-lg mx-auto">
+            <div className="space-y-4">
+              <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nombre</label><input required type="text" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.nombre_obra} onChange={e => setCurrentObra({...currentObra, nombre_obra: e.target.value})} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Clave (Bloqueado)</label><input readOnly type="text" className="w-full p-3 bg-slate-100 border rounded-xl outline-none text-slate-400" value={currentObra.clave} /></div>
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Estatus</label>
+                  <select className="w-full p-3 bg-slate-50 border rounded-xl outline-none" value={currentObra.estatus} onChange={e => setCurrentObra({...currentObra, estatus: e.target.value})}>
+                    <option value="Consolidación">Consolidación</option><option value="Bodega">Bodega</option><option value="Vendida">Vendida</option>
+                  </select>
+                </div>
+              </div>
+              <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Ubicación</label><input type="text" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.ubicacion} onChange={e => setCurrentObra({...currentObra, ubicacion: e.target.value})} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Precio Lista</label><input type="number" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.precio_lista} onChange={e => setCurrentObra({...currentObra, precio_lista: e.target.value})} /></div>
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Provenance</label>
+                  <select className="w-full p-3 bg-slate-50 border rounded-xl outline-none" value={currentObra.provenance} onChange={e => setCurrentObra({...currentObra, provenance: e.target.value})}>
+                    <option value="">Seleccionar...</option>
+                    {comisiones.map(c => <option key={c.id} value={c.id}>{c.provenance}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Observaciones</label><textarea rows="3" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.observaciones} onChange={e => setCurrentObra({...currentObra, observaciones: e.target.value})} /></div>
+            </div>
+            <button disabled={saving} type="submit" className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg flex justify-center items-center gap-2 active:scale-95 transition-all">
+              {saving ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><IconSave /> Guardar Registro</>}
+            </button>
+          </form>
+          <Toast {...toast} onClose={() => setToast({ message: '', type: '' })} />
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
