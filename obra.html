@@ -164,7 +164,7 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
               </div>
             ))}
           </main>
-          <button onClick={() => { setCurrentObra({ id: Date.now().toString(), nombre_obra: '', estatus: 'Consolidación', clave: 'Pendiente' }); setView("form"); }} className="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-all"><IconPlus /></button>
+          <button onClick={() => { setCurrentObra({ id: Date.now().toString(), nombre_obra: '', estatus: 'Consolidación', clave: 'Pendiente', ancho: '', alto: '', largo: '' }); setView("form"); }} className="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-all"><IconPlus /></button>
           <Toast {...toast} onClose={() => setToast({ message: '', type: '' })} />
         </div>
       );
@@ -193,6 +193,11 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
                  <div className="grid grid-cols-2 gap-4">
                    <div><p className="text-[10px] text-slate-400 font-bold uppercase">Precio Lista</p><p className="text-lg font-black text-indigo-600">{formatCurrency(currentObra.precio_lista)}</p></div>
                    <div><p className="text-[10px] text-slate-400 font-bold uppercase">Superficie</p><p className="text-sm font-medium text-slate-700">{currentObra.superficie} m²</p></div>
+                 </div>
+                 <div className="grid grid-cols-3 gap-4">
+                   <div><p className="text-[10px] text-slate-400 font-bold uppercase">Ancho</p><p className="text-sm font-medium text-slate-700">{currentObra.ancho || "-"} m</p></div>
+                   <div><p className="text-[10px] text-slate-400 font-bold uppercase">Alto</p><p className="text-sm font-medium text-slate-700">{currentObra.alto || "-"} m</p></div>
+                   <div><p className="text-[10px] text-slate-400 font-bold uppercase">Largo</p><p className="text-sm font-medium text-slate-700">{currentObra.largo || "-"} m</p></div>
                  </div>
                </div>
              </div>
@@ -248,6 +253,11 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
                     {comisiones.map(c => <option key={c.id} value={c.id}>{c.provenance}</option>)}
                   </select>
                 </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Ancho (m)</label><input type="number" step="any" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.ancho || ''} onChange={e => setCurrentObra({...currentObra, ancho: e.target.value})} /></div>
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Alto (m)</label><input type="number" step="any" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.alto || ''} onChange={e => setCurrentObra({...currentObra, alto: e.target.value})} /></div>
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Largo (m)</label><input type="number" step="any" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.largo || ''} onChange={e => setCurrentObra({...currentObra, largo: e.target.value})} /></div>
               </div>
               <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Observaciones</label><textarea rows="3" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.observaciones} onChange={e => setCurrentObra({...currentObra, observaciones: e.target.value})} /></div>
             </div>
