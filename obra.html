@@ -37,6 +37,7 @@
     const IconSearch = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>;
     const IconMap = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>;
     const IconTrash = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>;
+    const IconAttachment = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-8.49 8.49a5 5 0 0 1-7.07-7.07l8.49-8.49a3.5 3.5 0 0 1 4.95 4.95l-8.49 8.49a2 2 0 0 1-2.83-2.83l8.49-8.49"/></svg>;
 
     // --- COMPONENTE CARGADOR ---
     const BoxLoader = ({ message = "Cargando datos..." }) => (
@@ -191,7 +192,12 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
                         <h3 className="font-semibold text-slate-800 text-sm leading-tight truncate">{o.nombre_obra}</h3>
                         <p className="text-[10px] text-slate-400 font-mono">#{o.clave}</p>
                       </div>
-                      <span className="text-[10px] font-bold bg-indigo-100 text-indigo-600 px-2 py-1 rounded uppercase tracking-wider ml-2 shrink-0">{o.estatus}</span>
+                      <div className="flex items-center gap-2 ml-2 shrink-0">
+                        {o.adjuntos?.length > 0 && (
+                          <span className="text-indigo-500" title="Tiene adjuntos"><IconAttachment /></span>
+                        )}
+                        <span className="text-[10px] font-bold bg-indigo-100 text-indigo-600 px-2 py-1 rounded uppercase tracking-wider">{o.estatus}</span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -204,7 +210,12 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
               <div key={o.id} onClick={() => openDetail(o)} className="bg-white p-4 rounded-2xl shadow-sm border active:scale-95 transition-all">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-bold text-slate-800 leading-tight">{o.nombre_obra}</h3>
-                  <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded uppercase tracking-wider">{o.estatus}</span>
+                  <div className="flex items-center gap-2">
+                    {o.adjuntos?.length > 0 && (
+                      <span className="text-indigo-500" title="Tiene adjuntos"><IconAttachment /></span>
+                    )}
+                    <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded uppercase tracking-wider">{o.estatus}</span>
+                  </div>
                 </div>
                 <p className="text-xs text-slate-400 font-mono mb-2">#{o.clave}</p>
                 <div className="flex items-center text-xs text-slate-500 mt-2">
