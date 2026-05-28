@@ -23,7 +23,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useMemo } = React;
 
     // URL de tu Apps Script (Debe ser la URL de ejecución /exec)
     const API_URL = "https://script.google.com/macros/s/AKfycbxmPBIboe_Evn45ZHjtkjydbmlPRMuSax_sEiTc2iN8cqqi2i4-Pf_lOd6875cQXEd_yg/exec";
@@ -64,6 +64,30 @@
 
     const RECENT_OBRAS_KEY = "recentObras";
     const MAX_RECENT = 3;
+    const DEFAULT_OBRA = {
+      id: '',
+      nombre_obra: '',
+      ubicacion: '',
+      estatus: 'Consolidación',
+      tipo_obra: '',
+      superficie: '',
+      precio_lista: '',
+      precio_venta: '',
+      fecha_registro: '',
+      fecha_adquisicion: '',
+      fecha_venta: '',
+      cliente: '',
+      observaciones: '',
+      id_responsable: '',
+      autor: '',
+      asignacion: '',
+      provenance: '',
+      clave: 'Pendiente',
+      ancho: '',
+      alto: '',
+      largo: '',
+      tags: []
+    };
 
     function getRecentIds() {
       try { return JSON.parse(localStorage.getItem(RECENT_OBRAS_KEY) || "[]"); } catch (e) { console.error("Error parsing recent obras from localStorage:", e); return []; }
@@ -82,6 +106,9 @@
       const [obras, setObras] = useState([]);
       const [comisiones, setComisiones] = useState([]);
       const [search, setSearch] = useState("");
+      const [filterStatus, setFilterStatus] = useState("");
+      const [filterTipo, setFilterTipo] = useState("");
+      const [filterProvenance, setFilterProvenance] = useState("");
       const [currentObra, setCurrentObra] = useState(null);
       const [toast, setToast] = useState({ message: '', type: '' });
       const [saving, setSaving] = useState(false);
@@ -103,12 +130,22 @@
       };
 
       const showToast = (message, type = 'success') => setToast({ message, type });
+      const activateOnKey = (event, action) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          action();
+        }
+      };
 
       const openDetail = (obra) => {
         saveRecentId(obra.id);
         setRecentIds(getRecentIds());
         setCurrentObra(obra);
         setView("detail");
+      };
+      const handleCreateNewObra = () => {
+        setCurrentObra({ ...DEFAULT_OBRA, id: Date.now().toString(), fecha_registro: new Date().toISOString().split('T')[0] });
+        setView("form");
       };
 
       const handleCopyInfo = () => {
@@ -122,11 +159,15 @@ Autor: ${currentObra.autor || 'N/A'}
 Ubicación: ${currentObra.ubicacion || 'N/A'}
 Precio Lista: $${(currentObra.precio_lista || 0).toLocaleString()}
 Precio Venta: $${(currentObra.precio_venta || 0).toLocaleString()}
+Superficie: ${currentObra.superficie || 0} m²
 Cliente: ${currentObra.cliente || 'N/A'}
 Fecha Registro: ${currentObra.fecha_registro || 'N/A'}
 Fecha Adquisición: ${currentObra.fecha_adquisicion || 'N/A'}
 Fecha Venta: ${currentObra.fecha_venta || 'N/A'}
+Asignación: ${currentObra.asignacion || 'N/A'}
+ID Responsable: ${currentObra.id_responsable || 'N/A'}
 Provenance: ${prov}
+Tags: ${tagsAsText(currentObra.tags) || 'N/A'}
 Observaciones: ${currentObra.observaciones || 'Ninguna'}
         `.trim();
 
@@ -148,8 +189,12 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
         setSaving(true);
         const isNew = !obras.find(o => o.id === currentObra.id);
         const action = isNew ? 'registro_obra_add' : 'registro_obra_update';
+        const tagsNormalized = Array.isArray(currentObra.tags)
+          ? currentObra.tags
+          : (currentObra.tags || '').toString().split(',').map(t => t.trim()).filter(Boolean);
+        const payload = { ...currentObra, tags: tagsNormalized };
         try {
-          const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action, data: currentObra }) });
+          const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action, data: payload }) });
           const result = await res.json();
           if (result.result === 'success') {
             showToast("Guardado correctamente");
@@ -161,10 +206,20 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
       };
 
       const formatCurrency = (v) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(v || 0);
+      const tagsAsText = (tags) => Array.isArray(tags) ? tags.join(', ') : (tags || '');
+      const uniqueValues = (items) => [...new Set(items.filter(Boolean).map(x => x.toString().trim()))].sort((a, b) => a.localeCompare(b, 'es-MX'));
+      const statusOptions = useMemo(() => uniqueValues(obras.map(o => o.estatus)), [obras]);
+      const tipoOptions = useMemo(() => uniqueValues(obras.map(o => o.tipo_obra)), [obras]);
+      const provenanceOptions = useMemo(() => uniqueValues(obras.map(o => comisiones.find(c => c.id === o.provenance)?.provenance || o.provenance)), [obras, comisiones]);
 
       const filtered = [...obras].reverse().filter(o => 
-        (o.nombre_obra || "").toLowerCase().includes(search.toLowerCase()) || 
-        (o.clave || "").toLowerCase().includes(search.toLowerCase())
+        (
+          (o.nombre_obra || "").toLowerCase().includes(search.toLowerCase()) ||
+          (o.clave || "").toLowerCase().includes(search.toLowerCase())
+        ) &&
+        (!filterStatus || (o.estatus || '') === filterStatus) &&
+        (!filterTipo || (o.tipo_obra || '') === filterTipo) &&
+        (!filterProvenance || (comisiones.find(c => c.id === o.provenance)?.provenance || o.provenance || '') === filterProvenance)
       );
 
       const recentObras = recentIds.map(id => obras.find(o => o.id === id)).filter(Boolean);
@@ -179,6 +234,20 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><IconSearch /></span>
               <input type="text" placeholder="Buscar por nombre o clave..." className="w-full pl-10 pr-4 py-3 bg-white border rounded-xl shadow-sm outline-none focus:ring-2 focus:ring-indigo-500" value={search} onChange={e => setSearch(e.target.value)} />
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
+              <select className="w-full px-3 py-2 bg-white border rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                <option value="">Estatus: Todos</option>
+                {statusOptions.map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+              <select className="w-full px-3 py-2 bg-white border rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500" value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
+                <option value="">Tipo: Todos</option>
+                {tipoOptions.map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+              <select className="w-full px-3 py-2 bg-white border rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500" value={filterProvenance} onChange={e => setFilterProvenance(e.target.value)}>
+                <option value="">Provenance: Todos</option>
+                {provenanceOptions.map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
           </header>
           <main className="p-4 space-y-4">
             {!loading && recentObras.length > 0 && (
@@ -186,7 +255,7 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
                 <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Vistas Recientemente</h2>
                 <div className="space-y-2">
                   {recentObras.map(o => (
-                    <div key={o.id} onClick={() => openDetail(o)} className="bg-indigo-50 border border-indigo-100 p-3 rounded-2xl active:scale-95 transition-all flex justify-between items-center">
+                    <div key={o.id} onClick={() => openDetail(o)} role="button" tabIndex={0} onKeyDown={(e) => activateOnKey(e, () => openDetail(o))} className="bg-indigo-50 border border-indigo-100 p-3 rounded-2xl active:scale-95 transition-all flex justify-between items-center">
                       <div className="min-w-0">
                         <h3 className="font-semibold text-slate-800 text-sm leading-tight truncate">{o.nombre_obra}</h3>
                         <p className="text-[10px] text-slate-400 font-mono">#{o.clave}</p>
@@ -200,20 +269,30 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
                 </div>
               </div>
             )}
-            {loading ? <BoxLoader message="Obteniendo registros..." /> : filtered.map(o => (
-              <div key={o.id} onClick={() => openDetail(o)} className="bg-white p-4 rounded-2xl shadow-sm border active:scale-95 transition-all">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-bold text-slate-800 leading-tight">{o.nombre_obra}</h3>
-                  <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded uppercase tracking-wider">{o.estatus}</span>
-                </div>
-                <p className="text-xs text-slate-400 font-mono mb-2">#{o.clave}</p>
-                <div className="flex items-center text-xs text-slate-500 mt-2">
-                   <IconMap /> <span className="ml-1 truncate">{o.ubicacion}</span>
-                </div>
-              </div>
-            ))}
+            {loading ? <BoxLoader message="Obteniendo registros..." /> : (
+              <ul className="space-y-3">
+                {filtered.map(o => (
+                  <li key={o.id} onClick={() => openDetail(o)} role="button" tabIndex={0} onKeyDown={(e) => activateOnKey(e, () => openDetail(o))} className="bg-white p-4 rounded-2xl shadow-sm border active:scale-95 transition-all">
+                    <div className="flex justify-between items-start mb-2 gap-3">
+                      <h3 className="font-bold text-slate-800 leading-tight">{o.nombre_obra}</h3>
+                      <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded uppercase tracking-wider shrink-0">{o.estatus}</span>
+                    </div>
+                    <ul className="text-xs text-slate-600 space-y-1">
+                      <li><span className="font-semibold">Clave:</span> {o.clave || '-'}</li>
+                      <li><span className="font-semibold">Tipo:</span> {o.tipo_obra || '-'}</li>
+                      <li><span className="font-semibold">Ubicación:</span> {o.ubicacion || '-'}</li>
+                      <li><span className="font-semibold">Provenance:</span> {comisiones.find(c => c.id === o.provenance)?.provenance || o.provenance || '-'}</li>
+                      <li><span className="font-semibold">Precio lista:</span> {formatCurrency(o.precio_lista)}</li>
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {!loading && filtered.length === 0 && (
+              <div className="bg-white border rounded-2xl p-4 text-sm text-slate-500">No hay obras que coincidan con los filtros.</div>
+            )}
           </main>
-          <button onClick={() => { setCurrentObra({ id: Date.now().toString(), nombre_obra: '', estatus: 'Consolidación', clave: 'Pendiente', ancho: '', alto: '', largo: '' }); setView("form"); }} className="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-all"><IconPlus /></button>
+          <button onClick={handleCreateNewObra} className="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-all"><IconPlus /></button>
           <Toast {...toast} onClose={() => setToast({ message: '', type: '' })} />
         </div>
       );
@@ -267,6 +346,11 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
                    <div><p className="text-[10px] text-slate-400 font-bold uppercase">Fecha Venta</p><p className="text-sm text-slate-700">{currentObra.fecha_venta || "-"}</p></div>
                  </div>
                  <div><p className="text-[10px] text-slate-400 font-bold uppercase">Provenance</p><p className="text-sm text-slate-700">{comisiones.find(c => c.id === currentObra.provenance)?.provenance || currentObra.provenance || "-"}</p></div>
+                 <div className="grid grid-cols-2 gap-4">
+                   <div><p className="text-[10px] text-slate-400 font-bold uppercase">Asignación</p><p className="text-sm text-slate-700">{currentObra.asignacion || "-"}</p></div>
+                   <div><p className="text-[10px] text-slate-400 font-bold uppercase">ID Responsable</p><p className="text-sm text-slate-700">{currentObra.id_responsable || "-"}</p></div>
+                 </div>
+                 <div><p className="text-[10px] text-slate-400 font-bold uppercase">Tags</p><p className="text-sm text-slate-700">{tagsAsText(currentObra.tags) || "-"}</p></div>
                  <div><p className="text-[10px] text-slate-400 font-bold uppercase">Observaciones</p><p className="text-sm text-slate-700 whitespace-pre-wrap">{currentObra.observaciones || "Sin observaciones."}</p></div>
                </div>
              </div>
@@ -319,15 +403,36 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
                   </select>
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Asignación</label><input readOnly type="text" title="La asignación se genera automáticamente al guardar." aria-describedby="asignacion-help" className="w-full p-3 bg-slate-100 border rounded-xl outline-none text-slate-400" value={currentObra.asignacion || ''} /><p id="asignacion-help" className="text-[10px] text-slate-400 mt-1 ml-1">Se genera automáticamente al guardar.</p></div>
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">ID Responsable</label><input type="text" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.id_responsable || ''} onChange={e => setCurrentObra({...currentObra, id_responsable: e.target.value})} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Tipo de Obra</label><input type="text" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.tipo_obra || ''} onChange={e => setCurrentObra({...currentObra, tipo_obra: e.target.value})} /></div>
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Autor</label><input type="text" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.autor || ''} onChange={e => setCurrentObra({...currentObra, autor: e.target.value})} /></div>
+              </div>
               <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Ubicación</label><input type="text" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.ubicacion} onChange={e => setCurrentObra({...currentObra, ubicacion: e.target.value})} /></div>
               <div className="grid grid-cols-2 gap-4">
                 <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Precio Lista</label><input type="number" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.precio_lista} onChange={e => setCurrentObra({...currentObra, precio_lista: e.target.value})} /></div>
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Precio Venta</label><input type="number" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.precio_venta || ''} onChange={e => setCurrentObra({...currentObra, precio_venta: e.target.value})} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Superficie (m²)</label><input type="number" step="any" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.superficie || ''} onChange={e => setCurrentObra({...currentObra, superficie: e.target.value})} /></div>
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Cliente</label><input type="text" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.cliente || ''} onChange={e => setCurrentObra({...currentObra, cliente: e.target.value})} /></div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Fecha Registro</label><input type="date" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.fecha_registro || ''} onChange={e => setCurrentObra({...currentObra, fecha_registro: e.target.value})} /></div>
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Fecha Adquisición</label><input type="date" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.fecha_adquisicion || ''} onChange={e => setCurrentObra({...currentObra, fecha_adquisicion: e.target.value})} /></div>
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Fecha Venta</label><input type="date" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.fecha_venta || ''} onChange={e => setCurrentObra({...currentObra, fecha_venta: e.target.value})} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Provenance</label>
                   <select className="w-full p-3 bg-slate-50 border rounded-xl outline-none" value={currentObra.provenance} onChange={e => setCurrentObra({...currentObra, provenance: e.target.value})}>
                     <option value="">Seleccionar...</option>
                     {comisiones.map(c => <option key={c.id} value={c.id}>{c.provenance}</option>)}
                   </select>
                 </div>
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Tags (separados por coma)</label><input type="text" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={tagsAsText(currentObra.tags)} onChange={e => setCurrentObra({...currentObra, tags: e.target.value})} /></div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Ancho (m)</label><input type="number" step="any" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.ancho || ''} onChange={e => setCurrentObra({...currentObra, ancho: e.target.value})} /></div>
