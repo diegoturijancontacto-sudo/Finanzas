@@ -35,6 +35,7 @@
     const IconSave = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
     const IconPlus = () => <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>;
     const IconSearch = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>;
+    const IconPaperclip = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-8.49 8.49a5.5 5.5 0 0 1-7.78-7.78l8.48-8.49a3.5 3.5 0 1 1 4.95 4.95l-8.49 8.48a1.5 1.5 0 0 1-2.12-2.12l8.49-8.48"/></svg>;
     const IconMap = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>;
     const IconTrash = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>;
 
@@ -109,6 +110,7 @@
       const [filterStatus, setFilterStatus] = useState("");
       const [filterTipo, setFilterTipo] = useState("");
       const [filterProvenance, setFilterProvenance] = useState("");
+      const [filterAutor, setFilterAutor] = useState("");
       const [currentObra, setCurrentObra] = useState(null);
       const [toast, setToast] = useState({ message: '', type: '' });
       const [saving, setSaving] = useState(false);
@@ -211,6 +213,7 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
       const statusOptions = useMemo(() => uniqueValues(obras.map(o => o.estatus)), [obras]);
       const tipoOptions = useMemo(() => uniqueValues(obras.map(o => o.tipo_obra)), [obras]);
       const provenanceOptions = useMemo(() => uniqueValues(obras.map(o => comisiones.find(c => c.id === o.provenance)?.provenance || o.provenance)), [obras, comisiones]);
+      const autorOptions = useMemo(() => uniqueValues(obras.map(o => o.autor)), [obras]);
 
       const filtered = [...obras].reverse().filter(o => 
         (
@@ -219,7 +222,8 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
         ) &&
         (!filterStatus || (o.estatus || '') === filterStatus) &&
         (!filterTipo || (o.tipo_obra || '') === filterTipo) &&
-        (!filterProvenance || (comisiones.find(c => c.id === o.provenance)?.provenance || o.provenance || '') === filterProvenance)
+        (!filterProvenance || (comisiones.find(c => c.id === o.provenance)?.provenance || o.provenance || '') === filterProvenance) &&
+        (!filterAutor || (o.autor || '') === filterAutor)
       );
 
       const recentObras = recentIds.map(id => obras.find(o => o.id === id)).filter(Boolean);
@@ -234,7 +238,7 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><IconSearch /></span>
               <input type="text" placeholder="Buscar por nombre o clave..." className="w-full pl-10 pr-4 py-3 bg-white border rounded-xl shadow-sm outline-none focus:ring-2 focus:ring-indigo-500" value={search} onChange={e => setSearch(e.target.value)} />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mt-3">
               <select className="w-full px-3 py-2 bg-white border rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
                 <option value="">Estatus: Todos</option>
                 {statusOptions.map(v => <option key={v} value={v}>{v}</option>)}
@@ -246,6 +250,10 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
               <select className="w-full px-3 py-2 bg-white border rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500" value={filterProvenance} onChange={e => setFilterProvenance(e.target.value)}>
                 <option value="">Provenance: Todos</option>
                 {provenanceOptions.map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+              <select className="w-full px-3 py-2 bg-white border rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500" value={filterAutor} onChange={e => setFilterAutor(e.target.value)}>
+                <option value="">Autor: Todos</option>
+                {autorOptions.map(v => <option key={v} value={v}>{v}</option>)}
               </select>
             </div>
           </header>
@@ -277,13 +285,17 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
                       <h3 className="font-bold text-slate-800 leading-tight">{o.nombre_obra}</h3>
                       <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded uppercase tracking-wider shrink-0">{o.estatus}</span>
                     </div>
-                    <ul className="text-xs text-slate-600 space-y-1">
-                      <li><span className="font-semibold">Clave:</span> {o.clave || '-'}</li>
-                      <li><span className="font-semibold">Tipo:</span> {o.tipo_obra || '-'}</li>
-                      <li><span className="font-semibold">Ubicación:</span> {o.ubicacion || '-'}</li>
-                      <li><span className="font-semibold">Provenance:</span> {comisiones.find(c => c.id === o.provenance)?.provenance || o.provenance || '-'}</li>
-                      <li><span className="font-semibold">Precio lista:</span> {formatCurrency(o.precio_lista)}</li>
-                    </ul>
+                    <div className="flex items-center justify-between text-xs">
+                      <p className="text-slate-500 font-mono">#{o.clave || '-'}</p>
+                      {(() => {
+                        const hasAdjuntos = Array.isArray(o.adjuntos) ? o.adjuntos.length > 0 : false;
+                        return (
+                          <span className={hasAdjuntos ? "text-indigo-600" : "text-slate-300"} title={hasAdjuntos ? "Con archivos adjuntos" : "Sin archivos adjuntos"}>
+                            <IconPaperclip />
+                          </span>
+                        );
+                      })()}
+                    </div>
                   </li>
                 ))}
               </ul>
