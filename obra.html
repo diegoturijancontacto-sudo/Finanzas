@@ -102,6 +102,16 @@
 
     // --- APP PRINCIPAL ---
     function App() {
+      const toDisplayCm = (value) => {
+        if (value === '' || value === null || value === undefined) return '';
+        const n = parseFloat(value);
+        return Number.isFinite(n) ? (n * 100) : '';
+      };
+      const toStorageMeters = (value) => {
+        if (value === '' || value === null || value === undefined) return '';
+        const n = parseFloat(value);
+        return Number.isFinite(n) ? (n / 100) : '';
+      };
       const [view, setView] = useState("list");
       const [loading, setLoading] = useState(true);
       const [obras, setObras] = useState([]);
@@ -126,9 +136,9 @@
           if (data.registrosObra) {
             setObras(data.registrosObra.map(o => ({
               ...o,
-              ancho: o.ancho === '' || o.ancho === null || o.ancho === undefined ? '' : ((parseFloat(o.ancho) || 0) * 100),
-              alto: o.alto === '' || o.alto === null || o.alto === undefined ? '' : ((parseFloat(o.alto) || 0) * 100),
-              largo: o.largo === '' || o.largo === null || o.largo === undefined ? '' : ((parseFloat(o.largo) || 0) * 100),
+              ancho: toDisplayCm(o.ancho),
+              alto: toDisplayCm(o.alto),
+              largo: toDisplayCm(o.largo),
             })));
             setComisiones(data.comisiones || []);
           }
@@ -201,9 +211,9 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
           : (currentObra.tags || '').toString().split(',').map(t => t.trim()).filter(Boolean);
         const payload = {
           ...currentObra,
-          ancho: currentObra.ancho === '' || currentObra.ancho === null || currentObra.ancho === undefined ? 0 : ((parseFloat(currentObra.ancho) || 0) / 100),
-          alto: currentObra.alto === '' || currentObra.alto === null || currentObra.alto === undefined ? 0 : ((parseFloat(currentObra.alto) || 0) / 100),
-          largo: currentObra.largo === '' || currentObra.largo === null || currentObra.largo === undefined ? 0 : ((parseFloat(currentObra.largo) || 0) / 100),
+          ancho: toStorageMeters(currentObra.ancho),
+          alto: toStorageMeters(currentObra.alto),
+          largo: toStorageMeters(currentObra.largo),
           tags: tagsNormalized
         };
         try {
