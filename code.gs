@@ -532,6 +532,10 @@ rol: r[4] || 'responsable',
 fecha_registro: r[5] || '',
 identificador: (r[colIdent - 1] || '').toString() || generarIdentificador(r[1] || '')
 }));
+const responsablesById = responsables.reduce((acc, r) => {
+acc[(r.id || '').toString()] = r.nombre || '';
+return acc;
+}, {});
 const shC = ss.getSheetByName(SHEET_COMENTARIOS);
 const comData = shC.getDataRange().getValues();
 const comentarios = comData.slice(1).map(r => ({
@@ -585,6 +589,7 @@ documentos: parseDocumentosObra_(r[12]),
 observaciones: r[13] || '',
 adjuntos: parseAdjuntosObra_(r[14]),
 id_responsable: (r[15] || '').toString(),
+responsable_nombre: responsablesById[(r[15] || '').toString()] || '',
 autor: r[16] || '',
 asignacion: normalizeAsignacion_(r[17]),
 provenance: r[18] || '',

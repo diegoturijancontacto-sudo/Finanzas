@@ -124,7 +124,12 @@
           const res = await fetch(API_URL);
           const data = await res.json();
           if (data.registrosObra) {
-            setObras(data.registrosObra);
+            setObras(data.registrosObra.map(o => ({
+              ...o,
+              ancho: o.ancho === '' || o.ancho === null || o.ancho === undefined ? '' : ((parseFloat(o.ancho) || 0) * 100),
+              alto: o.alto === '' || o.alto === null || o.alto === undefined ? '' : ((parseFloat(o.alto) || 0) * 100),
+              largo: o.largo === '' || o.largo === null || o.largo === undefined ? '' : ((parseFloat(o.largo) || 0) * 100),
+            })));
             setComisiones(data.comisiones || []);
           }
         } catch (e) { showToast("Error al conectar", "error"); }
@@ -167,7 +172,7 @@ Fecha Registro: ${currentObra.fecha_registro || 'N/A'}
 Fecha Adquisición: ${currentObra.fecha_adquisicion || 'N/A'}
 Fecha Venta: ${currentObra.fecha_venta || 'N/A'}
 Asignación: ${currentObra.asignacion || 'N/A'}
-ID Responsable: ${currentObra.id_responsable || 'N/A'}
+Responsable: ${currentObra.responsable_nombre || currentObra.id_responsable || 'N/A'}
 Provenance: ${prov}
 Tags: ${tagsAsText(currentObra.tags) || 'N/A'}
 Observaciones: ${currentObra.observaciones || 'Ninguna'}
@@ -194,7 +199,13 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
         const tagsNormalized = Array.isArray(currentObra.tags)
           ? currentObra.tags
           : (currentObra.tags || '').toString().split(',').map(t => t.trim()).filter(Boolean);
-        const payload = { ...currentObra, tags: tagsNormalized };
+        const payload = {
+          ...currentObra,
+          ancho: currentObra.ancho === '' || currentObra.ancho === null || currentObra.ancho === undefined ? 0 : ((parseFloat(currentObra.ancho) || 0) / 100),
+          alto: currentObra.alto === '' || currentObra.alto === null || currentObra.alto === undefined ? 0 : ((parseFloat(currentObra.alto) || 0) / 100),
+          largo: currentObra.largo === '' || currentObra.largo === null || currentObra.largo === undefined ? 0 : ((parseFloat(currentObra.largo) || 0) / 100),
+          tags: tagsNormalized
+        };
         try {
           const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action, data: payload }) });
           const result = await res.json();
@@ -343,9 +354,9 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
                    <div><p className="text-[10px] text-slate-400 font-bold uppercase">Cliente</p><p className="text-sm font-medium text-slate-700">{currentObra.cliente || "-"}</p></div>
                  </div>
                  <div className="grid grid-cols-3 gap-4">
-                   <div><p className="text-[10px] text-slate-400 font-bold uppercase">Ancho</p><p className="text-sm font-medium text-slate-700">{currentObra.ancho || "-"} m</p></div>
-                   <div><p className="text-[10px] text-slate-400 font-bold uppercase">Alto</p><p className="text-sm font-medium text-slate-700">{currentObra.alto || "-"} m</p></div>
-                   <div><p className="text-[10px] text-slate-400 font-bold uppercase">Largo</p><p className="text-sm font-medium text-slate-700">{currentObra.largo || "-"} m</p></div>
+                   <div><p className="text-[10px] text-slate-400 font-bold uppercase">Ancho</p><p className="text-sm font-medium text-slate-700">{currentObra.ancho || "-"} cm</p></div>
+                   <div><p className="text-[10px] text-slate-400 font-bold uppercase">Alto</p><p className="text-sm font-medium text-slate-700">{currentObra.alto || "-"} cm</p></div>
+                   <div><p className="text-[10px] text-slate-400 font-bold uppercase">Largo</p><p className="text-sm font-medium text-slate-700">{currentObra.largo || "-"} cm</p></div>
                  </div>
                </div>
              </div>
@@ -360,7 +371,7 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
                  <div><p className="text-[10px] text-slate-400 font-bold uppercase">Provenance</p><p className="text-sm text-slate-700">{comisiones.find(c => c.id === currentObra.provenance)?.provenance || currentObra.provenance || "-"}</p></div>
                  <div className="grid grid-cols-2 gap-4">
                    <div><p className="text-[10px] text-slate-400 font-bold uppercase">Asignación</p><p className="text-sm text-slate-700">{currentObra.asignacion || "-"}</p></div>
-                   <div><p className="text-[10px] text-slate-400 font-bold uppercase">ID Responsable</p><p className="text-sm text-slate-700">{currentObra.id_responsable || "-"}</p></div>
+                   <div><p className="text-[10px] text-slate-400 font-bold uppercase">Responsable</p><p className="text-sm text-slate-700">{currentObra.responsable_nombre || currentObra.id_responsable || "-"}</p></div>
                  </div>
                  <div><p className="text-[10px] text-slate-400 font-bold uppercase">Tags</p><p className="text-sm text-slate-700">{tagsAsText(currentObra.tags) || "-"}</p></div>
                  <div><p className="text-[10px] text-slate-400 font-bold uppercase">Observaciones</p><p className="text-sm text-slate-700 whitespace-pre-wrap">{currentObra.observaciones || "Sin observaciones."}</p></div>
@@ -447,9 +458,9 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
                 <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Tags (separados por coma)</label><input type="text" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={tagsAsText(currentObra.tags)} onChange={e => setCurrentObra({...currentObra, tags: e.target.value})} /></div>
               </div>
               <div className="grid grid-cols-3 gap-4">
-                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Ancho (m)</label><input type="number" step="any" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.ancho || ''} onChange={e => setCurrentObra({...currentObra, ancho: e.target.value})} /></div>
-                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Alto (m)</label><input type="number" step="any" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.alto || ''} onChange={e => setCurrentObra({...currentObra, alto: e.target.value})} /></div>
-                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Largo (m)</label><input type="number" step="any" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.largo || ''} onChange={e => setCurrentObra({...currentObra, largo: e.target.value})} /></div>
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Ancho (cm)</label><input type="number" step="any" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.ancho || ''} onChange={e => setCurrentObra({...currentObra, ancho: e.target.value})} /></div>
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Alto (cm)</label><input type="number" step="any" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.alto || ''} onChange={e => setCurrentObra({...currentObra, alto: e.target.value})} /></div>
+                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Largo (cm)</label><input type="number" step="any" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.largo || ''} onChange={e => setCurrentObra({...currentObra, largo: e.target.value})} /></div>
               </div>
               <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Observaciones</label><textarea rows="3" className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={currentObra.observaciones} onChange={e => setCurrentObra({...currentObra, observaciones: e.target.value})} /></div>
             </div>
