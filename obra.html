@@ -123,6 +123,7 @@
     function getUiSettings() {
       try {
         const storedSettings = JSON.parse(localStorage.getItem(UI_SETTINGS_KEY) || "{}");
+        // Compatibilidad: si venía el flag antiguo invertMeasures, se usa como estado inicial para rotateMeasures.
         const rotateMeasures = typeof storedSettings.rotateMeasures === 'boolean'
           ? storedSettings.rotateMeasures
           : !!storedSettings.invertMeasures;
@@ -276,6 +277,13 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
         const parsed = parseFloat(value);
         return Number.isFinite(parsed) ? parsed : null;
       };
+      const matchesPriceRange = (priceValue, min, max) => {
+        if (min === null && max === null) return true;
+        if (priceValue === null) return false;
+        if (min !== null && priceValue < min) return false;
+        if (max !== null && priceValue > max) return false;
+        return true;
+      };
       const minPriceValue = parseNumeric(filterPriceMin);
       const maxPriceValue = parseNumeric(filterPriceMax);
       const statusOptions = useMemo(() => uniqueValues(obras.map(o => o.estatus)), [obras]);
@@ -292,12 +300,7 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
         (!filterTipo || (o.tipo_obra || '') === filterTipo) &&
         (!filterProvenance || (comisiones.find(c => c.id === o.provenance)?.provenance || o.provenance || '') === filterProvenance) &&
         (!filterAutor || (o.autor || '') === filterAutor) &&
-        (() => {
-          const priceValue = parseNumeric(o.precio_venta) ?? parseNumeric(o.precio_lista);
-          if (minPriceValue !== null && (priceValue === null || priceValue < minPriceValue)) return false;
-          if (maxPriceValue !== null && (priceValue === null || priceValue > maxPriceValue)) return false;
-          return true;
-        })()
+        matchesPriceRange(parseNumeric(o.precio_venta) ?? parseNumeric(o.precio_lista), minPriceValue, maxPriceValue)
       );
 
       const recentObras = recentIds.map(id => obras.find(o => o.id === id)).filter(Boolean);
@@ -431,7 +434,7 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
                 />
               </label>
               <div className="space-y-2">
-                <p className="text-sm">Rotación de medidas: ancho→alto, alto→largo, largo→ancho</p>
+                <p className="text-sm">Si está activado: ancho muestra alto, alto muestra largo y largo muestra ancho.</p>
                 <button
                   onClick={() => setUiSettings({ ...uiSettings, rotateMeasures: !uiSettings.rotateMeasures })}
                   className={`w-full py-2 rounded-xl font-semibold border ${uiSettings.rotateMeasures ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-300 text-slate-700'}`}
