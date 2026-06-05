@@ -292,15 +292,22 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
       const autorOptions = useMemo(() => uniqueValues(obras.map(o => o.autor)), [obras]);
 
       const filtered = [...obras].reverse().filter(o => 
-        (
-          (o.nombre_obra || "").toLowerCase().includes(search.toLowerCase()) ||
-          (o.clave || "").toLowerCase().includes(search.toLowerCase())
-        ) &&
-        (!filterStatus || (o.estatus || '') === filterStatus) &&
-        (!filterTipo || (o.tipo_obra || '') === filterTipo) &&
-        (!filterProvenance || (comisiones.find(c => c.id === o.provenance)?.provenance || o.provenance || '') === filterProvenance) &&
-        (!filterAutor || (o.autor || '') === filterAutor) &&
-        matchesPriceRange(parseNumeric(o.precio_venta) ?? parseNumeric(o.precio_lista), minPriceValue, maxPriceValue)
+        (() => {
+          const ventaPrice = parseNumeric(o.precio_venta);
+          const listaPrice = parseNumeric(o.precio_lista);
+          const selectedPrice = ventaPrice ?? listaPrice;
+          return (
+            (
+              (o.nombre_obra || "").toLowerCase().includes(search.toLowerCase()) ||
+              (o.clave || "").toLowerCase().includes(search.toLowerCase())
+            ) &&
+            (!filterStatus || (o.estatus || '') === filterStatus) &&
+            (!filterTipo || (o.tipo_obra || '') === filterTipo) &&
+            (!filterProvenance || (comisiones.find(c => c.id === o.provenance)?.provenance || o.provenance || '') === filterProvenance) &&
+            (!filterAutor || (o.autor || '') === filterAutor) &&
+            matchesPriceRange(selectedPrice, minPriceValue, maxPriceValue)
+          );
+        })()
       );
 
       const recentObras = recentIds.map(id => obras.find(o => o.id === id)).filter(Boolean);
@@ -435,7 +442,7 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
               </label>
               <div className="space-y-2">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Rotar medidas</p>
-                <p className="text-sm">Si está activado: ancho muestra alto, alto muestra largo y largo muestra ancho.</p>
+                <p className="text-sm">Cuando está activado, el campo ancho muestra el valor de alto, alto muestra largo y largo muestra ancho.</p>
                 <button
                   onClick={() => setUiSettings({ ...uiSettings, rotateMeasures: !uiSettings.rotateMeasures })}
                   className={`w-full py-2 rounded-xl font-semibold border ${uiSettings.rotateMeasures ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-300 text-slate-700'}`}
