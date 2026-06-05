@@ -83,6 +83,7 @@
     const RECENT_OBRAS_KEY = "recentObras";
     const UI_SETTINGS_KEY = "obraUiSettings";
     const MAX_RECENT = 3;
+    const MEASURE_ROUND_FACTOR = 10000;
     const DEFAULT_UI_SETTINGS = { darkMode: false, invertMeasures: true };
     const DEFAULT_OBRA = {
       id: '',
@@ -133,7 +134,7 @@
       const normalizeMeasureValue = (value) => {
         if (value === '' || value === null || value === undefined) return '';
         const n = parseFloat(value);
-        return Number.isFinite(n) ? parseFloat(n.toFixed(4)) : '';
+        return Number.isFinite(n) ? (Math.round(n * MEASURE_ROUND_FACTOR) / MEASURE_ROUND_FACTOR) : '';
       };
       const getDisplayedMeasures = (obra, invert) => ({
         ancho: invert ? obra?.alto : obra?.ancho,
@@ -281,7 +282,6 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
       );
 
       const recentObras = recentIds.map(id => obras.find(o => o.id === id)).filter(Boolean);
-
       // --- RENDERIZADO DE VISTAS ---
 
       if (view === "list") return (
@@ -314,7 +314,7 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Configuración</p>
               <div className="space-y-2 text-sm">
                 <label className="flex items-center justify-between gap-3">
-                  <span>Modo obscuro</span>
+                  <span>Modo oscuro</span>
                   <input
                     type="checkbox"
                     checked={!!uiSettings.darkMode}
@@ -322,7 +322,7 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
                   />
                 </label>
                 <label className="flex items-center justify-between gap-3">
-                  <span>Invertir medidas (Ancho ↔ Alto)</span>
+                  <span>Intercambiar ancho y alto en visualización</span>
                   <input
                     type="checkbox"
                     checked={!!uiSettings.invertMeasures}
@@ -384,12 +384,10 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
         </div>
       );
 
-      if (view === "detail") return (
+      if (view === "detail") {
+        const displayedMeasures = getDisplayedMeasures(currentObra || {}, uiSettings.invertMeasures);
+        return (
         <div className="min-h-screen bg-slate-50 pb-20">
-          {(() => {
-            const displayedMeasures = getDisplayedMeasures(currentObra, uiSettings.invertMeasures);
-            return (
-              <>
           <nav className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10 shadow-sm">
             <button onClick={() => setView("list")} className="p-2 text-slate-600"><IconBack /></button>
             <h2 className="font-bold text-slate-800 truncate px-4">Vista de Obra</h2>
@@ -473,11 +471,9 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
              )}
           </div>
           <Toast {...toast} onClose={() => setToast({ message: '', type: '' })} />
-             </>
-           );
-          })()}
         </div>
       );
+      }
 
       if (view === "form") return (
         <div className="min-h-screen bg-white">
