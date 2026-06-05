@@ -84,7 +84,7 @@
     const UI_SETTINGS_KEY = "obraUiSettings";
     const MAX_RECENT = 3;
     const MEASURE_ROUND_FACTOR = 10000;
-    const DEFAULT_UI_SETTINGS = { darkMode: false, invertMeasures: true };
+    const DEFAULT_UI_SETTINGS = { darkMode: false, rotateMeasures: true };
     const DEFAULT_OBRA = {
       id: '',
       nombre_obra: '',
@@ -122,7 +122,11 @@
 
     function getUiSettings() {
       try {
-        return { ...DEFAULT_UI_SETTINGS, ...(JSON.parse(localStorage.getItem(UI_SETTINGS_KEY) || "{}")) };
+        const storedSettings = JSON.parse(localStorage.getItem(UI_SETTINGS_KEY) || "{}");
+        const rotateMeasures = typeof storedSettings.rotateMeasures === 'boolean'
+          ? storedSettings.rotateMeasures
+          : !!storedSettings.invertMeasures;
+        return { ...DEFAULT_UI_SETTINGS, ...storedSettings, rotateMeasures };
       } catch (e) {
         console.error("Error parsing UI settings:", e);
         return { ...DEFAULT_UI_SETTINGS };
@@ -136,10 +140,10 @@
         const n = parseFloat(value);
         return Number.isFinite(n) ? (Math.round(n * MEASURE_ROUND_FACTOR) / MEASURE_ROUND_FACTOR) : '';
       };
-      const getDisplayedMeasures = (obra, invert) => ({
-        ancho: invert ? obra?.alto : obra?.ancho,
-        alto: invert ? obra?.ancho : obra?.alto,
-        largo: obra?.largo
+      const getDisplayedMeasures = (obra, rotate) => ({
+        ancho: rotate ? obra?.alto : obra?.ancho,
+        alto: rotate ? obra?.largo : obra?.alto,
+        largo: rotate ? obra?.ancho : obra?.largo
       });
       const [view, setView] = useState("list");
       const [loading, setLoading] = useState(true);
@@ -150,6 +154,9 @@
       const [filterTipo, setFilterTipo] = useState("");
       const [filterProvenance, setFilterProvenance] = useState("");
       const [filterAutor, setFilterAutor] = useState("");
+      const [filterPriceMin, setFilterPriceMin] = useState("");
+      const [filterPriceMax, setFilterPriceMax] = useState("");
+      const [showFilters, setShowFilters] = useState(true);
       const [currentObra, setCurrentObra] = useState(null);
       const [toast, setToast] = useState({ message: '', type: '' });
       const [saving, setSaving] = useState(false);
@@ -265,6 +272,12 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
       const formatCurrency = (v) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(v || 0);
       const tagsAsText = (tags) => Array.isArray(tags) ? tags.join(', ') : (tags || '');
       const uniqueValues = (items) => [...new Set(items.filter(Boolean).map(x => x.toString().trim()))].sort((a, b) => a.localeCompare(b, 'es-MX'));
+      const parseNumeric = (value) => {
+        const parsed = parseFloat(value);
+        return Number.isFinite(parsed) ? parsed : null;
+      };
+      const minPriceValue = parseNumeric(filterPriceMin);
+      const maxPriceValue = parseNumeric(filterPriceMax);
       const statusOptions = useMemo(() => uniqueValues(obras.map(o => o.estatus)), [obras]);
       const tipoOptions = useMemo(() => uniqueValues(obras.map(o => o.tipo_obra)), [obras]);
       const provenanceOptions = useMemo(() => uniqueValues(obras.map(o => comisiones.find(c => c.id === o.provenance)?.provenance || o.provenance)), [obras, comisiones]);
@@ -278,7 +291,13 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
         (!filterStatus || (o.estatus || '') === filterStatus) &&
         (!filterTipo || (o.tipo_obra || '') === filterTipo) &&
         (!filterProvenance || (comisiones.find(c => c.id === o.provenance)?.provenance || o.provenance || '') === filterProvenance) &&
-        (!filterAutor || (o.autor || '') === filterAutor)
+        (!filterAutor || (o.autor || '') === filterAutor) &&
+        (() => {
+          const priceValue = parseNumeric(o.precio_venta) ?? parseNumeric(o.precio_lista);
+          if (minPriceValue !== null && (priceValue === null || priceValue < minPriceValue)) return false;
+          if (maxPriceValue !== null && (priceValue === null || priceValue > maxPriceValue)) return false;
+          return true;
+        })()
       );
 
       const recentObras = recentIds.map(id => obras.find(o => o.id === id)).filter(Boolean);
@@ -287,12 +306,26 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
       if (view === "list") return (
         <div className="min-h-screen">
           <header className="sticky top-0 z-10 glass-header p-4 border-b">
-            <h1 className="text-2xl font-bold text-slate-800 mb-4">Registro de Obra</h1>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h1 className="text-2xl font-bold text-slate-800">Registro de Obra</h1>
+              <button
+                onClick={() => setView("settings")}
+                className="px-3 py-2 text-xs font-bold bg-white border rounded-xl text-slate-600 active:scale-95 transition-all"
+              >
+                Configuración
+              </button>
+            </div>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><IconSearch /></span>
               <input type="text" placeholder="Buscar por nombre o clave..." className="w-full pl-10 pr-4 py-3 bg-white border rounded-xl shadow-sm outline-none focus:ring-2 focus:ring-indigo-500" value={search} onChange={e => setSearch(e.target.value)} />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mt-3">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="mt-3 w-full px-3 py-2 text-xs font-bold bg-white border rounded-xl text-slate-600 active:scale-95 transition-all"
+            >
+              {showFilters ? "Ocultar filtros" : "Mostrar filtros"}
+            </button>
+            {showFilters && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mt-3">
               <select className="w-full px-3 py-2 bg-white border rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
                 <option value="">Estatus: Todos</option>
                 {statusOptions.map(v => <option key={v} value={v}>{v}</option>)}
@@ -309,28 +342,23 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
                 <option value="">Autor: Todos</option>
                 {autorOptions.map(v => <option key={v} value={v}>{v}</option>)}
               </select>
-            </div>
-            <div className="mt-3 bg-white border rounded-2xl p-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Configuración</p>
-              <div className="space-y-2 text-sm">
-                <label className="flex items-center justify-between gap-3">
-                  <span>Modo oscuro</span>
-                  <input
-                    type="checkbox"
-                    checked={!!uiSettings.darkMode}
-                    onChange={e => setUiSettings({ ...uiSettings, darkMode: e.target.checked })}
-                  />
-                </label>
-                <label className="flex items-center justify-between gap-3">
-                  <span>Intercambiar ancho y alto en visualización</span>
-                  <input
-                    type="checkbox"
-                    checked={!!uiSettings.invertMeasures}
-                    onChange={e => setUiSettings({ ...uiSettings, invertMeasures: e.target.checked })}
-                  />
-                </label>
-              </div>
-            </div>
+              <input
+                type="number"
+                step="any"
+                placeholder="Precio mínimo"
+                className="w-full px-3 py-2 bg-white border rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                value={filterPriceMin}
+                onChange={e => setFilterPriceMin(e.target.value)}
+              />
+              <input
+                type="number"
+                step="any"
+                placeholder="Precio máximo"
+                className="w-full px-3 py-2 bg-white border rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                value={filterPriceMax}
+                onChange={e => setFilterPriceMax(e.target.value)}
+              />
+            </div>}
           </header>
           <main className="p-4 space-y-4">
             {!loading && recentObras.length > 0 && (
@@ -384,8 +412,40 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
         </div>
       );
 
+      if (view === "settings") return (
+        <div className="min-h-screen bg-slate-50">
+          <nav className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10 shadow-sm">
+            <button onClick={() => setView("list")} className="p-2 text-slate-600"><IconBack /></button>
+            <h2 className="font-bold text-slate-800 truncate px-4">Configuración</h2>
+            <div className="w-8"></div>
+          </nav>
+          <div className="p-4 max-w-lg mx-auto">
+            <div className="bg-white border rounded-2xl p-4 space-y-4">
+              <label className="flex items-center justify-between gap-3 text-sm">
+                <span>Modo oscuro</span>
+                <input
+                  type="checkbox"
+                  checked={!!uiSettings.darkMode}
+                  onChange={e => setUiSettings({ ...uiSettings, darkMode: e.target.checked })}
+                />
+              </label>
+              <div className="space-y-2">
+                <p className="text-sm">Intercambio de medidas: ancho→alto, alto→largo, largo→ancho</p>
+                <button
+                  onClick={() => setUiSettings({ ...uiSettings, rotateMeasures: !uiSettings.rotateMeasures })}
+                  className={`w-full py-2 rounded-xl font-semibold border ${uiSettings.rotateMeasures ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-300 text-slate-700'}`}
+                >
+                  {uiSettings.rotateMeasures ? "Activado" : "Desactivado"}
+                </button>
+              </div>
+            </div>
+          </div>
+          <Toast {...toast} onClose={() => setToast({ message: '', type: '' })} />
+        </div>
+      );
+
       if (view === "detail") {
-        const displayedMeasures = getDisplayedMeasures(currentObra || {}, uiSettings.invertMeasures);
+        const displayedMeasures = getDisplayedMeasures(currentObra || {}, uiSettings.rotateMeasures);
         return (
         <div className="min-h-screen bg-slate-50 pb-20">
           <nav className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10 shadow-sm">
