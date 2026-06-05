@@ -361,8 +361,8 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
                 value={filterPriceMax}
                 onChange={e => setFilterPriceMax(e.target.value)}
               />
-              <p className="text-xs text-slate-500 px-1 sm:col-span-2 lg:col-span-4">Al usar rango de precios se muestran solo obras con precio válido.</p>
             </div>}
+            {showFilters && <p className="text-xs text-slate-500 px-1 mt-2">Al usar rango de precios se muestran solo obras con precio válido.</p>}
           </header>
           <main className="p-4 space-y-4">
             {!loading && recentObras.length > 0 && (
@@ -434,6 +434,7 @@ Observaciones: ${currentObra.observaciones || 'Ninguna'}
                 />
               </label>
               <div className="space-y-2">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Rotar medidas</p>
                 <p className="text-sm">Si está activado: ancho muestra alto, alto muestra largo y largo muestra ancho.</p>
                 <button
                   onClick={() => setUiSettings({ ...uiSettings, rotateMeasures: !uiSettings.rotateMeasures })}
