@@ -1,11 +1,12 @@
 const CACHE_NAME = 'v1_cache_pwa';
-// Agrega aquí los archivos que quieres que funcionen sin internet
+
+// Corregido: Quitamos las barras iniciales para que busque dentro de /Finanzas/
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/css/style.css',
-  '/js/main.js',
-  '/icons/icon-192x192.png'
+  './',                  // Representa la raíz de tu carpeta /Finanzas/
+  'index.html',
+  'css/style.css',       // Asegúrate de que tu carpeta de estilos se llame exactamente así
+  'js/main.js',          // Asegúrate de que tu script principal se llame exactamente así
+  'icons/icon-192x192.png'
 ];
 
 // Evento de instalación: Guarda los archivos en la caché
@@ -13,6 +14,7 @@ self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
+        console.log('Abriendo caché y guardando archivos');
         return cache.addAll(urlsToCache);
       })
       .then(() => self.skipWaiting())
