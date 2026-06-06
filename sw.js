@@ -3,7 +3,7 @@ const CACHE_NAME = 'v1_cache_pwa';
 // Corregido: Quitamos las barras iniciales para que busque dentro de /Finanzas/
 const urlsToCache = [
   './',                  // Representa la raíz de tu carpeta /Finanzas/
-  'index.html',         // Asegúrate de que tu script principal se llame exactamente así
+  'obra.html',         // Asegúrate de que tu script principal se llame exactamente así
   'icons/icon-192x192.png'
 ];
 
