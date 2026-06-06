@@ -1,7 +1,7 @@
 {
   "name": "base de datos",
   "short_name": "DBMobile",
-  "start_url": "/Finanzas/",
+  "start_url": "/Finanzas/obra.html",
   "scope": "/Finanzas/",
   "display": "standalone",
   "background_color": "#ffffff",
