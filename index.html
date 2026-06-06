@@ -1,7 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <link rel="manifest" href="/Finanzas/manifest.json">
+  <!-- En el <head> de tu index.html -->
+  <link rel="manifest" href="manifest.json"> 
+
+  <!-- IMPORTANTE PARA IPHONE: iOS a veces ignora el manifiesto para el ícono. 
+     Debes agregar esta línea explícitamente para que Safari detecte el ícono -->
+  <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+
   <meta name="theme-color" content="#317EFB">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
