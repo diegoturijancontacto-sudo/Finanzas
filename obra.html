@@ -94,7 +94,7 @@
     };
 
     const RECENT_OBRAS_KEY = "recentObras";
-    const VIEWED_OBRAS_KEY = "obraViewedHistory"; // Nuevo: Clave para el historial completo
+    const VIEWED_OBRAS_KEY = "obraViewedHistory"; 
     const UI_SETTINGS_KEY = "obraUiSettings";
     const MAX_RECENT = 3;
     const MEASURE_ROUND_FACTOR = 10000;
@@ -104,7 +104,7 @@
       id: '', nombre_obra: '', ubicacion: '', estatus: 'Consolidación', tipo_obra: '', 
       superficie: '', precio_lista: '', precio_venta: '', fecha_registro: '', fecha_adquisicion: '', 
       fecha_venta: '', cliente: '', observaciones: '', id_responsable: '', autor: '', 
-      asignacion: '', provenance: '', clave: 'Pendiente', ancho: '', alto: '', largo: '', tags: []
+      asignacion: '', provenance: '', clave: 'Pendiente', ancho: '', alto: '', largo: '', tags: [], tipo_moneda: 'MXN'
     };
 
     function getRecentIds() {
@@ -203,7 +203,8 @@
           if (!hash) {
             setView("list");
           } else if (obras.length > 0) {
-            const linkedObra = obras.find(o => o.clave === hash || o.id === hash);
+            // Mantenemos compatibilidad con clave por si existen links viejos, pero preferimos ID
+            const linkedObra = obras.find(o => o.id === hash || o.clave === hash);
             if (linkedObra) {
               setCurrentObra(linkedObra);
               setView("detail");
@@ -228,6 +229,7 @@
               ancho: normalizeMeasureValue(o.ancho),
               alto: normalizeMeasureValue(o.alto),
               largo: normalizeMeasureValue(o.largo),
+              tipo_moneda: o.tipo_moneda || 'MXN' // Fallback si no viene de DB
             }));
             setObras(fetchedObras);
             setComisiones(data.comisiones || []);
@@ -235,10 +237,10 @@
             // Enrutamiento inicial (Deep linking)
             const hash = window.location.hash.substring(1);
             const pathClave = window.location.pathname.split('/').pop();
-            const targetClave = hash || (pathClave && !pathClave.includes('.html') ? pathClave : null);
+            const targetHash = hash || (pathClave && !pathClave.includes('.html') ? pathClave : null);
 
-            if (targetClave) {
-              const linkedObra = fetchedObras.find(o => o.clave === targetClave || o.id === targetClave);
+            if (targetHash) {
+              const linkedObra = fetchedObras.find(o => o.id === targetHash || o.clave === targetHash);
               if (linkedObra) {
                 openDetail(linkedObra, true);
               }
@@ -281,9 +283,9 @@
         setCurrentObra(obra);
         setView("detail");
 
-        // Actualizar la URL con hash (ej. #CLAVE) para permitir enviar el enlace
+        // Actualizar la URL con hash utilizando el ID
         if (!isInitialLoad) {
-          window.location.hash = obra.clave || obra.id;
+          window.location.hash = obra.id;
         }
       };
 
@@ -291,6 +293,17 @@
         setCurrentObra({ ...DEFAULT_OBRA, id: Date.now().toString(), fecha_registro: new Date().toISOString().split('T')[0] });
         setView("form");
         window.history.pushState("", document.title, window.location.pathname + window.location.search);
+      };
+
+      // Modificado para aceptar código de moneda (ej: USD, MXN)
+      const formatCurrency = (v, currencyCode = 'MXN') => {
+        const val = parseFloat(v);
+        if (!Number.isFinite(val)) return '-';
+        try {
+          return new Intl.NumberFormat('es-MX', { style: 'currency', currency: currencyCode }).format(val);
+        } catch(e) {
+          return `$${val.toLocaleString('es-MX')} ${currencyCode}`;
+        }
       };
 
       const handleCopyInfo = () => {
@@ -303,8 +316,8 @@ Estatus: ${currentObra.estatus || 'N/A'}
 Tipo: ${currentObra.tipo_obra || 'N/A'}
 Autor: ${currentObra.autor || 'N/A'}
 Ubicación: ${currentObra.ubicacion || 'N/A'}
-Precio Lista: $${(currentObra.precio_lista || 0).toLocaleString()}
-Precio Venta: $${(currentObra.precio_venta || 0).toLocaleString()}
+Precio Lista: ${formatCurrency(currentObra.precio_lista, currentObra.tipo_moneda)}
+Precio Venta: ${formatCurrency(currentObra.precio_venta, currentObra.tipo_moneda)}
 Superficie: ${currentObra.superficie || 0} m²
 Cliente: ${currentObra.cliente || 'N/A'}
 Fecha Registro: ${currentObra.fecha_registro || 'N/A'}
@@ -315,7 +328,7 @@ Responsable: ${currentObra.responsable_nombre || currentObra.id_responsable || '
 Provenance: ${prov}
 Tags: ${tagsAsText(currentObra.tags) || 'N/A'}
 Observaciones: ${currentObra.observaciones || 'Ninguna'}
-Enlace directo: ${window.location.origin}${window.location.pathname}#${currentObra.clave}
+Enlace directo: ${window.location.origin}${window.location.pathname}#${currentObra.id}
         `.trim();
 
         const textArea = document.createElement("textarea");
@@ -369,7 +382,6 @@ Enlace directo: ${window.location.origin}${window.location.pathname}#${currentOb
         }
       };
 
-      const formatCurrency = (v) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(v || 0);
       const tagsAsText = (tags) => Array.isArray(tags) ? tags.join(', ') : (tags || '');
       const uniqueValues = (items) => [...new Set(items.filter(Boolean).map(x => x.toString().trim()))].sort((a, b) => a.localeCompare(b, 'es-MX'));
       
@@ -669,8 +681,8 @@ Enlace directo: ${window.location.origin}${window.location.pathname}#${currentOb
                   </div>
                   <div><p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase">Ubicación</p><p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{currentObra.ubicacion || "No especificada"}</p></div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div><p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase">Precio Lista</p><p className="text-lg font-black text-indigo-600 dark:text-indigo-400">{formatCurrency(currentObra.precio_lista)}</p></div>
-                    <div><p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase">Precio Venta</p><p className="text-lg font-black text-emerald-600 dark:text-emerald-400">{formatCurrency(currentObra.precio_venta)}</p></div>
+                    <div><p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase">Precio Lista</p><p className="text-lg font-black text-indigo-600 dark:text-indigo-400">{formatCurrency(currentObra.precio_lista, currentObra.tipo_moneda)}</p></div>
+                    <div><p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase">Precio Venta</p><p className="text-lg font-black text-emerald-600 dark:text-emerald-400">{formatCurrency(currentObra.precio_venta, currentObra.tipo_moneda)}</p></div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div><p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase">Superficie</p><p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{currentObra.superficie || "0"} m²</p></div>
@@ -831,13 +843,21 @@ Enlace directo: ${window.location.origin}${window.location.pathname}#${currentOb
                   <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100" value={currentObra.ubicacion || ''} onChange={e => setCurrentObra({...currentObra, ubicacion: e.target.value})} />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Precio Lista (MXN)</label>
+                    <label className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Moneda</label>
+                    <select className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-slate-100" value={currentObra.tipo_moneda || 'MXN'} onChange={e => setCurrentObra({...currentObra, tipo_moneda: e.target.value})}>
+                      <option value="MXN">MXN - Pesos</option>
+                      <option value="USD">USD - Dólares</option>
+                      <option value="EUR">EUR - Euros</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Precio Lista</label>
                     <input type="number" step="any" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100" value={currentObra.precio_lista || ''} onChange={e => setCurrentObra({...currentObra, precio_lista: e.target.value})} />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Precio Venta (MXN)</label>
+                    <label className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Precio Venta</label>
                     <input type="number" step="any" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100" value={currentObra.precio_venta || ''} onChange={e => setCurrentObra({...currentObra, precio_venta: e.target.value})} />
                   </div>
                 </div>
