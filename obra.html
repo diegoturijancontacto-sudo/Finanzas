@@ -84,11 +84,12 @@
     const IconBack = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m15 18-6-6 6-6"/></svg>;
     const IconEdit = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>;
     const IconCopy = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>;
+    const IconShare = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>;
+    const IconFlag = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>;
     const IconSave = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
     const IconSearch = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>;
-    const IconPaperclip = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-8.49 8.49a5.5 5.5 0 0 1-7.78-7.78l8.48-8.49a3.5 3.5 0 1 1 4.95 4.95l-8.49 8.48a1.5 1.5 0 0 1-2.12-2.12l8.49-8.48"/></svg>;
     const IconUnseen = () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><line x1="4" y1="4" x2="20" y2="20"/></svg>;
-    const IconChevronRight = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><path d="m9 18 6-6-6-6"/></svg>;
+    const IconChevronRight = ({ className = "text-slate-400" }) => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m9 18 6-6-6-6"/></svg>;
 
     // --- COMPONENTE CARGADOR ---
     const BoxLoader = ({ message = "Cargando datos..." }) => (
@@ -176,7 +177,7 @@
         largo: rotate ? obra?.ancho : obra?.largo
       });
 
-      // Vistas permitidas: 'discover', 'list', 'form', 'settings', 'detail'
+      // Vistas permitidas: 'discover', 'list', 'form', 'settings', 'detail', 'author'
       const [view, setView] = useState("discover"); 
       const [loading, setLoading] = useState(true);
       const [obras, setObras] = useState([]);
@@ -192,6 +193,8 @@
       const [showFilters, setShowFilters] = useState(false);
       
       const [currentObra, setCurrentObra] = useState(null);
+      const [currentAuthor, setCurrentAuthor] = useState(null); // Nuevo estado para la vista de Autor
+      
       const [toast, setToast] = useState({ message: '', type: '' });
       const [saving, setSaving] = useState(false);
       const [recentIds, setRecentIds] = useState(() => getRecentIds());
@@ -209,7 +212,7 @@
       useEffect(() => {
         const handleHashChange = () => {
           const hash = window.location.hash.substring(1);
-          if (!hash && view === 'detail') setView("list");
+          if (!hash && (view === 'detail' || view === 'author')) setView("list");
           else if (hash && obras.length > 0) {
             const linkedObra = obras.find(o => o.id === hash || o.clave === hash);
             if (linkedObra) {
@@ -283,6 +286,7 @@
         catch(e) { return `$${val.toLocaleString('es-MX')} ${currencyCode}`; }
       };
 
+      // Funciones de utilidad para Detail
       const handleCopyInfo = () => {
         if (!currentObra) return;
         const prov = comisiones.find(c => c.id === currentObra.provenance)?.provenance || currentObra.provenance || "No definida";
@@ -292,6 +296,36 @@
         try { document.execCommand('copy'); showToast("Copiado al portapapeles"); } 
         catch (err) { showToast("Error al copiar", "error"); }
         document.body.removeChild(textArea);
+      };
+
+      const handleShare = async () => {
+        const obraUrl = `${window.location.origin}${window.location.pathname}#${currentObra.id}`;
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: currentObra.nombre_obra,
+              text: `Mira esta obra de ${currentObra.autor || 'autor desconocido'}: ${currentObra.nombre_obra}`,
+              url: obraUrl,
+            });
+          } catch (err) { console.log("Compartir cancelado o con error", err); }
+        } else {
+          handleCopyInfo();
+        }
+      };
+
+      const handleReportError = async () => {
+        if (!currentObra) return;
+        const obraUrl = `${window.location.origin}${window.location.pathname}#${currentObra.id}`;
+        const msg = `Hola, quiero reportar un error en la obra: ${currentObra.nombre_obra} - ${obraUrl}`;
+        const url = `https://bot-yy1q.onrender.com/send?number=5212202334062&message=${encodeURIComponent(msg)}`;
+        
+        showToast("Enviando reporte...");
+        try {
+          await fetch(url, { mode: 'no-cors' }); // no-cors para evitar bloqueos del navegador si no controlamos el bot
+          showToast("Reporte enviado al Bot de WhatsApp exitosamente");
+        } catch (e) {
+          showToast("No se pudo contactar con el Bot", "error");
+        }
       };
 
       const handleSave = async (e) => {
@@ -347,7 +381,7 @@
         return grouped;
       }, [obras]);
 
-      // Componente reutilizable para la tarjeta visual
+      // Componente reutilizable para la tarjeta visual en Descubrir
       const DiscoverCard = ({ obra }) => {
         const imgUrl = getFirstImage(obra);
         return (
@@ -370,7 +404,6 @@
         );
       };
 
-      // Control para mostrar BottomNav solo en las vistas principales
       const isMainTab = ['discover', 'list', 'settings'].includes(view);
 
       return (
@@ -484,7 +517,7 @@
                       const o = obras.find(x => x.id === id);
                       if (!o) return null;
                       return (
-                        <div key={id} onClick={() => openDetail(o)} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl active:scale-95 transition-transform">
+                        <div key={id} onClick={() => openDetail(o)} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl active:scale-95 transition-transform cursor-pointer">
                           <div className="min-w-0">
                             <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{o.nombre_obra}</p>
                             <p className="text-[10px] text-slate-400 font-mono">#{o.clave}</p>
@@ -499,14 +532,45 @@
             </div>
           )}
 
+          {/* VISTA: AUTHOR GRID */}
+          {view === "author" && (
+            <div className="animate-fade-in max-w-xl mx-auto">
+               <nav className="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50 p-4 flex justify-between items-center z-10 pt-safe">
+                <button onClick={() => setView("detail")} className="p-2 -ml-2 text-indigo-600 dark:text-indigo-400 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"><IconBack /></button>
+                <h2 className="font-bold text-slate-900 dark:text-white truncate max-w-[200px] text-center">{currentAuthor || "Autor Desconocido"}</h2>
+                <div className="w-10"></div> {/* Spacer balance */}
+              </nav>
+              <div className="p-4">
+                <p className="text-xs text-slate-500 mb-4 uppercase tracking-widest font-bold text-center">Catálogo del autor</p>
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                  {obras.filter(o => o.autor === currentAuthor).map(obra => {
+                    const imgUrl = getFirstImage(obra);
+                    return (
+                      <div key={obra.id} onClick={() => openDetail(obra)} className="relative aspect-square rounded-xl overflow-hidden cursor-pointer shadow-sm hover:shadow-md transition-all border border-slate-200 dark:border-slate-800 bg-slate-200 dark:bg-slate-800">
+                        {imgUrl ? (
+                           <img src={imgUrl} className="w-full h-full object-cover" alt={obra.nombre_obra} />
+                        ) : (
+                           <div className="w-full h-full bg-gradient-to-br from-indigo-400 to-purple-600 flex items-center justify-center p-2 text-center">
+                             <span className="text-[9px] sm:text-xs text-white font-bold leading-tight line-clamp-3">{obra.nombre_obra}</span>
+                           </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* VISTA: DETAIL */}
           {view === "detail" && currentObra && (
             <div className="animate-fade-in bg-slate-50 dark:bg-slate-950 pb-safe-nav">
               <nav className="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50 p-4 flex justify-between items-center z-10 pt-safe">
                 <button onClick={() => setView("list")} className="p-2 -ml-2 text-indigo-600 dark:text-indigo-400 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"><IconBack /></button>
-                <div className="flex gap-2">
-                  <button onClick={handleCopyInfo} className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full"><IconCopy /></button>
-                  <button onClick={() => setView("form")} className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full"><IconEdit /></button>
+                <div className="flex gap-1 sm:gap-2">
+                  <button onClick={handleShare} className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors"><IconShare /></button>
+                  <button onClick={handleCopyInfo} className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors"><IconCopy /></button>
+                  <button onClick={() => setView("form")} className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors"><IconEdit /></button>
                 </div>
               </nav>
               
@@ -522,7 +586,14 @@
                   
                   <div className="space-y-5 pt-4 border-t border-slate-100 dark:border-slate-800">
                     <div className="grid grid-cols-2 gap-4">
-                      <div><p className="text-[10px] text-slate-400 font-bold uppercase">Autor</p><p className="text-sm font-semibold">{currentObra.autor || "-"}</p></div>
+                      {/* Enlace interactivo a la cuadrícula de Autor */}
+                      <div onClick={() => { setCurrentAuthor(currentObra.autor); setView("author"); }} className="cursor-pointer group p-2 -m-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <p className="text-[10px] text-slate-400 font-bold uppercase">Autor</p>
+                        <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 group-hover:underline flex items-center gap-1">
+                          {currentObra.autor || "-"}
+                          {currentObra.autor && <IconChevronRight className="w-3 h-3 text-indigo-400" />}
+                        </p>
+                      </div>
                       <div><p className="text-[10px] text-slate-400 font-bold uppercase">Tipo</p><p className="text-sm font-semibold">{currentObra.tipo_obra || "-"}</p></div>
                     </div>
                     <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl">
@@ -571,6 +642,13 @@
                      <p className="text-[10px] text-slate-400 font-bold uppercase">Observaciones</p>
                      <p className="text-sm whitespace-pre-wrap mt-1 text-slate-700 dark:text-slate-300">{currentObra.observaciones || "Sin observaciones."}</p>
                   </div>
+                </div>
+
+                {/* Botón Reportar Error */}
+                <div className="pt-4 pb-8 flex justify-center">
+                  <button onClick={handleReportError} className="flex items-center gap-2 text-xs font-bold text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/50 px-5 py-2.5 rounded-full transition-all active:scale-95 border border-red-100 dark:border-red-900/50 shadow-sm">
+                    <IconFlag className="w-4 h-4" /> Reportar problema con esta obra
+                  </button>
                 </div>
               </div>
             </div>
