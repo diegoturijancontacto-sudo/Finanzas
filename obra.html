@@ -71,7 +71,7 @@
     // URL de tu Apps Script
     const API_URL = "https://script.google.com/macros/s/AKfycbxmPBIboe_Evn45ZHjtkjydbmlPRMuSax_sEiTc2iN8cqqi2i4-Pf_lOd6875cQXEd_yg/exec";
 
-    // --- LISTA COMPLETA DE AUTORES Y ABREVIATURAS DE ADMIN.HTML ---
+    // --- LISTA COMPLETA DE AUTORES Y ABREVIATURAS ---
     const AUTOR_ABREVIATURAS = {
         'Abelardo López': 'ALP',
         'Alberto Aragón': 'ARG',
@@ -106,9 +106,18 @@
         'Vladimir Cora': 'VCR'
     };
 
+    // --- CATÁLOGO DE TIPOS DE ADJUNTO Y CÓDIGOS ---
+    const TIPOS_ADJUNTO = [
+      { code: 'RW', label: 'Imagen Original (RW)' },
+      { code: 'RD', label: 'Imagen Editada (RD)' },
+      { code: 'FO', label: 'Foto de la Obra (FO)' },
+      { code: 'VD', label: 'Video (VD)' },
+      { code: 'CER', label: 'Certificado (CER)' },
+      { code: 'COT', label: 'Cotización (COT)' }
+    ];
+
     // --- FUNCIÓN DE GENERACIÓN DE CLAVE EXACTA DE ADMIN.HTML ---
     function generateClave(provenanceName, artista, tecnica, claveActual, allRegistrosObra = []) {
-        // Bloque 1: Número (4 dígitos) + Origen (3 letras)
         let numStr = '0001'; 
 
         if (claveActual && claveActual.length >= 4) {
@@ -138,7 +147,6 @@
 
         const bloque1 = `${numStr}${provStr}`;
 
-        // Bloque 2: Artista + Técnica
         let artistStr = '';
         if (artista && artista.trim() !== '') {
             const cleanArtista = artista.trim();
@@ -188,7 +196,7 @@
         return bloque1;
     }
 
-    // --- COMPONENTES DE ICONOS ---
+    // --- ICONOS ---
     const IconCompass = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>;
     const IconList = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>;
     const IconPlusCircle = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>;
@@ -312,8 +320,9 @@
       const [currentObra, setCurrentObra] = useState(null);
       const [currentAuthor, setCurrentAuthor] = useState(null);
       
-      // Estado para documentos/adjuntos dentro del modal o formulario
+      // Estado para documentos/adjuntos
       const [pendingFiles, setPendingFiles] = useState([]);
+      const [selectedTipoAdj, setSelectedTipoAdj] = useState("RW");
       const [newDoc, setNewDoc] = useState({ tipo: '', nombre: '', url: '', fecha: '' });
       const [uploadingAdj, setUploadingAdj] = useState(false);
       
@@ -400,10 +409,10 @@
           id: 'obra_' + (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2))),
           fecha_registro: new Date().toISOString().split('T')[0]
         };
-        // Auto-generar clave inicial
         newObra.clave = generateClave('', '', '', '', obras);
         setCurrentObra(newObra);
         setPendingFiles([]);
+        setSelectedTipoAdj("RW");
         setView("form");
         window.history.pushState("", document.title, window.location.pathname + window.location.search);
       };
@@ -414,10 +423,10 @@
           tags: Array.isArray(obra.tags) ? obra.tags.join(', ') : (obra.tags || '')
         });
         setPendingFiles([]);
+        setSelectedTipoAdj("RW");
         setView("form");
       };
 
-      // Recalcular clave en el formulario en tiempo real
       const handleFormChange = (field, value) => {
         if (!currentObra) return;
         const updated = { ...currentObra, [field]: value };
@@ -450,7 +459,28 @@
         return currentObra?.id_responsable || (responsables[0]?.id || '');
       };
 
-      // --- OPERACIONES DE ADJUNTOS Y DOCUMENTOS (ADMIN.HTML METODOS) ---
+      // --- GENERADOR DE NOMBRES SEGÚN REGLA: [CLAVE]-[TIPO][XX].[EXT] ---
+      const generateAdjuntoName = (tipoCode, originalName) => {
+        const claveBase = currentObra?.clave || 'OBRA';
+        const extMatch = originalName.match(/\.[^/.]+$/);
+        const ext = extMatch ? extMatch[0].toLowerCase() : '';
+
+        // Contar adjuntos ya subidos con el mismo código
+        const existingAdjCount = (currentObra?.adjuntos || []).filter(a => {
+          const nameWithoutExt = (a.name || '').replace(/\.[^/.]+$/, '');
+          return nameWithoutExt.includes(`-${tipoCode}`);
+        }).length;
+
+        // Contar adjuntos en cola pendientes
+        const pendingCount = pendingFiles.filter(p => p.typeCode === tipoCode).length;
+
+        const nextNum = existingAdjCount + pendingCount + 1;
+        const seqStr = String(nextNum).padStart(2, '0');
+
+        return `${claveBase}-${tipoCode}${seqStr}${ext}`;
+      };
+
+      // --- OPERACIONES DE ADJUNTOS Y DOCUMENTOS ---
       const handleAddDocumento = async () => {
         if (!newDoc.nombre) { showToast('El nombre del documento es obligatorio', 'error'); return; }
         const actorId = getActorId();
@@ -509,11 +539,14 @@
         const file = e.target.files[0];
         if (!file) return;
 
-        // Si es una obra nueva que no existe en el backend aún
+        const customName = generateAdjuntoName(selectedTipoAdj, file.name);
+
         const isExisting = obras.some(o => o.id === currentObra.id);
         if (!isExisting) {
+          file.customName = customName;
+          file.typeCode = selectedTipoAdj;
           setPendingFiles([...pendingFiles, file]);
-          showToast("Archivo en cola. Se subirá al guardar la obra.");
+          showToast(`Guardado en cola como: ${customName}`);
           e.target.value = '';
           return;
         }
@@ -536,7 +569,7 @@
               data: {
                 id_obra: currentObra.id,
                 id_actor: actorId,
-                filename: file.name,
+                filename: customName,
                 mimeType: file.type || 'application/octet-stream',
                 base64
               }
@@ -546,7 +579,7 @@
           if (result.result === 'success') {
             const newAdj = {
               id: result.fileId,
-              name: file.name,
+              name: customName,
               url: result.url,
               kind: 'adjunto_obra',
               uploadedBy: actorId,
@@ -555,7 +588,7 @@
             };
             const updatedAdj = [...(currentObra.adjuntos || []), newAdj];
             setCurrentObra({ ...currentObra, adjuntos: updatedAdj });
-            showToast("Archivo subido a Drive con éxito");
+            showToast("Subido a Drive con éxito");
           } else { showToast("Error subiendo archivo", "error"); }
         } catch (e) { showToast("Error al subir archivo", "error"); } 
         finally {
@@ -588,7 +621,7 @@
         } catch (e) { showToast("Error en la llamada", "error"); }
       };
 
-      // --- GUARDAR Y ELIMINAR OBRA COMPLETA ---
+      // --- GUARDAR Y ELIMINAR OBRA ---
       const handleSave = async (e) => {
         e.preventDefault();
         if (!currentObra) return;
@@ -616,10 +649,9 @@
           const result = await res.json();
           
           if (result && result.result === 'success') {
-            // Si hay archivos pendientes por subir (obras creadas desde cero)
             if (!isExisting && pendingFiles.length > 0) {
               const actorId = getActorId() || payload.id_responsable;
-              showToast("Subiendo adjuntos pendientes a Drive...");
+              showToast("Subiendo adjuntos pendientes...");
               for (const file of pendingFiles) {
                 try {
                   const base64 = await new Promise((res, rej) => {
@@ -629,7 +661,13 @@
                     method: 'POST',
                     body: JSON.stringify({
                       action: 'registro_obra_upload_adjunto',
-                      data: { id_obra: payload.id, id_actor: actorId, filename: file.name, mimeType: file.type || 'application/octet-stream', base64 }
+                      data: { 
+                        id_obra: payload.id, 
+                        id_actor: actorId, 
+                        filename: file.customName || file.name, 
+                        mimeType: file.type || 'application/octet-stream', 
+                        base64 
+                      }
                     })
                   });
                 } catch (_) {}
@@ -659,7 +697,7 @@
         finally { setSaving(false); }
       };
 
-      // --- UTILIDADES DE COMPARTIR Y ACCIONES ---
+      // --- UTILIDADES ---
       const handleCopyInfo = () => {
         if (!currentObra) return;
         const prov = comisiones.find(c => c.id === currentObra.provenance)?.provenance || currentObra.provenance || "No definida";
@@ -978,7 +1016,7 @@
                           ) : (
                             <div className="w-full h-28 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-700 rounded-xl mb-1 text-slate-400"><IconFileText className="w-8 h-8 mb-1"/></div>
                           )}
-                          <p className="text-[10px] font-bold truncate text-slate-700 dark:text-slate-300">{a.name || 'Archivo'}</p>
+                          <p className="text-[10px] font-bold truncate text-slate-700 dark:text-slate-300 font-mono">{a.name || 'Archivo'}</p>
                         </a>
                       ))}
                     </div>
@@ -988,7 +1026,7 @@
                 {/* DOCUMENTOS */}
                 {currentObra.documentos && currentObra.documentos.length > 0 && (
                   <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-800 space-y-3">
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Documentos Legales y Téchnicos</h3>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Documentos Legales y Técnicos</h3>
                     {currentObra.documentos.map(doc => (
                       <div key={doc.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
                         <div className="min-w-0">
@@ -1208,7 +1246,7 @@
                   </div>
                 </div>
 
-                {/* SECCIÓN ADJUNTOS DRIVE */}
+                {/* SECCIÓN ADJUNTOS DRIVE (CON NOMENCLATURA DINÁMICA) */}
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm space-y-4">
                   <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2">
                     <IconPaperclip /> Adjuntos en Google Drive
@@ -1218,7 +1256,7 @@
                     <div className="space-y-2">
                       {currentObra.adjuntos.map(adj => (
                         <div key={adj.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs">
-                          <span className="truncate font-medium min-w-0 pr-2">{adj.name || adj.id}</span>
+                          <span className="truncate font-mono font-medium min-w-0 pr-2">{adj.name || adj.id}</span>
                           <button type="button" onClick={() => handleDeleteAdjunto(adj.id)} className="text-red-500 hover:text-red-700 p-1 shrink-0"><IconTrash /></button>
                         </div>
                       ))}
@@ -1229,18 +1267,40 @@
                     <div className="space-y-1">
                       <p className="text-[10px] font-bold text-amber-600 uppercase">Archivos por subir al guardar:</p>
                       {pendingFiles.map((f, i) => (
-                        <div key={i} className="text-xs bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 p-2 rounded-lg flex justify-between">
-                          <span className="truncate">{f.name}</span>
+                        <div key={i} className="text-xs bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 p-2 rounded-lg flex justify-between font-mono">
+                          <span className="truncate">{f.customName || f.name}</span>
                           <button type="button" onClick={() => setPendingFiles(pendingFiles.filter((_, idx) => idx !== i))} className="text-red-500">✕</button>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  <input ref={fileInputRef} type="file" className="hidden" onChange={handleUploadAdjunto} />
-                  <button type="button" disabled={uploadingAdj} onClick={() => fileInputRef.current?.click()} className="w-full py-3 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-colors flex justify-center items-center gap-2">
-                    {uploadingAdj ? 'Subiendo...' : '⬆ Subir nuevo archivo'}
-                  </button>
+                  {/* SELECTOR DE TIPO Y BOTÓN DE SUBIDA */}
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl space-y-3 border border-slate-100 dark:border-slate-800">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Tipo de Adjunto</label>
+                      <select 
+                        className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-xs font-semibold"
+                        value={selectedTipoAdj} 
+                        onChange={e => setSelectedTipoAdj(e.target.value)}
+                      >
+                        {TIPOS_ADJUNTO.map(t => (
+                          <option key={t.code} value={t.code}>{t.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <input ref={fileInputRef} type="file" className="hidden" onChange={handleUploadAdjunto} />
+                    
+                    <button 
+                      type="button" 
+                      disabled={uploadingAdj} 
+                      onClick={() => fileInputRef.current?.click()} 
+                      className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-600 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex justify-center items-center gap-2 disabled:opacity-50"
+                    >
+                      {uploadingAdj ? 'Subiendo...' : '⬆ Seleccionar y Subir Archivo'}
+                    </button>
+                  </div>
                 </div>
                 
                 <button disabled={saving} type="submit" className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-lg flex justify-center items-center gap-2 active:scale-95 transition-all disabled:opacity-50">
@@ -1290,4 +1350,3 @@
   </script>
 </body>
 </html>
-
