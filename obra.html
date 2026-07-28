@@ -10,14 +10,13 @@
   
   <title>Gestor de Obras Pro</title>
   
-  <!-- CDN confiables y estables de alto rendimiento -->
+  <!-- CDN confiables de Tailwind y React -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.22.20/babel.min.js"></script>
   
   <script>
-    // Configuración de Tailwind para soportar modo oscuro nativo por clase CSS
     tailwind.config = {
       darkMode: 'class',
       theme: {
@@ -51,7 +50,6 @@
     .animate-box-bounce { 
       animation: bounce-custom 1s infinite ease-in-out; 
     }
-    /* Scrollbar oculta o sutil para tarjetas en discover */
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
@@ -60,7 +58,6 @@
     .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
     .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #475569; }
     
-    /* Variables de área segura para iOS (PWA) */
     .pb-safe-nav { padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
     .pt-safe { padding-top: env(safe-area-inset-top); }
   </style>
@@ -69,18 +66,134 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useMemo } = React;
+    const { useState, useEffect, useMemo, useRef } = React;
 
     // URL de tu Apps Script
     const API_URL = "https://script.google.com/macros/s/AKfycbxmPBIboe_Evn45ZHjtkjydbmlPRMuSax_sEiTc2iN8cqqi2i4-Pf_lOd6875cQXEd_yg/exec";
 
-    // --- COMPONENTES DE ICONOS (Lucide/Feather libres de derechos) ---
+    // --- LISTA COMPLETA DE AUTORES Y ABREVIATURAS DE ADMIN.HTML ---
+    const AUTOR_ABREVIATURAS = {
+        'Abelardo López': 'ALP',
+        'Alberto Aragón': 'ARG',
+        'Amador Montes': 'AMT',
+        'Armando Fallas': 'AFV',
+        'Carlos Abascal': 'ABZ',
+        'Carlos Mérida': 'CMR',
+        'Carlos Oviedo': 'COV',
+        'Diego Isabel Santos': 'DIS',
+        'Eddie Martínez': 'EDM',
+        'Emiliano López Javier': 'MLJ',
+        'Enrique Flores': 'FLR',
+        'Fernando Andriacci': 'FAC',
+        'Gerardo de la Barrera': 'GDL',
+        'Ivonne Kennedy': 'IVK',
+        'José Luis Cuevas': 'JLC',
+        'Josefa García': 'JSG',
+        'Leonardo Nierman': 'NRM',
+        'Leonardo Salinas': 'LSL',
+        'Leonora Carrington': 'LCG',
+        'Luis Nishizawa': 'NSZ',
+        'Maximino Javier': 'MXJ',
+        'Miguel y Erick Jaramillo': 'MEJ',
+        'Pedro Friedeberg': 'FRG',
+        'Rafael Coronel': 'RFC',
+        'Rodrigo de la Sierra': 'RDS',
+        'Rufino Tamayo': 'TMY',
+        'Salvador Jaramillo': 'SVJ',
+        'Santiago Carbonell': 'SCN',
+        'Sebastián Guirnalda': 'SGU',
+        'Virgilio Santaella': 'VST',
+        'Vladimir Cora': 'VCR'
+    };
+
+    // --- FUNCIÓN DE GENERACIÓN DE CLAVE EXACTA DE ADMIN.HTML ---
+    function generateClave(provenanceName, artista, tecnica, claveActual, allRegistrosObra = []) {
+        // Bloque 1: Número (4 dígitos) + Origen (3 letras)
+        let numStr = '0001'; 
+
+        if (claveActual && claveActual.length >= 4) {
+            numStr = claveActual.substring(0, 4);
+        } else {
+            if (allRegistrosObra && allRegistrosObra.length > 0) {
+                let maxBloque1 = 0;
+                allRegistrosObra.forEach(obra => {
+                    if (obra.clave) {
+                        const numeroActual = parseInt(obra.clave.substring(0, 4), 10);
+                        if (!isNaN(numeroActual) && numeroActual > maxBloque1) {
+                            maxBloque1 = numeroActual;
+                        }
+                    }
+                });
+                numStr = String(maxBloque1 + 1).padStart(4, '0');
+            }
+        }
+
+        let provStr = 'RTB';
+        if (provenanceName && provenanceName.trim() !== '') {
+            const cleanProv = provenanceName.trim().replace(/\s+/g, '').toUpperCase();
+            if (cleanProv.length > 0) {
+                provStr = cleanProv.substring(0, 3).padEnd(3, 'X');
+            }
+        }
+
+        const bloque1 = `${numStr}${provStr}`;
+
+        // Bloque 2: Artista + Técnica
+        let artistStr = '';
+        if (artista && artista.trim() !== '') {
+            const cleanArtista = artista.trim();
+            let abreviaturaEncontrada = null;
+            const artistaLower = cleanArtista.toLowerCase();
+            
+            for (const [nombreAutor, abreviatura] of Object.entries(AUTOR_ABREVIATURAS)) {
+                if (nombreAutor.toLowerCase() === artistaLower) {
+                    abreviaturaEncontrada = abreviatura;
+                    break;
+                }
+            }
+            
+            if (abreviaturaEncontrada) {
+                artistStr = abreviaturaEncontrada;
+            } else {
+                const wordsArtista = cleanArtista.split(/\s+/);
+                const pNombre = wordsArtista[0] || '';
+                const sNombre = wordsArtista[1] || '';
+
+                const iniP1 = pNombre.charAt(0).toUpperCase();
+                const iniS2 = sNombre.substring(0, 2).toUpperCase();
+
+                artistStr = `${iniP1}${iniS2}`;
+            }
+        }
+
+        let tecStr = '';
+        if (tecnica && tecnica.trim() !== '') {
+            const wordsTec = tecnica.trim().split(/\s+/);
+            const pPalabraTec = wordsTec[0] || '';
+
+            if (pPalabraTec.length >= 3) {
+                const p2 = pPalabraTec.substring(0, 2).toUpperCase();
+                const ult = pPalabraTec.charAt(pPalabraTec.length - 1).toUpperCase();
+                tecStr = `${p2}${ult}`;
+            } else {
+                tecStr = pPalabraTec.toUpperCase().padEnd(3, 'X');
+            }
+        }
+
+        const bloque2 = `${artistStr}${tecStr}`;
+
+        if (bloque2 !== '') {
+            return `${bloque1}-${bloque2}`;
+        }
+        return bloque1;
+    }
+
+    // --- COMPONENTES DE ICONOS ---
     const IconCompass = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>;
     const IconList = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>;
     const IconPlusCircle = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>;
     const IconSettings = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>;
     
-    // Iconos Secundarios
     const IconBack = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m15 18-6-6 6-6"/></svg>;
     const IconEdit = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>;
     const IconCopy = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>;
@@ -90,8 +203,11 @@
     const IconSearch = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>;
     const IconUnseen = () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><line x1="4" y1="4" x2="20" y2="20"/></svg>;
     const IconChevronRight = ({ className = "text-slate-400" }) => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m9 18 6-6-6-6"/></svg>;
+    const IconTrash = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>;
+    const IconPaperclip = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>;
+    const IconFileText = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>;
 
-    // --- COMPONENTE CARGADOR ---
+    // --- CARGADOR E INDICADORES ---
     const BoxLoader = ({ message = "Cargando datos..." }) => (
       <div className="flex flex-col items-center justify-center p-12 space-y-6">
         <div className="flex items-end justify-center space-x-2 h-10">
@@ -126,7 +242,8 @@
       id: '', nombre_obra: '', ubicacion: '', estatus: 'Consolidación', tipo_obra: '', 
       superficie: '', precio_lista: '', precio_venta: '', fecha_registro: '', fecha_adquisicion: '', 
       fecha_venta: '', cliente: '', observaciones: '', id_responsable: '', autor: '', 
-      asignacion: '', provenance: '', clave: 'Pendiente', ancho: '', alto: '', largo: '', tags: [], tipo_moneda: 'MXN'
+      asignacion: '', provenance: '', clave: '', ancho: '', alto: '', largo: '', tags: [], tipo_moneda: 'MXN',
+      documentos: [], adjuntos: []
     };
 
     function getRecentIds() { try { return JSON.parse(localStorage.getItem(RECENT_OBRAS_KEY) || "[]"); } catch (e) { return []; } }
@@ -154,16 +271,16 @@
       } catch (e) { return { ...DEFAULT_UI_SETTINGS }; }
     }
 
-    // Extracción de imagen principal
     const getFirstImage = (obra) => {
         if (obra && obra.adjuntos && obra.adjuntos.length > 0) {
-            const img = obra.adjuntos.find(a => a.mimeType?.includes('image'));
-            if (img) return `https://drive.google.com/thumbnail?id=${img.id}&sz=w600`;
+            const img = obra.adjuntos.find(a => a.mimeType?.includes('image') || a.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+            if (img && img.id) return `https://drive.google.com/thumbnail?id=${img.id}&sz=w600`;
+            if (img && img.url) return img.url;
         }
         return null;
     }
 
-    // --- APP PRINCIPAL ---
+    // --- COMPONENTE PRINCIPAL ---
     function App() {
       const normalizeMeasureValue = (value) => {
         if (value === '' || value === null || value === undefined) return '';
@@ -177,10 +294,10 @@
         largo: rotate ? obra?.ancho : obra?.largo
       });
 
-      // Vistas permitidas: 'discover', 'list', 'form', 'settings', 'detail', 'author'
       const [view, setView] = useState("discover"); 
       const [loading, setLoading] = useState(true);
       const [obras, setObras] = useState([]);
+      const [responsables, setResponsables] = useState([]);
       const [comisiones, setComisiones] = useState([]);
       const [search, setSearch] = useState("");
       
@@ -193,13 +310,20 @@
       const [showFilters, setShowFilters] = useState(false);
       
       const [currentObra, setCurrentObra] = useState(null);
-      const [currentAuthor, setCurrentAuthor] = useState(null); // Nuevo estado para la vista de Autor
+      const [currentAuthor, setCurrentAuthor] = useState(null);
+      
+      // Estado para documentos/adjuntos dentro del modal o formulario
+      const [pendingFiles, setPendingFiles] = useState([]);
+      const [newDoc, setNewDoc] = useState({ tipo: '', nombre: '', url: '', fecha: '' });
+      const [uploadingAdj, setUploadingAdj] = useState(false);
       
       const [toast, setToast] = useState({ message: '', type: '' });
       const [saving, setSaving] = useState(false);
       const [recentIds, setRecentIds] = useState(() => getRecentIds());
       const [viewedIds, setViewedIds] = useState(() => getViewedHistory()); 
       const [uiSettings, setUiSettings] = useState(() => getUiSettings());
+
+      const fileInputRef = useRef(null);
 
       useEffect(() => { fetchAllData(); }, []);
 
@@ -238,9 +362,12 @@
               ancho: normalizeMeasureValue(o.ancho),
               alto: normalizeMeasureValue(o.alto),
               largo: normalizeMeasureValue(o.largo),
-              tipo_moneda: o.tipo_moneda || 'MXN'
+              tipo_moneda: o.tipo_moneda || 'MXN',
+              documentos: Array.isArray(o.documentos) ? o.documentos : [],
+              adjuntos: Array.isArray(o.adjuntos) ? o.adjuntos : []
             }));
             setObras(fetchedObras);
+            setResponsables(data.responsables || []);
             setComisiones(data.comisiones || []);
 
             const hash = window.location.hash.substring(1);
@@ -251,17 +378,11 @@
           } else {
             showToast("Error de formato API", "error");
           }
-        } catch (e) { showToast("Error de conexión.", "error"); } 
+        } catch (e) { showToast("Error de conexión con el backend.", "error"); } 
         finally { setLoading(false); }
       };
 
       const showToast = (message, type = 'success') => setToast({ message, type });
-      const activateOnKey = (event, action) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); action(); } };
-
-      const handleGoToList = () => {
-        setView("list");
-        window.history.pushState("", document.title, window.location.pathname + window.location.search);
-      };
 
       const openDetail = (obra, isInitialLoad = false) => {
         if (!obra) return;
@@ -274,9 +395,44 @@
       };
 
       const handleCreateNewObra = () => {
-        setCurrentObra({ ...DEFAULT_OBRA, id: Date.now().toString(), fecha_registro: new Date().toISOString().split('T')[0] });
+        const newObra = {
+          ...DEFAULT_OBRA,
+          id: 'obra_' + (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2))),
+          fecha_registro: new Date().toISOString().split('T')[0]
+        };
+        // Auto-generar clave inicial
+        newObra.clave = generateClave('', '', '', '', obras);
+        setCurrentObra(newObra);
+        setPendingFiles([]);
         setView("form");
         window.history.pushState("", document.title, window.location.pathname + window.location.search);
+      };
+
+      const handleEditObra = (obra) => {
+        setCurrentObra({
+          ...obra,
+          tags: Array.isArray(obra.tags) ? obra.tags.join(', ') : (obra.tags || '')
+        });
+        setPendingFiles([]);
+        setView("form");
+      };
+
+      // Recalcular clave en el formulario en tiempo real
+      const handleFormChange = (field, value) => {
+        if (!currentObra) return;
+        const updated = { ...currentObra, [field]: value };
+        
+        if (field === 'provenance' || field === 'autor' || field === 'tipo_obra') {
+          let provName = '';
+          const provVal = updated.provenance;
+          if (provVal) {
+            const com = comisiones.find(c => c.id === provVal);
+            provName = com ? com.provenance : provVal;
+          }
+          updated.clave = generateClave(provName, updated.autor, updated.tipo_obra, updated.clave, obras);
+        }
+        
+        setCurrentObra(updated);
       };
 
       const formatCurrency = (v, currencyCode = 'MXN') => {
@@ -286,11 +442,229 @@
         catch(e) { return `$${val.toLocaleString('es-MX')} ${currencyCode}`; }
       };
 
-      // Funciones de utilidad para Detail
+      const getActorId = () => {
+        try {
+          const u = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+          if (u && u.id) return u.id;
+        } catch (_) {}
+        return currentObra?.id_responsable || (responsables[0]?.id || '');
+      };
+
+      // --- OPERACIONES DE ADJUNTOS Y DOCUMENTOS (ADMIN.HTML METODOS) ---
+      const handleAddDocumento = async () => {
+        if (!newDoc.nombre) { showToast('El nombre del documento es obligatorio', 'error'); return; }
+        const actorId = getActorId();
+        if (!actorId) { showToast('Selecciona un responsable en la obra primero', 'error'); return; }
+
+        showToast("Agregando documento...");
+        try {
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'registro_obra_documento_add',
+              data: {
+                id_obra: currentObra.id,
+                id_actor: actorId,
+                documento: newDoc
+              }
+            })
+          });
+          const result = await res.json();
+          if (result.result === 'success') {
+            const updatedDocs = [...(currentObra.documentos || []), result.documento];
+            setCurrentObra({ ...currentObra, documentos: updatedDocs });
+            setNewDoc({ tipo: '', nombre: '', url: '', fecha: '' });
+            showToast("Documento guardado con éxito");
+          } else {
+            showToast('Error: ' + (result.message || 'No se pudo agregar'), 'error');
+          }
+        } catch (e) { showToast("Error al agregar documento", "error"); }
+      };
+
+      const handleDeleteDocumento = async (docId) => {
+        if (!confirm('¿Eliminar este documento?')) return;
+        const actorId = getActorId();
+        try {
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'registro_obra_documento_delete',
+              data: {
+                id_obra: currentObra.id,
+                id_actor: actorId,
+                documentoId: docId
+              }
+            })
+          });
+          const result = await res.json();
+          if (result.result === 'success') {
+            const updatedDocs = currentObra.documentos.filter(d => d.id !== docId);
+            setCurrentObra({ ...currentObra, documentos: updatedDocs });
+            showToast("Documento eliminado");
+          } else { showToast('Error al eliminar', 'error'); }
+        } catch (e) { showToast("Error en la solicitud", "error"); }
+      };
+
+      const handleUploadAdjunto = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Si es una obra nueva que no existe en el backend aún
+        const isExisting = obras.some(o => o.id === currentObra.id);
+        if (!isExisting) {
+          setPendingFiles([...pendingFiles, file]);
+          showToast("Archivo en cola. Se subirá al guardar la obra.");
+          e.target.value = '';
+          return;
+        }
+
+        const actorId = getActorId();
+        setUploadingAdj(true);
+        showToast("Subiendo archivo a Drive...");
+        try {
+          const base64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = ev => resolve(ev.target.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'registro_obra_upload_adjunto',
+              data: {
+                id_obra: currentObra.id,
+                id_actor: actorId,
+                filename: file.name,
+                mimeType: file.type || 'application/octet-stream',
+                base64
+              }
+            })
+          });
+          const result = await res.json();
+          if (result.result === 'success') {
+            const newAdj = {
+              id: result.fileId,
+              name: file.name,
+              url: result.url,
+              kind: 'adjunto_obra',
+              uploadedBy: actorId,
+              createdAt: new Date().toISOString(),
+              mimeType: file.type || 'application/octet-stream'
+            };
+            const updatedAdj = [...(currentObra.adjuntos || []), newAdj];
+            setCurrentObra({ ...currentObra, adjuntos: updatedAdj });
+            showToast("Archivo subido a Drive con éxito");
+          } else { showToast("Error subiendo archivo", "error"); }
+        } catch (e) { showToast("Error al subir archivo", "error"); } 
+        finally {
+          setUploadingAdj(false);
+          e.target.value = '';
+        }
+      };
+
+      const handleDeleteAdjunto = async (fileId) => {
+        if (!confirm('¿Eliminar este adjunto? Se borrará también de Drive.')) return;
+        const actorId = getActorId();
+        try {
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'registro_obra_adjunto_eliminar',
+              data: {
+                id_obra: currentObra.id,
+                id_actor: actorId,
+                fileId
+              }
+            })
+          });
+          const result = await res.json();
+          if (result.result === 'success') {
+            const updatedAdj = currentObra.adjuntos.filter(a => a.id !== fileId);
+            setCurrentObra({ ...currentObra, adjuntos: updatedAdj });
+            showToast("Adjunto eliminado");
+          } else { showToast('Error al eliminar adjunto', 'error'); }
+        } catch (e) { showToast("Error en la llamada", "error"); }
+      };
+
+      // --- GUARDAR Y ELIMINAR OBRA COMPLETA ---
+      const handleSave = async (e) => {
+        e.preventDefault();
+        if (!currentObra) return;
+        setSaving(true);
+        const isExisting = obras.some(o => o.id === currentObra.id);
+        const action = isExisting ? 'registro_obra_update' : 'registro_obra_add';
+        
+        const tagsNormalized = Array.isArray(currentObra.tags) 
+          ? currentObra.tags 
+          : (currentObra.tags || '').toString().split(',').map(t => t.trim()).filter(Boolean);
+
+        const payload = { 
+          ...currentObra, 
+          ancho: normalizeMeasureValue(currentObra.ancho), 
+          alto: normalizeMeasureValue(currentObra.alto), 
+          largo: normalizeMeasureValue(currentObra.largo), 
+          superficie: parseFloat(currentObra.superficie) || 0,
+          precio_lista: parseFloat(currentObra.precio_lista) || 0,
+          precio_venta: parseFloat(currentObra.precio_venta) || 0,
+          tags: tagsNormalized 
+        };
+
+        try {
+          const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action, data: payload }) });
+          const result = await res.json();
+          
+          if (result && result.result === 'success') {
+            // Si hay archivos pendientes por subir (obras creadas desde cero)
+            if (!isExisting && pendingFiles.length > 0) {
+              const actorId = getActorId() || payload.id_responsable;
+              showToast("Subiendo adjuntos pendientes a Drive...");
+              for (const file of pendingFiles) {
+                try {
+                  const base64 = await new Promise((res, rej) => {
+                    const r = new FileReader(); r.onload = ev => res(ev.target.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(file);
+                  });
+                  await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                      action: 'registro_obra_upload_adjunto',
+                      data: { id_obra: payload.id, id_actor: actorId, filename: file.name, mimeType: file.type || 'application/octet-stream', base64 }
+                    })
+                  });
+                } catch (_) {}
+              }
+            }
+
+            showToast("Obra guardada correctamente");
+            await fetchAllData();
+            setView("list");
+          } else { showToast("Error: " + (result?.message || 'Desconocido'), "error"); }
+        } catch (e) { showToast("Error al guardar la obra", "error"); } 
+        finally { setSaving(false); }
+      };
+
+      const handleDeleteObra = async () => {
+        if (!confirm('¿Estás seguro de eliminar este registro de obra?')) return;
+        setSaving(true);
+        try {
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'registro_obra_delete', data: { id: currentObra.id } })
+          });
+          showToast("Registro eliminado");
+          await fetchAllData();
+          setView("list");
+        } catch (e) { showToast("Error al eliminar", "error"); }
+        finally { setSaving(false); }
+      };
+
+      // --- UTILIDADES DE COMPARTIR Y ACCIONES ---
       const handleCopyInfo = () => {
         if (!currentObra) return;
         const prov = comisiones.find(c => c.id === currentObra.provenance)?.provenance || currentObra.provenance || "No definida";
-        const textToCopy = `Ficha de Obra: ${currentObra.nombre_obra || 'N/A'}\nClave: ${currentObra.clave || 'N/A'}\nEstatus: ${currentObra.estatus || 'N/A'}\nTipo: ${currentObra.tipo_obra || 'N/A'}\nAutor: ${currentObra.autor || 'N/A'}\nUbicación: ${currentObra.ubicacion || 'N/A'}\nPrecio Lista: ${formatCurrency(currentObra.precio_lista, currentObra.tipo_moneda)}\nPrecio Venta: ${formatCurrency(currentObra.precio_venta, currentObra.tipo_moneda)}\nSuperficie: ${currentObra.superficie || 0} m²\nCliente: ${currentObra.cliente || 'N/A'}\nFecha Registro: ${currentObra.fecha_registro || 'N/A'}\nFecha Adquisición: ${currentObra.fecha_adquisicion || 'N/A'}\nFecha Venta: ${currentObra.fecha_venta || 'N/A'}\nAsignación: ${currentObra.asignacion || 'N/A'}\nResponsable: ${currentObra.responsable_nombre || currentObra.id_responsable || 'N/A'}\nProvenance: ${prov}\nTags: ${tagsAsText(currentObra.tags) || 'N/A'}\nObservaciones: ${currentObra.observaciones || 'Ninguna'}\nEnlace: ${window.location.origin}${window.location.pathname}#${currentObra.id}`.trim();
+        const resp = responsables.find(r => r.id === currentObra.id_responsable)?.nombre || currentObra.id_responsable || "Sin asignar";
+        const textToCopy = `Ficha de Obra: ${currentObra.nombre_obra || 'N/A'}\nClave: ${currentObra.clave || 'N/A'}\nEstatus: ${currentObra.estatus || 'N/A'}\nTipo: ${currentObra.tipo_obra || 'N/A'}\nAutor: ${currentObra.autor || 'N/A'}\nUbicación: ${currentObra.ubicacion || 'N/A'}\nPrecio Lista: ${formatCurrency(currentObra.precio_lista, currentObra.tipo_moneda)}\nPrecio Venta: ${formatCurrency(currentObra.precio_venta, currentObra.tipo_moneda)}\nSuperficie: ${currentObra.superficie || 0} m²\nCliente: ${currentObra.cliente || 'N/A'}\nFecha Registro: ${currentObra.fecha_registro || 'N/A'}\nFecha Adquisición: ${currentObra.fecha_adquisicion || 'N/A'}\nFecha Venta: ${currentObra.fecha_venta || 'N/A'}\nResponsable: ${resp}\nProvenance: ${prov}\nObservaciones: ${currentObra.observaciones || 'Ninguna'}\nEnlace: ${window.location.origin}${window.location.pathname}#${currentObra.id}`.trim();
         const textArea = document.createElement("textarea");
         textArea.value = textToCopy; document.body.appendChild(textArea); textArea.select();
         try { document.execCommand('copy'); showToast("Copiado al portapapeles"); } 
@@ -307,7 +681,7 @@
               text: `Mira esta obra de ${currentObra.autor || 'autor desconocido'}: ${currentObra.nombre_obra}`,
               url: obraUrl,
             });
-          } catch (err) { console.log("Compartir cancelado o con error", err); }
+          } catch (err) {}
         } else {
           handleCopyInfo();
         }
@@ -321,31 +695,11 @@
         
         showToast("Enviando reporte...");
         try {
-          await fetch(url, { mode: 'no-cors' }); // no-cors para evitar bloqueos del navegador si no controlamos el bot
+          await fetch(url, { mode: 'no-cors' });
           showToast("Reporte enviado al Bot de WhatsApp exitosamente");
         } catch (e) {
           showToast("No se pudo contactar con el Bot", "error");
         }
-      };
-
-      const handleSave = async (e) => {
-        e.preventDefault();
-        if (!currentObra) return;
-        setSaving(true);
-        const isNew = !obras.find(o => o.id === currentObra.id);
-        const action = isNew ? 'registro_obra_add' : 'registro_obra_update';
-        const tagsNormalized = Array.isArray(currentObra.tags) ? currentObra.tags : (currentObra.tags || '').toString().split(',').map(t => t.trim()).filter(Boolean);
-        const payload = { ...currentObra, ancho: normalizeMeasureValue(currentObra.ancho), alto: normalizeMeasureValue(currentObra.alto), largo: normalizeMeasureValue(currentObra.largo), tags: tagsNormalized };
-        try {
-          const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action, data: payload }) });
-          const result = await res.json();
-          if (result && result.result === 'success') {
-            showToast("Guardado correctamente");
-            await fetchAllData();
-            setView("list");
-          } else { showToast("Error: " + (result?.message || 'Desconocido'), "error"); }
-        } catch (e) { showToast("Error al guardar", "error"); } 
-        finally { setSaving(false); }
       };
 
       const tagsAsText = (tags) => Array.isArray(tags) ? tags.join(', ') : (tags || '');
@@ -381,7 +735,6 @@
         return grouped;
       }, [obras]);
 
-      // Componente reutilizable para la tarjeta visual en Descubrir
       const DiscoverCard = ({ obra }) => {
         const imgUrl = getFirstImage(obra);
         return (
@@ -436,11 +789,11 @@
             </div>
           )}
 
-          {/* VISTA: LISTA (DEFAULT) */}
+          {/* VISTA: LISTA */}
           {view === "list" && (
             <div className="animate-fade-in max-w-xl mx-auto">
               <header className="sticky top-0 z-10 glass-header p-4 border-b bg-white/90 dark:bg-slate-900/90 border-slate-200 dark:border-slate-800 shadow-sm">
-                <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">Inventario</h1>
+                <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">Inventario de Obras</h1>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><IconSearch /></span>
                   <input type="text" placeholder="Buscar nombre o clave..." className="w-full pl-10 pr-4 py-3 bg-slate-100 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100 placeholder-slate-500" value={search} onChange={e => setSearch(e.target.value)} />
@@ -460,7 +813,7 @@
                 )}
               </header>
               <main className="p-4 space-y-3">
-                {loading ? <BoxLoader message="Cargando listado..." /> : filtered.map(o => {
+                {loading ? <BoxLoader message="Cargando inventario..." /> : filtered.map(o => {
                   const isNew = !viewedIds.includes(o.id);
                   return (
                     <div key={o.id} onClick={() => openDetail(o)} className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 active:scale-95 cursor-pointer transition-transform">
@@ -538,7 +891,7 @@
                <nav className="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50 p-4 flex justify-between items-center z-10 pt-safe">
                 <button onClick={() => setView("detail")} className="p-2 -ml-2 text-indigo-600 dark:text-indigo-400 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"><IconBack /></button>
                 <h2 className="font-bold text-slate-900 dark:text-white truncate max-w-[200px] text-center">{currentAuthor || "Autor Desconocido"}</h2>
-                <div className="w-10"></div> {/* Spacer balance */}
+                <div className="w-10"></div>
               </nav>
               <div className="p-4">
                 <p className="text-xs text-slate-500 mb-4 uppercase tracking-widest font-bold text-center">Catálogo del autor</p>
@@ -570,7 +923,7 @@
                 <div className="flex gap-1 sm:gap-2">
                   <button onClick={handleShare} className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors"><IconShare /></button>
                   <button onClick={handleCopyInfo} className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors"><IconCopy /></button>
-                  <button onClick={() => setView("form")} className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors"><IconEdit /></button>
+                  <button onClick={() => handleEditObra(currentObra)} className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors"><IconEdit /></button>
                 </div>
               </nav>
               
@@ -586,7 +939,6 @@
                   
                   <div className="space-y-5 pt-4 border-t border-slate-100 dark:border-slate-800">
                     <div className="grid grid-cols-2 gap-4">
-                      {/* Enlace interactivo a la cuadrícula de Autor */}
                       <div onClick={() => { setCurrentAuthor(currentObra.autor); setView("author"); }} className="cursor-pointer group p-2 -m-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <p className="text-[10px] text-slate-400 font-bold uppercase">Autor</p>
                         <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 group-hover:underline flex items-center gap-1">
@@ -614,24 +966,51 @@
                   </div>
                 </div>
 
+                {/* ADJUNTOS EN DRIVE */}
                 {currentObra.adjuntos && currentObra.adjuntos.length > 0 && (
                   <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-800">
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Imágenes Adjuntas</h3>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Adjuntos en Google Drive</h3>
                     <div className="grid grid-cols-2 gap-3">
-                      {currentObra.adjuntos.filter(a => a.mimeType?.includes('image')).map(a => (
-                        <a key={a.id} href={a.url} target="_blank" className="block rounded-2xl overflow-hidden shadow-sm active:scale-95 transition-transform border border-slate-100 dark:border-slate-800">
-                          <img src={`https://drive.google.com/thumbnail?id=${a.id}&sz=w400`} className="w-full h-32 object-cover" alt={a.name} />
+                      {currentObra.adjuntos.map(a => (
+                        <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer" className="block rounded-2xl overflow-hidden shadow-sm active:scale-95 transition-transform border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 p-2">
+                          {a.mimeType?.includes('image') || a.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                            <img src={`https://drive.google.com/thumbnail?id=${a.id}&sz=w400`} className="w-full h-28 object-cover rounded-xl mb-1" alt={a.name} />
+                          ) : (
+                            <div className="w-full h-28 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-700 rounded-xl mb-1 text-slate-400"><IconFileText className="w-8 h-8 mb-1"/></div>
+                          )}
+                          <p className="text-[10px] font-bold truncate text-slate-700 dark:text-slate-300">{a.name || 'Archivo'}</p>
                         </a>
                       ))}
                     </div>
                   </div>
                 )}
+
+                {/* DOCUMENTOS */}
+                {currentObra.documentos && currentObra.documentos.length > 0 && (
+                  <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-800 space-y-3">
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Documentos Legales y Téchnicos</h3>
+                    {currentObra.documentos.map(doc => (
+                      <div key={doc.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{doc.nombre}</p>
+                          <p className="text-[10px] text-slate-400">{doc.tipo || 'General'} {doc.fecha ? `• ${doc.fecha}` : ''}</p>
+                        </div>
+                        {doc.url && <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-lg">Ver</a>}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-800 space-y-4">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Información Interna</h3>
-                  <div className="grid grid-cols-2 gap-4 pt-2">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Información de Ficha Técnica</h3>
+                  <div className="grid grid-cols-2 gap-4">
                      <div><p className="text-[10px] text-slate-400 font-bold uppercase">Ubicación</p><p className="text-sm font-medium">{currentObra.ubicacion || "-"}</p></div>
                      <div><p className="text-[10px] text-slate-400 font-bold uppercase">Cliente</p><p className="text-sm font-medium">{currentObra.cliente || "-"}</p></div>
+                     <div><p className="text-[10px] text-slate-400 font-bold uppercase">Superficie</p><p className="text-sm font-medium">{currentObra.superficie ? `${currentObra.superficie} m²` : "-"}</p></div>
+                     <div>
+                       <p className="text-[10px] text-slate-400 font-bold uppercase">Provenance</p>
+                       <p className="text-sm font-medium">{comisiones.find(c => c.id === currentObra.provenance)?.provenance || currentObra.provenance || "-"}</p>
+                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2 border-t border-slate-100 dark:border-slate-800 pt-4">
                     <div><p className="text-[9px] text-slate-400 font-bold uppercase">Registro</p><p className="text-xs font-medium">{currentObra.fecha_registro || "-"}</p></div>
@@ -639,12 +1018,15 @@
                     <div><p className="text-[9px] text-slate-400 font-bold uppercase">Venta</p><p className="text-xs font-medium">{currentObra.fecha_venta || "-"}</p></div>
                   </div>
                   <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+                     <p className="text-[10px] text-slate-400 font-bold uppercase">Tags</p>
+                     <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400 mt-1">{tagsAsText(currentObra.tags) || "Sin etiquetas"}</p>
+                  </div>
+                  <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
                      <p className="text-[10px] text-slate-400 font-bold uppercase">Observaciones</p>
                      <p className="text-sm whitespace-pre-wrap mt-1 text-slate-700 dark:text-slate-300">{currentObra.observaciones || "Sin observaciones."}</p>
                   </div>
                 </div>
 
-                {/* Botón Reportar Error */}
                 <div className="pt-4 pb-8 flex justify-center">
                   <button onClick={handleReportError} className="flex items-center gap-2 text-xs font-bold text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/50 px-5 py-2.5 rounded-full transition-all active:scale-95 border border-red-100 dark:border-red-900/50 shadow-sm">
                     <IconFlag className="w-4 h-4" /> Reportar problema con esta obra
@@ -660,81 +1042,221 @@
               <nav className="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50 p-4 flex justify-between items-center z-10 pt-safe">
                 <button type="button" onClick={() => obras.find(o => o.id === currentObra.id) ? setView("detail") : setView("list")} className="font-semibold text-slate-500 dark:text-slate-400 px-2 py-1">Cancelar</button>
                 <h2 className="font-bold">{obras.find(o => o.id === currentObra.id) ? 'Editar Obra' : 'Nueva Obra'}</h2>
-                <div className="w-16"></div> {/* Spacer */}
+                <div className="w-16"></div>
               </nav>
               
               <form onSubmit={handleSave} className="p-4 space-y-6 max-w-lg mx-auto">
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm space-y-4">
+                  
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nombre</label>
-                    <input required type="text" className="w-full p-4 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-semibold" value={currentObra.nombre_obra || ''} onChange={e => setCurrentObra({...currentObra, nombre_obra: e.target.value})} />
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nombre de la Obra *</label>
+                    <input required type="text" className="w-full p-4 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-semibold" value={currentObra.nombre_obra || ''} onChange={e => handleFormChange('nombre_obra', e.target.value)} />
                   </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Estatus</label>
-                      <select className="w-full p-4 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none" value={currentObra.estatus || 'Consolidación'} onChange={e => setCurrentObra({...currentObra, estatus: e.target.value})}>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Estatus *</label>
+                      <select className="w-full p-4 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none" value={currentObra.estatus || 'Consolidación'} onChange={e => handleFormChange('estatus', e.target.value)}>
                         <option value="Consolidación">Consolidación</option>
                         <option value="Bodega">Bodega</option>
                         <option value="Vendida">Vendida</option>
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Clave</label>
-                      <input readOnly type="text" className="w-full p-4 bg-slate-100 dark:bg-slate-800 border-none rounded-2xl outline-none text-slate-400 font-mono" value={currentObra.clave || 'Automática'} />
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Clave (Autogenerada)</label>
+                      <input readOnly type="text" className="w-full p-4 bg-slate-100 dark:bg-slate-800 border-none rounded-2xl outline-none text-indigo-600 dark:text-indigo-400 font-mono font-bold" value={currentObra.clave || ''} />
                     </div>
                   </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Tipo</label>
-                      <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.tipo_obra || ''} onChange={e => setCurrentObra({...currentObra, tipo_obra: e.target.value})} />
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Tipo de Obra</label>
+                      <input type="text" placeholder="Ej: Pintura, Escultura" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.tipo_obra || ''} onChange={e => handleFormChange('tipo_obra', e.target.value)} />
                     </div>
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Autor</label>
-                      <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.autor || ''} onChange={e => setCurrentObra({...currentObra, autor: e.target.value})} />
+                      <input type="text" placeholder="Ej: Carlos Oviedo" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.autor || ''} onChange={e => handleFormChange('autor', e.target.value)} />
                     </div>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Provenance</label>
+                      <select className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-xs" value={currentObra.provenance || ''} onChange={e => handleFormChange('provenance', e.target.value)}>
+                        <option value="">Sin Provenance</option>
+                        {comisiones.map(c => (
+                          <option key={c.id} value={c.id}>{c.provenance} ({c.porcentaje}%)</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Responsable</label>
+                      <select className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-xs" value={currentObra.id_responsable || ''} onChange={e => handleFormChange('id_responsable', e.target.value)}>
+                        <option value="">Sin Responsable</option>
+                        {responsables.map(r => (
+                          <option key={r.id} value={r.id}>{r.nombre}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-3 gap-2">
                     <div className="col-span-1">
                       <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Moneda</label>
-                      <select className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.tipo_moneda || 'MXN'} onChange={e => setCurrentObra({...currentObra, tipo_moneda: e.target.value})}><option value="MXN">MXN</option><option value="USD">USD</option><option value="EUR">EUR</option></select>
+                      <select className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.tipo_moneda || 'MXN'} onChange={e => handleFormChange('tipo_moneda', e.target.value)}>
+                        <option value="MXN">MXN</option><option value="USD">USD</option><option value="EUR">EUR</option>
+                      </select>
                     </div>
                     <div>
                       <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">P. Lista</label>
-                      <input type="number" step="any" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.precio_lista || ''} onChange={e => setCurrentObra({...currentObra, precio_lista: e.target.value})} />
+                      <input type="number" step="any" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.precio_lista || ''} onChange={e => handleFormChange('precio_lista', e.target.value)} />
                     </div>
                     <div>
                       <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">P. Venta</label>
-                      <input type="number" step="any" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.precio_venta || ''} onChange={e => setCurrentObra({...currentObra, precio_venta: e.target.value})} />
+                      <input type="number" step="any" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.precio_venta || ''} onChange={e => handleFormChange('precio_venta', e.target.value)} />
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+
+                  <div className="grid grid-cols-4 gap-2">
                     <div>
                       <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Ancho(cm)</label>
-                      <input type="number" step="any" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.ancho || ''} onChange={e => setCurrentObra({...currentObra, ancho: e.target.value})} />
+                      <input type="number" step="any" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.ancho || ''} onChange={e => handleFormChange('ancho', e.target.value)} />
                     </div>
                     <div>
                       <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Alto(cm)</label>
-                      <input type="number" step="any" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.alto || ''} onChange={e => setCurrentObra({...currentObra, alto: e.target.value})} />
+                      <input type="number" step="any" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.alto || ''} onChange={e => handleFormChange('alto', e.target.value)} />
                     </div>
                     <div>
                       <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Largo(cm)</label>
-                      <input type="number" step="any" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.largo || ''} onChange={e => setCurrentObra({...currentObra, largo: e.target.value})} />
+                      <input type="number" step="any" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.largo || ''} onChange={e => handleFormChange('largo', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Sup (m²)</label>
+                      <input type="number" step="any" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.superficie || ''} onChange={e => handleFormChange('superficie', e.target.value)} />
                     </div>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Ubicación</label>
+                      <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.ubicacion || ''} onChange={e => handleFormChange('ubicacion', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Cliente</label>
+                      <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.cliente || ''} onChange={e => handleFormChange('cliente', e.target.value)} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">F. Registro</label>
+                      <input type="date" className="w-full p-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none" value={currentObra.fecha_registro || ''} onChange={e => handleFormChange('fecha_registro', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">F. Adquisición</label>
+                      <input type="date" className="w-full p-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none" value={currentObra.fecha_adquisicion || ''} onChange={e => handleFormChange('fecha_adquisicion', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">F. Venta</label>
+                      <input type="date" className="w-full p-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none" value={currentObra.fecha_venta || ''} onChange={e => handleFormChange('fecha_venta', e.target.value)} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Tags (separados por coma)</label>
+                    <input type="text" placeholder="abstracto, oleo, gran_formato" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.tags || ''} onChange={e => handleFormChange('tags', e.target.value)} />
+                  </div>
+
                   <div>
                     <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Observaciones</label>
-                    <textarea rows="3" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.observaciones || ''} onChange={e => setCurrentObra({...currentObra, observaciones: e.target.value})} />
+                    <textarea rows="3" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.observaciones || ''} onChange={e => handleFormChange('observaciones', e.target.value)} />
                   </div>
+
+                </div>
+
+                {/* SECCIÓN DOCUMENTOS */}
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm space-y-4">
+                  <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    <IconFileText /> Documentos Legales/Técnicos
+                  </h3>
+                  
+                  {currentObra.documentos && currentObra.documentos.length > 0 && (
+                    <div className="space-y-2">
+                      {currentObra.documentos.map(doc => (
+                        <div key={doc.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs">
+                          <div className="min-w-0">
+                            <p className="font-bold truncate">{doc.nombre}</p>
+                            <p className="text-[10px] text-slate-400">{doc.tipo} {doc.fecha ? `(${doc.fecha})` : ''}</p>
+                          </div>
+                          <button type="button" onClick={() => handleDeleteDocumento(doc.id)} className="text-red-500 hover:text-red-700 p-1"><IconTrash /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl space-y-3">
+                    <p className="text-xs font-bold text-slate-500 uppercase">Agregar nuevo documento</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input type="text" placeholder="Tipo (Planos, Escritura)" className="p-2 text-xs bg-white dark:bg-slate-800 border rounded-lg outline-none" value={newDoc.tipo} onChange={e => setNewDoc({ ...newDoc, tipo: e.target.value })} />
+                      <input type="text" placeholder="Nombre documento *" className="p-2 text-xs bg-white dark:bg-slate-800 border rounded-lg outline-none" value={newDoc.nombre} onChange={e => setNewDoc({ ...newDoc, nombre: e.target.value })} />
+                      <input type="url" placeholder="URL documento" className="p-2 text-xs bg-white dark:bg-slate-800 border rounded-lg outline-none col-span-2" value={newDoc.url} onChange={e => setNewDoc({ ...newDoc, url: e.target.value })} />
+                      <input type="date" className="p-2 text-xs bg-white dark:bg-slate-800 border rounded-lg outline-none col-span-2" value={newDoc.fecha} onChange={e => setNewDoc({ ...newDoc, fecha: e.target.value })} />
+                    </div>
+                    <button type="button" onClick={handleAddDocumento} className="w-full py-2 bg-slate-200 dark:bg-slate-700 text-xs font-bold rounded-lg hover:bg-slate-300 transition-colors">
+                      + Guardar Documento
+                    </button>
+                  </div>
+                </div>
+
+                {/* SECCIÓN ADJUNTOS DRIVE */}
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm space-y-4">
+                  <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    <IconPaperclip /> Adjuntos en Google Drive
+                  </h3>
+
+                  {currentObra.adjuntos && currentObra.adjuntos.length > 0 && (
+                    <div className="space-y-2">
+                      {currentObra.adjuntos.map(adj => (
+                        <div key={adj.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs">
+                          <span className="truncate font-medium min-w-0 pr-2">{adj.name || adj.id}</span>
+                          <button type="button" onClick={() => handleDeleteAdjunto(adj.id)} className="text-red-500 hover:text-red-700 p-1 shrink-0"><IconTrash /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {pendingFiles.length > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold text-amber-600 uppercase">Archivos por subir al guardar:</p>
+                      {pendingFiles.map((f, i) => (
+                        <div key={i} className="text-xs bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 p-2 rounded-lg flex justify-between">
+                          <span className="truncate">{f.name}</span>
+                          <button type="button" onClick={() => setPendingFiles(pendingFiles.filter((_, idx) => idx !== i))} className="text-red-500">✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <input ref={fileInputRef} type="file" className="hidden" onChange={handleUploadAdjunto} />
+                  <button type="button" disabled={uploadingAdj} onClick={() => fileInputRef.current?.click()} className="w-full py-3 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-colors flex justify-center items-center gap-2">
+                    {uploadingAdj ? 'Subiendo...' : '⬆ Subir nuevo archivo'}
+                  </button>
                 </div>
                 
                 <button disabled={saving} type="submit" className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-lg flex justify-center items-center gap-2 active:scale-95 transition-all disabled:opacity-50">
                   {saving ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><IconSave /> Guardar Registro</>}
                 </button>
+
+                {obras.some(o => o.id === currentObra.id) && (
+                  <button type="button" onClick={handleDeleteObra} className="w-full py-3 text-red-500 font-bold text-xs hover:underline text-center">
+                    Eliminar Registro de Obra
+                  </button>
+                )}
               </form>
             </div>
           )}
 
-          {/* BOTTOM NAVIGATION (PWA iOS Style) */}
+          {/* NAVEGACIÓN INFERIOR PWA */}
           {isMainTab && (
             <div className="fixed bottom-0 left-0 right-0 z-50 glass-nav border-t border-slate-200/50 dark:border-slate-800/50 pb-safe-nav bg-white/80 dark:bg-slate-900/80">
               <div className="flex justify-around items-center h-16 max-w-md mx-auto px-2">
@@ -768,3 +1290,4 @@
   </script>
 </body>
 </html>
+
