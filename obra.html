@@ -329,6 +329,7 @@
       const [selectedTipoAdj, setSelectedTipoAdj] = useState("RW");
       const [newDoc, setNewDoc] = useState({ tipo: '', nombre: '', url: '', fecha: '' });
       const [uploadingAdj, setUploadingAdj] = useState(false);
+      const [portadaPreviewUrl, setPortadaPreviewUrl] = useState('');
       
       const [toast, setToast] = useState({ message: '', type: '' });
       const [saving, setSaving] = useState(false);
@@ -363,6 +364,29 @@
         window.addEventListener("hashchange", handleHashChange);
         return () => window.removeEventListener("hashchange", handleHashChange);
       }, [obras, view]);
+
+      useEffect(() => {
+        let objectUrl = '';
+        const firstAttached = currentObra?.adjuntos?.[0];
+        const firstPending = pendingFiles[0];
+
+        if (firstAttached) {
+          setPortadaPreviewUrl(
+            firstAttached.id
+              ? `https://drive.google.com/thumbnail?id=${firstAttached.id}&sz=w1200`
+              : (firstAttached.url || '')
+          );
+          return;
+        }
+
+        if (firstPending && (firstPending.type?.includes('image') || firstPending.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i))) {
+          objectUrl = URL.createObjectURL(firstPending);
+          setPortadaPreviewUrl(objectUrl);
+          return () => URL.revokeObjectURL(objectUrl);
+        }
+
+        setPortadaPreviewUrl('');
+      }, [currentObra?.adjuntos, pendingFiles]);
 
       const fetchAllData = async () => {
         setLoading(true);
@@ -673,6 +697,11 @@
       const handleSave = async (e) => {
         e.preventDefault();
         if (!currentObra) return;
+        const hasAttachments = (currentObra.adjuntos && currentObra.adjuntos.length > 0) || pendingFiles.length > 0;
+        if (!hasAttachments) {
+          showToast('Debes subir al menos un adjunto antes de guardar la obra', 'error');
+          return;
+        }
         setSaving(true);
         const isExisting = obras.some(o => o.id === currentObra.id);
         const action = isExisting ? 'registro_obra_update' : 'registro_obra_add';
@@ -752,7 +781,7 @@
         const prov = comisiones.find(c => c.id === currentObra.provenance)?.provenance || currentObra.provenance || "No definida";
         const resp = responsables.find(r => r.id === currentObra.id_responsable)?.nombre || currentObra.id_responsable || "Sin asignar";
         const verificadaStr = currentObra.verificada ? '✅ Verificada' : '❌ No verificada';
-        const textToCopy = `Ficha de Obra: ${currentObra.nombre_obra || 'N/A'}\nClave: ${currentObra.clave || 'N/A'}\nEstatus: ${currentObra.estatus || 'N/A'}\nTipo: ${currentObra.tipo_obra || 'N/A'}\nAutor: ${currentObra.autor || 'N/A'}\nUbicación: ${currentObra.ubicacion || 'N/A'}\nPrecio Lista: ${formatCurrency(currentObra.precio_lista, currentObra.tipo_moneda)}\nPrecio Venta: ${formatCurrency(currentObra.precio_venta, currentObra.tipo_moneda)}\nSuperficie: ${currentObra.superficie || 0} m²\nCliente: ${currentObra.cliente || 'N/A'}\nFecha Registro: ${currentObra.fecha_registro || 'N/A'}\nFecha Adquisición: ${currentObra.fecha_adquisicion || 'N/A'}\nFecha Venta: ${currentObra.fecha_venta || 'N/A'}\nResponsable: ${resp}\nProvenance: ${prov}\nVerificada: ${verificadaStr}\nObservaciones: ${currentObra.observaciones || 'Ninguna'}\nEnlace: ${window.location.origin}${window.location.pathname}#${currentObra.id}`.trim();
+        const textToCopy = `Ficha de Obra: ${currentObra.nombre_obra || 'N/A'}\nWORK ID: ${currentObra.clave || 'N/A'}\nEstatus: ${currentObra.estatus || 'N/A'}\nTipo: ${currentObra.tipo_obra || 'N/A'}\nAutor: ${currentObra.autor || 'N/A'}\nUbicación: ${currentObra.ubicacion || 'N/A'}\nPrecio Lista: ${formatCurrency(currentObra.precio_lista, currentObra.tipo_moneda)}\nPrecio Venta: ${formatCurrency(currentObra.precio_venta, currentObra.tipo_moneda)}\nSuperficie: ${currentObra.superficie || 0} m²\nCliente: ${currentObra.cliente || 'N/A'}\nFecha Registro: ${currentObra.fecha_registro || 'N/A'}\nFecha Adquisición: ${currentObra.fecha_adquisicion || 'N/A'}\nFecha Venta: ${currentObra.fecha_venta || 'N/A'}\nResponsable: ${resp}\nProvenance: ${prov}\nVerificada: ${verificadaStr}\nObservaciones: ${currentObra.observaciones || 'Ninguna'}\nEnlace: ${window.location.origin}${window.location.pathname}#${currentObra.id}`.trim();
         const textArea = document.createElement("textarea");
         textArea.value = textToCopy; document.body.appendChild(textArea); textArea.select();
         try { document.execCommand('copy'); showToast("Copiado al portapapeles"); } 
@@ -1019,7 +1048,7 @@
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-800">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <span className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase">{currentObra.clave || "SIN CLAVE"}</span>
+                      <span className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase">{currentObra.clave || "SIN WORK ID"}</span>
                       <h1 className="text-2xl font-black text-slate-900 dark:text-white leading-tight mt-1">{currentObra.nombre_obra || "Sin Nombre"}</h1>
                     </div>
                     <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase shrink-0">{currentObra.estatus}</span>
@@ -1174,6 +1203,22 @@
               
               <form onSubmit={handleSave} className="p-4 space-y-6 max-w-lg mx-auto">
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm space-y-4">
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Portada</label>
+                    <div className="mt-2 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 aspect-[4/3] relative">
+                      {portadaPreviewUrl ? (
+                        <img src={portadaPreviewUrl} alt="Portada de la obra" className="absolute inset-0 w-full h-full object-cover" />
+                      ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+                          <IconFileText className="w-10 h-10 text-slate-400 mb-2" />
+                          <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">La portada se toma del primer adjunto</p>
+                          <p className="text-xs text-slate-500 mt-1">Si no hay adjuntos, no se podrá guardar el registro.</p>
+                        </div>
+                      )}
+                    </div>
+                    <p className="mt-2 text-[10px] text-slate-500">Se usará el primer archivo adjunto como portada.</p>
+                  </div>
                   
                   <div>
                     <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nombre de la Obra *</label>
@@ -1190,15 +1235,15 @@
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Clave (Autogenerada)</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">WORK ID (Autogenerado)</label>
                       <input readOnly type="text" className="w-full p-4 bg-slate-100 dark:bg-slate-800 border-none rounded-2xl outline-none text-indigo-600 dark:text-indigo-400 font-mono font-bold" value={currentObra.clave || ''} />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Tipo de Obra</label>
-                      <input type="text" placeholder="Ej: Pintura, Escultura" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.tipo_obra || ''} onChange={e => handleFormChange('tipo_obra', e.target.value)} />
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Técnica</label>
+                      <input type="text" placeholder="Ej: Bronce, Litografía" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.tipo_obra || ''} onChange={e => handleFormChange('tipo_obra', e.target.value)} />
                     </div>
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Autor</label>
