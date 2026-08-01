@@ -110,7 +110,7 @@
       position: relative;
     }
 
-    /* Modal para añadir Provenance */
+    /* Modal para añadir/editar Provenance */
     .prov-modal-overlay {
       position: fixed;
       inset: 0;
@@ -130,7 +130,7 @@
     .prov-modal {
       background: white;
       border-radius: 24px;
-      max-width: 420px;
+      max-width: 480px;
       width: 100%;
       padding: 28px;
       box-shadow: 0 25px 60px rgba(0,0,0,0.3);
@@ -174,7 +174,7 @@
       color: #94a3b8;
       margin-bottom: 4px;
     }
-    .prov-modal input {
+    .prov-modal input, .prov-modal select {
       width: 100%;
       padding: 12px 16px;
       border: 1px solid #e2e8f0;
@@ -184,12 +184,12 @@
       outline: none;
       transition: border-color 0.2s;
     }
-    .dark .prov-modal input {
+    .dark .prov-modal input, .dark .prov-modal select {
       background: #0f172a;
       border-color: #334155;
       color: #f1f5f9;
     }
-    .prov-modal input:focus {
+    .prov-modal input:focus, .prov-modal select:focus {
       border-color: #4f46e5;
       box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.35);
     }
@@ -230,6 +230,17 @@
       opacity: 0.6;
       cursor: not-allowed;
     }
+    .prov-modal .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+    .prov-modal .btn-danger:hover {
+      background: #dc2626;
+    }
+    .prov-modal .btn-danger:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
     .prov-modal .error-msg {
       color: #ef4444;
       font-size: 12px;
@@ -237,6 +248,136 @@
       display: none;
     }
     .prov-modal .error-msg.visible {
+      display: block;
+    }
+    .prov-modal .hint-text {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+    .dark .prov-modal .hint-text {
+      color: #64748b;
+    }
+
+    /* Modal para editar abreviatura */
+    .abrev-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+      animation: fadeIn 0.2s ease;
+    }
+    .abrev-modal-overlay.hidden {
+      display: none;
+    }
+    .abrev-modal {
+      background: white;
+      border-radius: 24px;
+      max-width: 480px;
+      width: 100%;
+      padding: 28px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      animation: slideUp 0.25s ease;
+    }
+    .dark .abrev-modal {
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+    .abrev-modal h3 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+    .dark .abrev-modal h3 {
+      color: #f1f5f9;
+    }
+    .abrev-modal .subtitle {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 20px;
+    }
+    .dark .abrev-modal .subtitle {
+      color: #94a3b8;
+    }
+    .abrev-modal label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      margin-bottom: 4px;
+    }
+    .abrev-modal input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 15px;
+      background: #f8fafc;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .dark .abrev-modal input {
+      background: #0f172a;
+      border-color: #334155;
+      color: #f1f5f9;
+    }
+    .abrev-modal input:focus {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.35);
+    }
+    .abrev-modal .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .abrev-modal .btn-row button {
+      flex: 1;
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 14px;
+      transition: all 0.15s;
+      cursor: pointer;
+      border: none;
+    }
+    .abrev-modal .btn-cancel {
+      background: #f1f5f9;
+      color: #475569;
+    }
+    .dark .abrev-modal .btn-cancel {
+      background: #334155;
+      color: #94a3b8;
+    }
+    .abrev-modal .btn-cancel:hover {
+      background: #e2e8f0;
+    }
+    .abrev-modal .btn-save {
+      background: #4f46e5;
+      color: white;
+    }
+    .abrev-modal .btn-save:hover {
+      background: #4338ca;
+    }
+    .abrev-modal .btn-save:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .abrev-modal .error-msg {
+      color: #ef4444;
+      font-size: 12px;
+      margin-top: 8px;
+      display: none;
+    }
+    .abrev-modal .error-msg.visible {
       display: block;
     }
   </style>
@@ -330,7 +471,9 @@
     };
 
     // --- TABLA DE PROVENANCE Y ABREVIATURAS (del archivo Excel) ---
-    const PROVENANCE_ABREVIATURAS = {
+    // ¡AHORA SE OBTIENEN DE LA HOJA ABREVIATURAS!
+    // Esta es la lista por defecto, pero se sobreescribirá con los datos de la API
+    const PROVENANCE_ABREVIATURAS_DEFAULT = {
         'Aguafuerte / Chavarria': 'CHV',
         'Andrea Moreno': 'AMR',
         'Bertha Swarstein': 'BSW',
@@ -357,8 +500,8 @@
     ];
     const TECH_ADJUNTO_CODE = 'TD';
 
-    // --- FUNCIÓN DE GENERACIÓN DE CLAVE EXACTA ---
-    function generateClave(provenanceName, artista, tecnica, claveActual, allRegistrosObra = []) {
+    // --- FUNCIÓN DE GENERACIÓN DE CLAVE EXACTA (MODIFICADA para usar abreviaturas de la hoja) ---
+    function generateClave(provenanceName, artista, tecnica, claveActual, allRegistrosObra = [], abreviaturasList = []) {
         let numStr = '0001';
 
         if (claveActual && claveActual.length >= 4) {
@@ -378,25 +521,42 @@
             }
         }
 
-        // --- BLOQUE 1: PROVENANCE ---
+        // --- BLOQUE 1: PROVENANCE (USANDO ABREVIATURAS DE LA HOJA) ---
         let provStr = 'RTB'; // Valor por defecto
         
         if (provenanceName && provenanceName.trim() !== '') {
             const cleanProv = provenanceName.trim();
             
+            // Buscar en la lista de abreviaturas (de la hoja Abreviaturas)
             let abreviaturaEncontrada = null;
-            const provLower = cleanProv.toLowerCase();
             
-            for (const [nombreProv, abreviatura] of Object.entries(PROVENANCE_ABREVIATURAS)) {
-                if (nombreProv.toLowerCase() === provLower || provLower.includes(nombreProv.toLowerCase()) || nombreProv.toLowerCase().includes(provLower)) {
-                    abreviaturaEncontrada = abreviatura;
+            // Primero buscar por nombre exacto
+            for (const abrev of abreviaturasList) {
+                if (abrev.nombre && abrev.nombre.toLowerCase() === cleanProv.toLowerCase()) {
+                    abreviaturaEncontrada = abrev.abreviatura;
                     break;
                 }
             }
             
+            // Si no se encontró, buscar por coincidencia parcial
+            if (!abreviaturaEncontrada) {
+                const provLower = cleanProv.toLowerCase();
+                for (const abrev of abreviaturasList) {
+                    if (abrev.nombre) {
+                        const nombreLower = abrev.nombre.toLowerCase();
+                        if (nombreLower.includes(provLower) || provLower.includes(nombreLower)) {
+                            abreviaturaEncontrada = abrev.abreviatura;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Si se encontró, usarla
             if (abreviaturaEncontrada) {
                 provStr = abreviaturaEncontrada;
             } else {
+                // Si no, generar una abreviatura
                 const cleanProvFallback = cleanProv.replace(/\s+/g, '').toUpperCase();
                 if (cleanProvFallback.length > 0) {
                     provStr = cleanProvFallback.substring(0, 3).padEnd(3, 'X');
@@ -696,6 +856,9 @@
     const IconPaperclip = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>;
     const IconFileText = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>;
     const IconPlus = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+    const IconEditAbrev = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+    const IconCog = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>;
+    const IconClose = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
 
     // --- ICONOS DE VERIFICACIÓN ---
     const IconVerified = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
@@ -793,6 +956,7 @@
       const [obras, setObras] = useState([]);
       const [responsables, setResponsables] = useState([]);
       const [comisiones, setComisiones] = useState([]);
+      const [abreviaturas, setAbreviaturas] = useState([]);
       const [search, setSearch] = useState("");
       
       const [filterStatus, setFilterStatus] = useState("");
@@ -819,12 +983,25 @@
       const [uiSettings, setUiSettings] = useState(() => getUiSettings());
       const [togglingVerification, setTogglingVerification] = useState(false);
 
-      // --- Estado para el modal de Provenance ---
+      // --- Estado para el modal de Provenance (Añadir/Editar) ---
       const [showProvModal, setShowProvModal] = useState(false);
+      const [provModalMode, setProvModalMode] = useState('add'); // 'add' o 'edit'
+      const [editingProvId, setEditingProvId] = useState(null);
       const [newProvName, setNewProvName] = useState('');
       const [newProvPercentage, setNewProvPercentage] = useState('');
+      const [newProvAbrev, setNewProvAbrev] = useState('');
       const [savingProv, setSavingProv] = useState(false);
       const [provError, setProvError] = useState('');
+
+      // --- Estado para el modal de edición de abreviatura ---
+      const [showAbrevModal, setShowAbrevModal] = useState(false);
+      const [editingAbrev, setEditingAbrev] = useState(null);
+      const [editingAbrevValue, setEditingAbrevValue] = useState('');
+      const [savingAbrev, setSavingAbrev] = useState(false);
+      const [abrevError, setAbrevError] = useState('');
+
+      // --- REF para controlar si se puede acceder al formulario ---
+      const [isDataLoaded, setIsDataLoaded] = useState(false);
 
       const imageInputRef = useRef(null);
       const techInputRef = useRef(null);
@@ -832,6 +1009,17 @@
       // Obtener listas de sugerencias (solo nombres, no abreviaturas)
       const tecnicaSuggestions = useMemo(() => Object.keys(TECNICA_ABREVIATURAS).sort(), []);
       const autorSuggestions = useMemo(() => Object.keys(AUTOR_ABREVIATURAS).sort(), []);
+
+      // Construir mapa de abreviaturas de Provenance desde la hoja Abreviaturas
+      const provenanceAbreviaturasMap = useMemo(() => {
+        const map = {};
+        abreviaturas.forEach(ab => {
+          if (ab.tipo && (ab.tipo.startsWith('prov_') || ab.tipo.startsWith('com_'))) {
+            map[ab.nombre] = ab.abreviatura;
+          }
+        });
+        return map;
+      }, [abreviaturas]);
 
       // Opciones de ubicación
       const ubicacionOptions = [
@@ -933,6 +1121,7 @@
 
       const fetchAllData = async () => {
         setLoading(true);
+        setIsDataLoaded(false);
         try {
           const res = await fetch(API_URL);
           if (!res.ok) throw new Error("Fallo en la red");
@@ -951,6 +1140,24 @@
             setObras(fetchedObras);
             setResponsables(data.responsables || []);
             setComisiones(data.comisiones || []);
+            
+            // Cargar abreviaturas desde la API
+            if (data.abreviaturas) {
+              setAbreviaturas(data.abreviaturas);
+            } else {
+              // Si no hay abreviaturas, inicializar con las predeterminadas
+              const defaultAbrevs = Object.entries(PROVENANCE_ABREVIATURAS_DEFAULT).map(([nombre, abreviatura]) => ({
+                id: 'abrev_' + Date.now().toString() + Math.random().toString(36).slice(2),
+                nombre: nombre,
+                abreviatura: abreviatura,
+                tipo: 'prov_default',
+                fecha_registro: new Date().toISOString()
+              }));
+              setAbreviaturas(defaultAbrevs);
+            }
+
+            // Marcar que los datos están cargados
+            setIsDataLoaded(true);
 
             const hash = window.location.hash.substring(1);
             if (hash) {
@@ -959,8 +1166,12 @@
             }
           } else {
             showToast("Error de formato API", "error");
+            setIsDataLoaded(true); // Aún así, permitir interactuar
           }
-        } catch (e) { showToast("Error de conexión con el backend.", "error"); } 
+        } catch (e) { 
+          showToast("Error de conexión con el backend.", "error");
+          setIsDataLoaded(true); // Permitir intentar de nuevo
+        } 
         finally { setLoading(false); }
       };
 
@@ -976,7 +1187,12 @@
         if (!isInitialLoad) window.location.hash = obra.id;
       };
 
+      // --- Función para crear nueva obra (solo si los datos están cargados) ---
       const handleCreateNewObra = () => {
+        if (!isDataLoaded) {
+          showToast('Espera a que los datos terminen de cargar', 'error');
+          return;
+        }
         const today = new Date().toISOString().split('T')[0];
         const newObra = {
           ...DEFAULT_OBRA,
@@ -984,7 +1200,8 @@
           fecha_registro: today,
           verificada: false
         };
-        newObra.clave = generateClave('', '', '', '', obras);
+        // Generar clave con las abreviaturas disponibles
+        newObra.clave = generateClave('', '', '', '', obras, abreviaturas);
         setCurrentObra(newObra);
         setPendingFiles([]);
         setSelectedTechAdj('RW');
@@ -1016,17 +1233,40 @@
             const com = comisiones.find(c => c.id === provVal);
             provName = com ? com.provenance : provVal;
           }
-          updated.clave = generateClave(provName, updated.autor, updated.tipo_obra, updated.clave, obras);
+          updated.clave = generateClave(provName, updated.autor, updated.tipo_obra, updated.clave, obras, abreviaturas);
         }
         
         setCurrentObra(updated);
       };
 
-      // --- Función para añadir una nueva comisión (Provenance) ---
-      const handleAddProvenance = async () => {
+      // --- Función para abrir el modal de añadir Provenance ---
+      const handleOpenAddProv = () => {
+        setProvModalMode('add');
+        setEditingProvId(null);
+        setNewProvName('');
+        setNewProvPercentage('');
+        setNewProvAbrev('');
+        setProvError('');
+        setShowProvModal(true);
+      };
+
+      // --- Función para abrir el modal de editar Provenance ---
+      const handleOpenEditProv = (comision) => {
+        setProvModalMode('edit');
+        setEditingProvId(comision.id);
+        setNewProvName(comision.provenance || '');
+        setNewProvPercentage(String(comision.porcentaje || ''));
+        // Buscar la abreviatura asociada
+        const abrev = abreviaturas.find(a => a.tipo === comision.id);
+        setNewProvAbrev(abrev ? abrev.abreviatura : '');
+        setProvError('');
+        setShowProvModal(true);
+      };
+
+      // --- Función para guardar Provenance (crear o actualizar) ---
+      const handleSaveProv = async () => {
         setProvError('');
         
-        // Validaciones
         const name = newProvName.trim();
         if (!name) {
           setProvError('El nombre de Provenance es obligatorio');
@@ -1037,42 +1277,292 @@
           setProvError('El porcentaje debe ser un número entre 0 y 100');
           return;
         }
+        const abrev = newProvAbrev.trim().toUpperCase();
+        if (!abrev) {
+          setProvError('La abreviatura es obligatoria');
+          return;
+        }
+        if (abrev.length < 2 || abrev.length > 5) {
+          setProvError('La abreviatura debe tener entre 2 y 5 caracteres');
+          return;
+        }
 
         setSavingProv(true);
         try {
-          const payload = {
-            id: 'com_' + (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2))),
-            provenance: name,
-            porcentaje: percentage
-          };
+          if (provModalMode === 'add') {
+            // --- MODO AÑADIR ---
+            const comId = 'com_' + (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2)));
+            
+            // 1. Crear la comisión
+            const payload = {
+              id: comId,
+              provenance: name,
+              porcentaje: percentage
+            };
 
+            const res = await fetch(API_URL, {
+              method: 'POST',
+              body: JSON.stringify({ action: 'comision_add', data: payload })
+            });
+            const result = await res.json();
+
+            if (result.result === 'success') {
+              // 2. Crear la abreviatura asociada
+              const abrevId = 'abrev_' + (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2)));
+              const abrevPayload = {
+                id: abrevId,
+                nombre: name,
+                abreviatura: abrev,
+                tipo: comId,
+                fecha_registro: new Date().toISOString()
+              };
+
+              const abrevRes = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'abreviatura_add', data: abrevPayload })
+              });
+              const abrevResult = await abrevRes.json();
+
+              if (abrevResult.result === 'success') {
+                // Actualizar la lista de comisiones y abreviaturas localmente
+                const newComision = { id: comId, provenance: name, porcentaje: percentage };
+                setComisiones(prev => [...prev, newComision]);
+                
+                const newAbrev = { 
+                  id: abrevId, 
+                  nombre: name, 
+                  abreviatura: abrev, 
+                  tipo: comId,
+                  fecha_registro: new Date().toISOString()
+                };
+                setAbreviaturas(prev => [...prev, newAbrev]);
+                
+                // Seleccionar automáticamente la nueva comisión en el campo
+                handleFormChange('provenance', comId);
+                
+                setShowProvModal(false);
+                showToast(`✅ Provenance "${name}" creado con ${percentage}% y abreviatura "${abrev}"`);
+              } else {
+                setProvError(abrevResult.message || 'Error al crear abreviatura');
+              }
+            } else {
+              setProvError(result.message || 'Error al crear Provenance');
+            }
+          } else {
+            // --- MODO EDITAR ---
+            // 1. Actualizar la comisión
+            const payload = {
+              id: editingProvId,
+              provenance: name,
+              porcentaje: percentage
+            };
+
+            const res = await fetch(API_URL, {
+              method: 'POST',
+              body: JSON.stringify({ action: 'comision_update', data: payload })
+            });
+            const result = await res.json();
+
+            if (result.result === 'success') {
+              // 2. Actualizar la abreviatura asociada
+              const abrev = abreviaturas.find(a => a.tipo === editingProvId);
+              if (abrev) {
+                const abrevPayload = {
+                  id: abrev.id,
+                  nombre: name,
+                  abreviatura: newProvAbrev.trim().toUpperCase(),
+                  tipo: editingProvId
+                };
+
+                const abrevRes = await fetch(API_URL, {
+                  method: 'POST',
+                  body: JSON.stringify({ action: 'abreviatura_update', data: abrevPayload })
+                });
+                const abrevResult = await abrevRes.json();
+
+                if (abrevResult.result === 'success') {
+                  // Actualizar listas locales
+                  setComisiones(prev => prev.map(c => 
+                    c.id === editingProvId ? { ...c, provenance: name, porcentaje: percentage } : c
+                  ));
+                  setAbreviaturas(prev => prev.map(a => 
+                    a.id === abrev.id ? { ...a, nombre: name, abreviatura: newProvAbrev.trim().toUpperCase() } : a
+                  ));
+                  
+                  // Si la obra actual usa este Provenance, regenerar la clave
+                  if (currentObra && currentObra.provenance === editingProvId) {
+                    const newClave = generateClave(name, currentObra.autor, currentObra.tipo_obra, currentObra.clave, obras, 
+                      abreviaturas.map(a => a.id === abrev.id ? { ...a, abreviatura: newProvAbrev.trim().toUpperCase() } : a)
+                    );
+                    setCurrentObra(prev => ({ ...prev, clave: newClave }));
+                  }
+                  
+                  setShowProvModal(false);
+                  showToast(`✅ Provenance "${name}" actualizado correctamente`);
+                } else {
+                  setProvError(abrevResult.message || 'Error al actualizar abreviatura');
+                }
+              } else {
+                // Si no tiene abreviatura, crear una nueva
+                const abrevId = 'abrev_' + (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2)));
+                const abrevPayload = {
+                  id: abrevId,
+                  nombre: name,
+                  abreviatura: newProvAbrev.trim().toUpperCase(),
+                  tipo: editingProvId,
+                  fecha_registro: new Date().toISOString()
+                };
+
+                const abrevRes = await fetch(API_URL, {
+                  method: 'POST',
+                  body: JSON.stringify({ action: 'abreviatura_add', data: abrevPayload })
+                });
+                const abrevResult = await abrevRes.json();
+
+                if (abrevResult.result === 'success') {
+                  setComisiones(prev => prev.map(c => 
+                    c.id === editingProvId ? { ...c, provenance: name, porcentaje: percentage } : c
+                  ));
+                  setAbreviaturas(prev => [...prev, { 
+                    id: abrevId, 
+                    nombre: name, 
+                    abreviatura: newProvAbrev.trim().toUpperCase(), 
+                    tipo: editingProvId,
+                    fecha_registro: new Date().toISOString()
+                  }]);
+                  
+                  setShowProvModal(false);
+                  showToast(`✅ Provenance "${name}" actualizado correctamente`);
+                } else {
+                  setProvError(abrevResult.message || 'Error al crear abreviatura');
+                }
+              }
+            } else {
+              setProvError(result.message || 'Error al actualizar Provenance');
+            }
+          }
+        } catch (error) {
+          console.error('Error al guardar Provenance:', error);
+          setProvError('Error de conexión con el servidor');
+        } finally {
+          setSavingProv(false);
+        }
+      };
+
+      // --- Función para eliminar Provenance ---
+      const handleDeleteProv = async () => {
+        if (!editingProvId) return;
+        if (!confirm(`¿Estás seguro de eliminar el Provenance "${newProvName}"? Esto también eliminará su abreviatura.`)) return;
+
+        setSavingProv(true);
+        try {
+          // Eliminar la comisión
           const res = await fetch(API_URL, {
             method: 'POST',
-            body: JSON.stringify({ action: 'comision_add', data: payload })
+            body: JSON.stringify({ action: 'comision_delete', data: { id: editingProvId } })
           });
           const result = await res.json();
 
           if (result.result === 'success') {
-            // Actualizar la lista de comisiones localmente
-            const newComision = { id: payload.id, provenance: name, porcentaje: percentage };
-            setComisiones(prev => [...prev, newComision]);
+            // Eliminar la abreviatura asociada
+            const abrev = abreviaturas.find(a => a.tipo === editingProvId);
+            if (abrev) {
+              await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'abreviatura_delete', data: { id: abrev.id } })
+              });
+            }
             
-            // Seleccionar automáticamente la nueva comisión en el campo
-            handleFormChange('provenance', payload.id);
+            // Actualizar listas locales
+            setComisiones(prev => prev.filter(c => c.id !== editingProvId));
+            setAbreviaturas(prev => prev.filter(a => a.tipo !== editingProvId));
             
-            // Cerrar modal y limpiar
+            // Si la obra actual usa este Provenance, limpiarlo
+            if (currentObra && currentObra.provenance === editingProvId) {
+              setCurrentObra(prev => ({ ...prev, provenance: '' }));
+            }
+            
             setShowProvModal(false);
-            setNewProvName('');
-            setNewProvPercentage('');
-            showToast(`✅ Provenance "${name}" creado con ${percentage}%`);
+            showToast(`✅ Provenance eliminado correctamente`);
           } else {
-            setProvError(result.message || 'Error al crear Provenance');
+            setProvError(result.message || 'Error al eliminar Provenance');
           }
         } catch (error) {
-          console.error('Error al crear Provenance:', error);
+          console.error('Error al eliminar Provenance:', error);
           setProvError('Error de conexión con el servidor');
         } finally {
           setSavingProv(false);
+        }
+      };
+
+      // --- Función para editar una abreviatura (desde Ajustes) ---
+      const handleEditAbrev = (abrev) => {
+        setEditingAbrev(abrev);
+        setEditingAbrevValue(abrev.abreviatura || '');
+        setAbrevError('');
+        setShowAbrevModal(true);
+      };
+
+      const handleSaveAbrev = async () => {
+        if (!editingAbrev) return;
+        
+        const newAbrev = editingAbrevValue.trim().toUpperCase();
+        if (!newAbrev) {
+          setAbrevError('La abreviatura no puede estar vacía');
+          return;
+        }
+        if (newAbrev.length < 2 || newAbrev.length > 5) {
+          setAbrevError('La abreviatura debe tener entre 2 y 5 caracteres');
+          return;
+        }
+
+        setSavingAbrev(true);
+        try {
+          const payload = {
+            id: editingAbrev.id,
+            nombre: editingAbrev.nombre,
+            abreviatura: newAbrev,
+            tipo: editingAbrev.tipo
+          };
+
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'abreviatura_update', data: payload })
+          });
+          const result = await res.json();
+
+          if (result.result === 'success') {
+            // Actualizar la lista local
+            setAbreviaturas(prev => prev.map(ab => 
+              ab.id === editingAbrev.id ? { ...ab, abreviatura: newAbrev } : ab
+            ));
+            
+            // Si la obra actual tiene esta abreviatura, regenerar la clave
+            if (currentObra) {
+              let provName = '';
+              const provVal = currentObra.provenance;
+              if (provVal) {
+                const com = comisiones.find(c => c.id === provVal);
+                provName = com ? com.provenance : provVal;
+              }
+              const newClave = generateClave(provName, currentObra.autor, currentObra.tipo_obra, currentObra.clave, obras, 
+                abreviaturas.map(ab => ab.id === editingAbrev.id ? { ...ab, abreviatura: newAbrev } : ab)
+              );
+              setCurrentObra(prev => ({ ...prev, clave: newClave }));
+            }
+            
+            setShowAbrevModal(false);
+            setEditingAbrev(null);
+            setEditingAbrevValue('');
+            showToast(`✅ Abreviatura actualizada a "${newAbrev}"`);
+          } else {
+            setAbrevError(result.message || 'Error al actualizar abreviatura');
+          }
+        } catch (error) {
+          console.error('Error al actualizar abreviatura:', error);
+          setAbrevError('Error de conexión con el servidor');
+        } finally {
+          setSavingAbrev(false);
         }
       };
 
@@ -1466,11 +1956,15 @@
       return (
         <div className="min-h-screen pb-24 pt-safe">
           
-          {/* MODAL PARA AÑADIR PROVENANCE */}
+          {/* MODAL PARA AÑADIR/EDITAR PROVENANCE */}
           <div className={`prov-modal-overlay ${showProvModal ? '' : 'hidden'}`}>
             <div className="prov-modal" onClick={(e) => e.stopPropagation()}>
-              <h3>Añadir Provenance</h3>
-              <p className="subtitle">Registra una nueva fuente de origen para la obra.</p>
+              <h3>{provModalMode === 'add' ? 'Añadir Provenance' : 'Editar Provenance'}</h3>
+              <p className="subtitle">
+                {provModalMode === 'add' 
+                  ? 'Registra una nueva fuente de origen para la obra.' 
+                  : 'Modifica los datos del Provenance seleccionado.'}
+              </p>
               
               <div className="space-y-4">
                 <div>
@@ -1501,6 +1995,20 @@
                     }}
                   />
                 </div>
+                <div>
+                  <label>Abreviatura (2-5 caracteres)</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ej: GNT" 
+                    value={newProvAbrev}
+                    onChange={(e) => {
+                      setNewProvAbrev(e.target.value.toUpperCase());
+                      setProvError('');
+                    }}
+                    maxLength={5}
+                  />
+                  <p className="hint-text">Se usará en la generación del WORK ID</p>
+                </div>
                 <div className={`error-msg ${provError ? 'visible' : ''}`}>{provError}</div>
               </div>
               
@@ -1512,7 +2020,67 @@
                     setShowProvModal(false);
                     setNewProvName('');
                     setNewProvPercentage('');
+                    setNewProvAbrev('');
                     setProvError('');
+                  }}
+                >
+                  Cancelar
+                </button>
+                {provModalMode === 'edit' && (
+                  <button 
+                    type="button" 
+                    className="btn-danger"
+                    onClick={handleDeleteProv}
+                    disabled={savingProv}
+                  >
+                    {savingProv ? 'Eliminando...' : '🗑 Eliminar'}
+                  </button>
+                )}
+                <button 
+                  type="button" 
+                  className="btn-save"
+                  onClick={handleSaveProv}
+                  disabled={savingProv}
+                >
+                  {savingProv ? 'Guardando...' : (provModalMode === 'add' ? 'Guardar' : 'Actualizar')}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* MODAL PARA EDITAR ABREVIATURA */}
+          <div className={`abrev-modal-overlay ${showAbrevModal ? '' : 'hidden'}`}>
+            <div className="abrev-modal" onClick={(e) => e.stopPropagation()}>
+              <h3>Editar Abreviatura</h3>
+              <p className="subtitle">Cambia la abreviatura para <strong>{editingAbrev?.nombre}</strong></p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label>Abreviatura (2-5 caracteres)</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ej: GNT" 
+                    value={editingAbrevValue}
+                    onChange={(e) => {
+                      setEditingAbrevValue(e.target.value.toUpperCase());
+                      setAbrevError('');
+                    }}
+                    autoFocus
+                    maxLength={5}
+                  />
+                </div>
+                <div className={`error-msg ${abrevError ? 'visible' : ''}`}>{abrevError}</div>
+              </div>
+              
+              <div className="btn-row">
+                <button 
+                  type="button" 
+                  className="btn-cancel"
+                  onClick={() => {
+                    setShowAbrevModal(false);
+                    setEditingAbrev(null);
+                    setEditingAbrevValue('');
+                    setAbrevError('');
                   }}
                 >
                   Cancelar
@@ -1520,10 +2088,10 @@
                 <button 
                   type="button" 
                   className="btn-save"
-                  onClick={handleAddProvenance}
-                  disabled={savingProv}
+                  onClick={handleSaveAbrev}
+                  disabled={savingAbrev}
                 >
-                  {savingProv ? 'Guardando...' : 'Guardar Provenance'}
+                  {savingAbrev ? 'Guardando...' : 'Guardar'}
                 </button>
               </div>
             </div>
@@ -1647,6 +2215,81 @@
                       )
                     })
                   }
+                </div>
+              </div>
+
+              {/* Sección de Provenance y Abreviaturas */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-slate-800 dark:text-slate-100">Gestionar Provenance</h3>
+                  <button 
+                    onClick={handleOpenAddProv}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95"
+                  >
+                    <IconPlus className="w-4 h-4" /> Nuevo
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mb-4">Administra las fuentes de origen y sus abreviaturas.</p>
+                <div className="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-2">
+                  {comisiones.length === 0 ? (
+                    <p className="text-sm text-slate-500 text-center py-4">No hay Provenance registrados.</p>
+                  ) : (
+                    comisiones.map(c => {
+                      const abrev = abreviaturas.find(a => a.tipo === c.id);
+                      return (
+                        <div key={c.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{c.provenance}</p>
+                              {abrev && (
+                                <span className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded">
+                                  {abrev.abreviatura}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-500">{c.porcentaje}% comisión</p>
+                          </div>
+                          <button 
+                            onClick={() => handleOpenEditProv(c)} 
+                            className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                          >
+                            <IconCog className="w-5 h-5" />
+                          </button>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* Sección de Abreviaturas (detalle) */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+                <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4">Todas las Abreviaturas</h3>
+                <p className="text-xs text-slate-500 mb-4">Edita las abreviaturas que se usan en la generación de WORK IDs.</p>
+                <div className="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-2">
+                  {abreviaturas
+                    .filter(ab => ab.tipo && (ab.tipo.startsWith('prov_') || ab.tipo.startsWith('com_')))
+                    .map(ab => {
+                      const comision = comisiones.find(c => c.id === ab.tipo);
+                      const displayName = comision ? comision.provenance : ab.nombre;
+                      return (
+                        <div key={ab.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{displayName}</p>
+                            <p className="text-xs font-mono text-indigo-600 dark:text-indigo-400">{ab.abreviatura}</p>
+                          </div>
+                          <button 
+                            onClick={() => handleEditAbrev(ab)} 
+                            className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                          >
+                            <IconEditAbrev />
+                          </button>
+                        </div>
+                      )
+                    })}
+                  {abreviaturas.filter(ab => ab.tipo && (ab.tipo.startsWith('prov_') || ab.tipo.startsWith('com_'))).length === 0 && (
+                    <p className="text-sm text-slate-500 text-center py-4">No hay abreviaturas de Provenance registradas.</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -1836,7 +2479,7 @@
             </div>
           )}
 
-          {/* VISTA: FORM (CREAR/EDITAR) */}
+          {/* VISTA: FORM (CREAR/EDITAR) - SOLO ACCESIBLE SI LOS DATOS ESTÁN CARGADOS */}
           {view === "form" && currentObra && (
             <div className="animate-fade-in bg-slate-50 dark:bg-slate-950 pb-safe-nav">
               <nav className="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50 p-4 flex justify-between items-center z-10 pt-safe">
@@ -1878,24 +2521,43 @@
                     </div>
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Provenance</label>
-                      <select 
-                        className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-xs" 
-                        value={currentObra.provenance || ''} 
-                        onChange={e => {
-                          if (e.target.value === '__add_provenance__') {
-                            setShowProvModal(true);
-                            e.target.value = currentObra.provenance || '';
-                            return;
-                          }
-                          handleFormChange('provenance', e.target.value);
-                        }}
-                      >
-                        <option value="">Sin Provenance</option>
-                        <option value="__add_provenance__">+ Añadir Provenance</option>
-                        {comisiones.map(c => (
-                          <option key={c.id} value={c.id}>{c.provenance} ({c.porcentaje}%)</option>
-                        ))}
-                      </select>
+                      <div className="flex gap-2">
+                        <select 
+                          className="flex-1 p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-xs" 
+                          value={currentObra.provenance || ''} 
+                          onChange={e => {
+                            if (e.target.value === '__add_provenance__') {
+                              handleOpenAddProv();
+                              e.target.value = currentObra.provenance || '';
+                              return;
+                            }
+                            handleFormChange('provenance', e.target.value);
+                          }}
+                        >
+                          <option value="">Sin Provenance</option>
+                          <option value="__add_provenance__">+ Añadir Provenance</option>
+                          {comisiones.map(c => {
+                            const abrev = abreviaturas.find(a => a.tipo === c.id);
+                            return (
+                              <option key={c.id} value={c.id}>
+                                {c.provenance} ({c.porcentaje}%) {abrev ? `[${abrev.abreviatura}]` : ''}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        {currentObra.provenance && (
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              const prov = comisiones.find(c => c.id === currentObra.provenance);
+                              if (prov) handleOpenEditProv(prov);
+                            }}
+                            className="p-3 bg-slate-100 dark:bg-slate-700 rounded-xl text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                          >
+                            <IconCog className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </section>
@@ -2193,9 +2855,15 @@
                   <IconList className="w-6 h-6" />
                   <span className="text-[10px] font-semibold">Obras</span>
                 </button>
-                <button onClick={handleCreateNewObra} className="flex flex-col items-center justify-center w-full h-full gap-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                <button 
+                  onClick={handleCreateNewObra} 
+                  className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${!isDataLoaded ? 'opacity-50 cursor-not-allowed' : 'hover:text-slate-600 dark:hover:text-slate-300'} text-slate-400`}
+                  disabled={!isDataLoaded}
+                  title={!isDataLoaded ? 'Espera a que los datos carguen' : 'Crear nueva obra'}
+                >
                   <IconPlusCircle className="w-6 h-6" />
                   <span className="text-[10px] font-semibold">Crear</span>
+                  {!isDataLoaded && <span className="text-[6px] text-amber-500">⏳</span>}
                 </button>
                 <button onClick={() => setView('settings')} className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${view === 'settings' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}>
                   <IconSettings className="w-6 h-6" />
