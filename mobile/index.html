@@ -380,6 +380,147 @@
     .abrev-modal .error-msg.visible {
       display: block;
     }
+
+    /* Modal para Técnica */
+    .tec-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+      animation: fadeIn 0.2s ease;
+    }
+    .tec-modal-overlay.hidden {
+      display: none;
+    }
+    .tec-modal {
+      background: white;
+      border-radius: 24px;
+      max-width: 480px;
+      width: 100%;
+      padding: 28px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      animation: slideUp 0.25s ease;
+    }
+    .dark .tec-modal {
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+    .tec-modal h3 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+    .dark .tec-modal h3 {
+      color: #f1f5f9;
+    }
+    .tec-modal .subtitle {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 20px;
+    }
+    .dark .tec-modal .subtitle {
+      color: #94a3b8;
+    }
+    .tec-modal label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      margin-bottom: 4px;
+    }
+    .tec-modal input, .tec-modal select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 15px;
+      background: #f8fafc;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .dark .tec-modal input, .dark .tec-modal select {
+      background: #0f172a;
+      border-color: #334155;
+      color: #f1f5f9;
+    }
+    .tec-modal input:focus, .tec-modal select:focus {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.35);
+    }
+    .tec-modal .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .tec-modal .btn-row button {
+      flex: 1;
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 14px;
+      transition: all 0.15s;
+      cursor: pointer;
+      border: none;
+    }
+    .tec-modal .btn-cancel {
+      background: #f1f5f9;
+      color: #475569;
+    }
+    .dark .tec-modal .btn-cancel {
+      background: #334155;
+      color: #94a3b8;
+    }
+    .tec-modal .btn-cancel:hover {
+      background: #e2e8f0;
+    }
+    .tec-modal .btn-save {
+      background: #4f46e5;
+      color: white;
+    }
+    .tec-modal .btn-save:hover {
+      background: #4338ca;
+    }
+    .tec-modal .btn-save:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .tec-modal .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+    .tec-modal .btn-danger:hover {
+      background: #dc2626;
+    }
+    .tec-modal .btn-danger:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .tec-modal .error-msg {
+      color: #ef4444;
+      font-size: 12px;
+      margin-top: 8px;
+      display: none;
+    }
+    .tec-modal .error-msg.visible {
+      display: block;
+    }
+    .tec-modal .hint-text {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+    .dark .tec-modal .hint-text {
+      color: #64748b;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen overscroll-y-none">
@@ -427,7 +568,8 @@
     };
 
     // --- TABLA DE TÉCNICAS Y ABREVIATURAS (del archivo Excel) ---
-    const TECNICA_ABREVIATURAS = {
+    // ¡AHORA SE OBTIENEN DE LA HOJA ABREVIATURAS!
+    const TECNICA_ABREVIATURAS_DEFAULT = {
         'Óleo sobre tela': 'OLO',
         'Óleo sobre lino': 'OLL',
         'Óleo sobre papel': 'OLP',
@@ -471,8 +613,6 @@
     };
 
     // --- TABLA DE PROVENANCE Y ABREVIATURAS (del archivo Excel) ---
-    // ¡AHORA SE OBTIENEN DE LA HOJA ABREVIATURAS!
-    // Esta es la lista por defecto, pero se sobreescribirá con los datos de la API
     const PROVENANCE_ABREVIATURAS_DEFAULT = {
         'Aguafuerte / Chavarria': 'CHV',
         'Andrea Moreno': 'AMR',
@@ -501,7 +641,7 @@
     const TECH_ADJUNTO_CODE = 'TD';
 
     // --- FUNCIÓN DE GENERACIÓN DE CLAVE EXACTA (MODIFICADA para usar abreviaturas de la hoja) ---
-    function generateClave(provenanceName, artista, tecnica, claveActual, allRegistrosObra = [], abreviaturasList = []) {
+    function generateClave(provenanceName, artista, tecnica, claveActual, allRegistrosObra = [], abreviaturasList = [], tecnicasList = []) {
         let numStr = '0001';
 
         if (claveActual && claveActual.length >= 4) {
@@ -594,23 +734,38 @@
             }
         }
 
-        // --- BLOQUE 3: TÉCNICA ---
+        // --- BLOQUE 3: TÉCNICA (USANDO ABREVIATURAS DE LA HOJA) ---
         let tecStr = '';
         if (tecnica && tecnica.trim() !== '') {
             const cleanTecnica = tecnica.trim();
             let abreviaturaEncontrada = null;
-            const tecLower = cleanTecnica.toLowerCase();
             
-            for (const [nombreTec, abreviatura] of Object.entries(TECNICA_ABREVIATURAS)) {
-                if (nombreTec.toLowerCase() === tecLower || tecLower.includes(nombreTec.toLowerCase()) || nombreTec.toLowerCase().includes(tecLower)) {
-                    abreviaturaEncontrada = abreviatura;
+            // Buscar en la lista de técnicas (de la hoja Abreviaturas con tipo 'tec_')
+            for (const tec of tecnicasList) {
+                if (tec.nombre && tec.nombre.toLowerCase() === cleanTecnica.toLowerCase()) {
+                    abreviaturaEncontrada = tec.abreviatura;
                     break;
+                }
+            }
+            
+            // Si no se encontró, buscar por coincidencia parcial
+            if (!abreviaturaEncontrada) {
+                const tecLower = cleanTecnica.toLowerCase();
+                for (const tec of tecnicasList) {
+                    if (tec.nombre) {
+                        const nombreLower = tec.nombre.toLowerCase();
+                        if (nombreLower.includes(tecLower) || tecLower.includes(nombreLower)) {
+                            abreviaturaEncontrada = tec.abreviatura;
+                            break;
+                        }
+                    }
                 }
             }
             
             if (abreviaturaEncontrada) {
                 tecStr = abreviaturaEncontrada;
             } else {
+                // Si no, generar una abreviatura
                 const wordsTec = cleanTecnica.split(/\s+/);
                 const pPalabraTec = wordsTec[0] || '';
 
@@ -957,6 +1112,7 @@
       const [responsables, setResponsables] = useState([]);
       const [comisiones, setComisiones] = useState([]);
       const [abreviaturas, setAbreviaturas] = useState([]);
+      const [tecnicas, setTecnicas] = useState([]); // Nueva lista para técnicas
       const [search, setSearch] = useState("");
       
       const [filterStatus, setFilterStatus] = useState("");
@@ -983,15 +1139,24 @@
       const [uiSettings, setUiSettings] = useState(() => getUiSettings());
       const [togglingVerification, setTogglingVerification] = useState(false);
 
-      // --- Estado para el modal de Provenance (Añadir/Editar) ---
+      // --- Estado para el modal de Provenance ---
       const [showProvModal, setShowProvModal] = useState(false);
-      const [provModalMode, setProvModalMode] = useState('add'); // 'add' o 'edit'
+      const [provModalMode, setProvModalMode] = useState('add');
       const [editingProvId, setEditingProvId] = useState(null);
       const [newProvName, setNewProvName] = useState('');
       const [newProvPercentage, setNewProvPercentage] = useState('');
       const [newProvAbrev, setNewProvAbrev] = useState('');
       const [savingProv, setSavingProv] = useState(false);
       const [provError, setProvError] = useState('');
+
+      // --- Estado para el modal de Técnica ---
+      const [showTecModal, setShowTecModal] = useState(false);
+      const [tecModalMode, setTecModalMode] = useState('add');
+      const [editingTecId, setEditingTecId] = useState(null);
+      const [newTecName, setNewTecName] = useState('');
+      const [newTecAbrev, setNewTecAbrev] = useState('');
+      const [savingTec, setSavingTec] = useState(false);
+      const [tecError, setTecError] = useState('');
 
       // --- Estado para el modal de edición de abreviatura ---
       const [showAbrevModal, setShowAbrevModal] = useState(false);
@@ -1007,7 +1172,7 @@
       const techInputRef = useRef(null);
 
       // Obtener listas de sugerencias (solo nombres, no abreviaturas)
-      const tecnicaSuggestions = useMemo(() => Object.keys(TECNICA_ABREVIATURAS).sort(), []);
+      const tecnicaSuggestions = useMemo(() => Object.keys(TECNICA_ABREVIATURAS_DEFAULT).sort(), []);
       const autorSuggestions = useMemo(() => Object.keys(AUTOR_ABREVIATURAS).sort(), []);
 
       // Construir mapa de abreviaturas de Provenance desde la hoja Abreviaturas
@@ -1144,8 +1309,11 @@
             // Cargar abreviaturas desde la API
             if (data.abreviaturas) {
               setAbreviaturas(data.abreviaturas);
+              // Filtrar las técnicas
+              const tecList = data.abreviaturas.filter(ab => ab.tipo && ab.tipo.startsWith('tec_'));
+              setTecnicas(tecList);
             } else {
-              // Si no hay abreviaturas, inicializar con las predeterminadas
+              // Inicializar con valores predeterminados
               const defaultAbrevs = Object.entries(PROVENANCE_ABREVIATURAS_DEFAULT).map(([nombre, abreviatura]) => ({
                 id: 'abrev_' + Date.now().toString() + Math.random().toString(36).slice(2),
                 nombre: nombre,
@@ -1154,6 +1322,16 @@
                 fecha_registro: new Date().toISOString()
               }));
               setAbreviaturas(defaultAbrevs);
+              
+              // Inicializar técnicas desde el diccionario
+              const defaultTecs = Object.entries(TECNICA_ABREVIATURAS_DEFAULT).map(([nombre, abreviatura]) => ({
+                id: 'tec_' + Date.now().toString() + Math.random().toString(36).slice(2),
+                nombre: nombre,
+                abreviatura: abreviatura,
+                tipo: 'tec_default',
+                fecha_registro: new Date().toISOString()
+              }));
+              setTecnicas(defaultTecs);
             }
 
             // Marcar que los datos están cargados
@@ -1166,11 +1344,11 @@
             }
           } else {
             showToast("Error de formato API", "error");
-            setIsDataLoaded(true); // Aún así, permitir interactuar
+            setIsDataLoaded(true);
           }
         } catch (e) { 
           showToast("Error de conexión con el backend.", "error");
-          setIsDataLoaded(true); // Permitir intentar de nuevo
+          setIsDataLoaded(true);
         } 
         finally { setLoading(false); }
       };
@@ -1187,7 +1365,7 @@
         if (!isInitialLoad) window.location.hash = obra.id;
       };
 
-      // --- Función para crear nueva obra (solo si los datos están cargados) ---
+      // --- Función para crear nueva obra ---
       const handleCreateNewObra = () => {
         if (!isDataLoaded) {
           showToast('Espera a que los datos terminen de cargar', 'error');
@@ -1201,7 +1379,7 @@
           verificada: false
         };
         // Generar clave con las abreviaturas disponibles
-        newObra.clave = generateClave('', '', '', '', obras, abreviaturas);
+        newObra.clave = generateClave('', '', '', '', obras, abreviaturas, tecnicas);
         setCurrentObra(newObra);
         setPendingFiles([]);
         setSelectedTechAdj('RW');
@@ -1233,7 +1411,7 @@
             const com = comisiones.find(c => c.id === provVal);
             provName = com ? com.provenance : provVal;
           }
-          updated.clave = generateClave(provName, updated.autor, updated.tipo_obra, updated.clave, obras, abreviaturas);
+          updated.clave = generateClave(provName, updated.autor, updated.tipo_obra, updated.clave, obras, abreviaturas, tecnicas);
         }
         
         setCurrentObra(updated);
@@ -1256,14 +1434,13 @@
         setEditingProvId(comision.id);
         setNewProvName(comision.provenance || '');
         setNewProvPercentage(String(comision.porcentaje || ''));
-        // Buscar la abreviatura asociada
         const abrev = abreviaturas.find(a => a.tipo === comision.id);
         setNewProvAbrev(abrev ? abrev.abreviatura : '');
         setProvError('');
         setShowProvModal(true);
       };
 
-      // --- Función para guardar Provenance (crear o actualizar) ---
+      // --- Función para guardar Provenance ---
       const handleSaveProv = async () => {
         setProvError('');
         
@@ -1290,10 +1467,8 @@
         setSavingProv(true);
         try {
           if (provModalMode === 'add') {
-            // --- MODO AÑADIR ---
             const comId = 'com_' + (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2)));
             
-            // 1. Crear la comisión
             const payload = {
               id: comId,
               provenance: name,
@@ -1307,7 +1482,6 @@
             const result = await res.json();
 
             if (result.result === 'success') {
-              // 2. Crear la abreviatura asociada
               const abrevId = 'abrev_' + (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2)));
               const abrevPayload = {
                 id: abrevId,
@@ -1324,7 +1498,6 @@
               const abrevResult = await abrevRes.json();
 
               if (abrevResult.result === 'success') {
-                // Actualizar la lista de comisiones y abreviaturas localmente
                 const newComision = { id: comId, provenance: name, porcentaje: percentage };
                 setComisiones(prev => [...prev, newComision]);
                 
@@ -1337,7 +1510,6 @@
                 };
                 setAbreviaturas(prev => [...prev, newAbrev]);
                 
-                // Seleccionar automáticamente la nueva comisión en el campo
                 handleFormChange('provenance', comId);
                 
                 setShowProvModal(false);
@@ -1349,8 +1521,6 @@
               setProvError(result.message || 'Error al crear Provenance');
             }
           } else {
-            // --- MODO EDITAR ---
-            // 1. Actualizar la comisión
             const payload = {
               id: editingProvId,
               provenance: name,
@@ -1364,7 +1534,6 @@
             const result = await res.json();
 
             if (result.result === 'success') {
-              // 2. Actualizar la abreviatura asociada
               const abrev = abreviaturas.find(a => a.tipo === editingProvId);
               if (abrev) {
                 const abrevPayload = {
@@ -1381,7 +1550,6 @@
                 const abrevResult = await abrevRes.json();
 
                 if (abrevResult.result === 'success') {
-                  // Actualizar listas locales
                   setComisiones(prev => prev.map(c => 
                     c.id === editingProvId ? { ...c, provenance: name, porcentaje: percentage } : c
                   ));
@@ -1389,10 +1557,10 @@
                     a.id === abrev.id ? { ...a, nombre: name, abreviatura: newProvAbrev.trim().toUpperCase() } : a
                   ));
                   
-                  // Si la obra actual usa este Provenance, regenerar la clave
                   if (currentObra && currentObra.provenance === editingProvId) {
                     const newClave = generateClave(name, currentObra.autor, currentObra.tipo_obra, currentObra.clave, obras, 
-                      abreviaturas.map(a => a.id === abrev.id ? { ...a, abreviatura: newProvAbrev.trim().toUpperCase() } : a)
+                      abreviaturas.map(a => a.id === abrev.id ? { ...a, abreviatura: newProvAbrev.trim().toUpperCase() } : a),
+                      tecnicas
                     );
                     setCurrentObra(prev => ({ ...prev, clave: newClave }));
                   }
@@ -1403,7 +1571,6 @@
                   setProvError(abrevResult.message || 'Error al actualizar abreviatura');
                 }
               } else {
-                // Si no tiene abreviatura, crear una nueva
                 const abrevId = 'abrev_' + (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2)));
                 const abrevPayload = {
                   id: abrevId,
@@ -1452,11 +1619,10 @@
       // --- Función para eliminar Provenance ---
       const handleDeleteProv = async () => {
         if (!editingProvId) return;
-        if (!confirm(`¿Estás seguro de eliminar el Provenance "${newProvName}"? Esto también eliminará su abreviatura.`)) return;
+        if (!confirm(`¿Estás seguro de eliminar el Provenance "${newProvName}"?`)) return;
 
         setSavingProv(true);
         try {
-          // Eliminar la comisión
           const res = await fetch(API_URL, {
             method: 'POST',
             body: JSON.stringify({ action: 'comision_delete', data: { id: editingProvId } })
@@ -1464,7 +1630,6 @@
           const result = await res.json();
 
           if (result.result === 'success') {
-            // Eliminar la abreviatura asociada
             const abrev = abreviaturas.find(a => a.tipo === editingProvId);
             if (abrev) {
               await fetch(API_URL, {
@@ -1473,11 +1638,9 @@
               });
             }
             
-            // Actualizar listas locales
             setComisiones(prev => prev.filter(c => c.id !== editingProvId));
             setAbreviaturas(prev => prev.filter(a => a.tipo !== editingProvId));
             
-            // Si la obra actual usa este Provenance, limpiarlo
             if (currentObra && currentObra.provenance === editingProvId) {
               setCurrentObra(prev => ({ ...prev, provenance: '' }));
             }
@@ -1492,6 +1655,171 @@
           setProvError('Error de conexión con el servidor');
         } finally {
           setSavingProv(false);
+        }
+      };
+
+      // --- FUNCIONES PARA TÉCNICA ---
+
+      // Abrir modal para añadir técnica
+      const handleOpenAddTec = () => {
+        setTecModalMode('add');
+        setEditingTecId(null);
+        setNewTecName('');
+        setNewTecAbrev('');
+        setTecError('');
+        setShowTecModal(true);
+      };
+
+      // Abrir modal para editar técnica
+      const handleOpenEditTec = (tec) => {
+        setTecModalMode('edit');
+        setEditingTecId(tec.id);
+        setNewTecName(tec.nombre || '');
+        setNewTecAbrev(tec.abreviatura || '');
+        setTecError('');
+        setShowTecModal(true);
+      };
+
+      // Guardar técnica (crear o actualizar)
+      const handleSaveTec = async () => {
+        setTecError('');
+        
+        const name = newTecName.trim();
+        if (!name) {
+          setTecError('El nombre de la técnica es obligatorio');
+          return;
+        }
+        const abrev = newTecAbrev.trim().toUpperCase();
+        if (!abrev) {
+          setTecError('La abreviatura es obligatoria');
+          return;
+        }
+        if (abrev.length < 2 || abrev.length > 5) {
+          setTecError('La abreviatura debe tener entre 2 y 5 caracteres');
+          return;
+        }
+
+        setSavingTec(true);
+        try {
+          if (tecModalMode === 'add') {
+            // Crear nueva técnica
+            const tecId = 'tec_' + (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2)));
+            
+            const payload = {
+              id: tecId,
+              nombre: name,
+              abreviatura: abrev,
+              tipo: 'tec_' + tecId,
+              fecha_registro: new Date().toISOString()
+            };
+
+            const res = await fetch(API_URL, {
+              method: 'POST',
+              body: JSON.stringify({ action: 'abreviatura_add', data: payload })
+            });
+            const result = await res.json();
+
+            if (result.result === 'success') {
+              const newTec = { 
+                id: tecId, 
+                nombre: name, 
+                abreviatura: abrev, 
+                tipo: 'tec_' + tecId,
+                fecha_registro: new Date().toISOString()
+              };
+              setTecnicas(prev => [...prev, newTec]);
+              setAbreviaturas(prev => [...prev, newTec]);
+              
+              // Seleccionar automáticamente la nueva técnica
+              handleFormChange('tipo_obra', name);
+              
+              setShowTecModal(false);
+              showToast(`✅ Técnica "${name}" creada con abreviatura "${abrev}"`);
+            } else {
+              setTecError(result.message || 'Error al crear técnica');
+            }
+          } else {
+            // Actualizar técnica existente
+            const payload = {
+              id: editingTecId,
+              nombre: name,
+              abreviatura: abrev,
+              tipo: 'tec_' + editingTecId
+            };
+
+            const res = await fetch(API_URL, {
+              method: 'POST',
+              body: JSON.stringify({ action: 'abreviatura_update', data: payload })
+            });
+            const result = await res.json();
+
+            if (result.result === 'success') {
+              setTecnicas(prev => prev.map(t => 
+                t.id === editingTecId ? { ...t, nombre: name, abreviatura: abrev } : t
+              ));
+              setAbreviaturas(prev => prev.map(a => 
+                a.id === editingTecId ? { ...a, nombre: name, abreviatura: abrev } : a
+              ));
+              
+              // Si la obra actual usa esta técnica, regenerar la clave
+              if (currentObra && currentObra.tipo_obra === name) {
+                let provName = '';
+                const provVal = currentObra.provenance;
+                if (provVal) {
+                  const com = comisiones.find(c => c.id === provVal);
+                  provName = com ? com.provenance : provVal;
+                }
+                const newClave = generateClave(provName, currentObra.autor, currentObra.tipo_obra, currentObra.clave, obras, abreviaturas, 
+                  tecnicas.map(t => t.id === editingTecId ? { ...t, abreviatura: abrev } : t)
+                );
+                setCurrentObra(prev => ({ ...prev, clave: newClave }));
+              }
+              
+              setShowTecModal(false);
+              showToast(`✅ Técnica "${name}" actualizada correctamente`);
+            } else {
+              setTecError(result.message || 'Error al actualizar técnica');
+            }
+          }
+        } catch (error) {
+          console.error('Error al guardar técnica:', error);
+          setTecError('Error de conexión con el servidor');
+        } finally {
+          setSavingTec(false);
+        }
+      };
+
+      // Eliminar técnica
+      const handleDeleteTec = async () => {
+        if (!editingTecId) return;
+        if (!confirm(`¿Estás seguro de eliminar la técnica "${newTecName}"?`)) return;
+
+        setSavingTec(true);
+        try {
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'abreviatura_delete', data: { id: editingTecId } })
+          });
+          const result = await res.json();
+
+          if (result.result === 'success') {
+            setTecnicas(prev => prev.filter(t => t.id !== editingTecId));
+            setAbreviaturas(prev => prev.filter(a => a.id !== editingTecId));
+            
+            if (currentObra && currentObra.tipo_obra === newTecName) {
+              setCurrentObra(prev => ({ ...prev, tipo_obra: '' }));
+            }
+            
+            setShowTecModal(false);
+            showToast(`✅ Técnica eliminada correctamente`);
+          } else {
+            setTecError(result.message || 'Error al eliminar técnica');
+          }
+        } catch (error) {
+          console.error('Error al eliminar técnica:', error);
+          setTecError('Error de conexión con el servidor');
+        } finally {
+          setSavingTec(false);
         }
       };
 
@@ -1532,12 +1860,16 @@
           const result = await res.json();
 
           if (result.result === 'success') {
-            // Actualizar la lista local
             setAbreviaturas(prev => prev.map(ab => 
               ab.id === editingAbrev.id ? { ...ab, abreviatura: newAbrev } : ab
             ));
+            // También actualizar en técnicas si es una técnica
+            if (editingAbrev.tipo && editingAbrev.tipo.startsWith('tec_')) {
+              setTecnicas(prev => prev.map(t => 
+                t.id === editingAbrev.id ? { ...t, abreviatura: newAbrev } : t
+              ));
+            }
             
-            // Si la obra actual tiene esta abreviatura, regenerar la clave
             if (currentObra) {
               let provName = '';
               const provVal = currentObra.provenance;
@@ -1546,7 +1878,8 @@
                 provName = com ? com.provenance : provVal;
               }
               const newClave = generateClave(provName, currentObra.autor, currentObra.tipo_obra, currentObra.clave, obras, 
-                abreviaturas.map(ab => ab.id === editingAbrev.id ? { ...ab, abreviatura: newAbrev } : ab)
+                abreviaturas.map(ab => ab.id === editingAbrev.id ? { ...ab, abreviatura: newAbrev } : ab),
+                tecnicas
               );
               setCurrentObra(prev => ({ ...prev, clave: newClave }));
             }
@@ -2048,6 +2381,82 @@
             </div>
           </div>
 
+          {/* MODAL PARA AÑADIR/EDITAR TÉCNICA */}
+          <div className={`tec-modal-overlay ${showTecModal ? '' : 'hidden'}`}>
+            <div className="tec-modal" onClick={(e) => e.stopPropagation()}>
+              <h3>{tecModalMode === 'add' ? 'Añadir Técnica' : 'Editar Técnica'}</h3>
+              <p className="subtitle">
+                {tecModalMode === 'add' 
+                  ? 'Registra una nueva técnica artística.' 
+                  : 'Modifica los datos de la técnica seleccionada.'}
+              </p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label>Nombre de la Técnica</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ej: Óleo sobre tela" 
+                    value={newTecName}
+                    onChange={(e) => {
+                      setNewTecName(e.target.value);
+                      setTecError('');
+                    }}
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label>Abreviatura (2-5 caracteres)</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ej: OLO" 
+                    value={newTecAbrev}
+                    onChange={(e) => {
+                      setNewTecAbrev(e.target.value.toUpperCase());
+                      setTecError('');
+                    }}
+                    maxLength={5}
+                  />
+                  <p className="hint-text">Se usará en la generación del WORK ID</p>
+                </div>
+                <div className={`error-msg ${tecError ? 'visible' : ''}`}>{tecError}</div>
+              </div>
+              
+              <div className="btn-row">
+                <button 
+                  type="button" 
+                  className="btn-cancel"
+                  onClick={() => {
+                    setShowTecModal(false);
+                    setNewTecName('');
+                    setNewTecAbrev('');
+                    setTecError('');
+                  }}
+                >
+                  Cancelar
+                </button>
+                {tecModalMode === 'edit' && (
+                  <button 
+                    type="button" 
+                    className="btn-danger"
+                    onClick={handleDeleteTec}
+                    disabled={savingTec}
+                  >
+                    {savingTec ? 'Eliminando...' : '🗑 Eliminar'}
+                  </button>
+                )}
+                <button 
+                  type="button" 
+                  className="btn-save"
+                  onClick={handleSaveTec}
+                  disabled={savingTec}
+                >
+                  {savingTec ? 'Guardando...' : (tecModalMode === 'add' ? 'Guardar' : 'Actualizar')}
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* MODAL PARA EDITAR ABREVIATURA */}
           <div className={`abrev-modal-overlay ${showAbrevModal ? '' : 'hidden'}`}>
             <div className="abrev-modal" onClick={(e) => e.stopPropagation()}>
@@ -2218,7 +2627,7 @@
                 </div>
               </div>
 
-              {/* Sección de Provenance y Abreviaturas */}
+              {/* Sección de Provenance */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-bold text-slate-800 dark:text-slate-100">Gestionar Provenance</h3>
@@ -2262,13 +2671,53 @@
                 </div>
               </div>
 
+              {/* Sección de Técnicas */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-slate-800 dark:text-slate-100">Gestionar Técnicas</h3>
+                  <button 
+                    onClick={handleOpenAddTec}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95"
+                  >
+                    <IconPlus className="w-4 h-4" /> Nueva
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mb-4">Administra las técnicas artísticas y sus abreviaturas.</p>
+                <div className="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-2">
+                  {tecnicas.length === 0 ? (
+                    <p className="text-sm text-slate-500 text-center py-4">No hay técnicas registradas.</p>
+                  ) : (
+                    tecnicas.map(t => {
+                      return (
+                        <div key={t.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{t.nombre}</p>
+                              <span className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded">
+                                {t.abreviatura}
+                              </span>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => handleOpenEditTec(t)} 
+                            className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                          >
+                            <IconCog className="w-5 h-5" />
+                          </button>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
+
               {/* Sección de Abreviaturas (detalle) */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
                 <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4">Todas las Abreviaturas</h3>
                 <p className="text-xs text-slate-500 mb-4">Edita las abreviaturas que se usan en la generación de WORK IDs.</p>
                 <div className="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-2">
                   {abreviaturas
-                    .filter(ab => ab.tipo && (ab.tipo.startsWith('prov_') || ab.tipo.startsWith('com_')))
+                    .filter(ab => ab.tipo && (ab.tipo.startsWith('prov_') || ab.tipo.startsWith('com_') || ab.tipo.startsWith('tec_')))
                     .map(ab => {
                       const comision = comisiones.find(c => c.id === ab.tipo);
                       const displayName = comision ? comision.provenance : ab.nombre;
@@ -2287,8 +2736,8 @@
                         </div>
                       )
                     })}
-                  {abreviaturas.filter(ab => ab.tipo && (ab.tipo.startsWith('prov_') || ab.tipo.startsWith('com_'))).length === 0 && (
-                    <p className="text-sm text-slate-500 text-center py-4">No hay abreviaturas de Provenance registradas.</p>
+                  {abreviaturas.filter(ab => ab.tipo && (ab.tipo.startsWith('prov_') || ab.tipo.startsWith('com_') || ab.tipo.startsWith('tec_'))).length === 0 && (
+                    <p className="text-sm text-slate-500 text-center py-4">No hay abreviaturas registradas.</p>
                   )}
                 </div>
               </div>
@@ -2356,7 +2805,10 @@
                           {currentObra.autor && <IconChevronRight className="w-3 h-3 text-indigo-400" />}
                         </p>
                       </div>
-                      <div><p className="text-[10px] text-slate-400 font-bold uppercase">Tipo</p><p className="text-sm font-semibold">{currentObra.tipo_obra || "-"}</p></div>
+                      <div>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase">Tipo</p>
+                        <p className="text-sm font-semibold">{currentObra.tipo_obra || "-"}</p>
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl">
                       <div><p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Precio Lista</p><p className="text-lg font-black text-slate-700 dark:text-slate-300">{formatCurrency(currentObra.precio_lista, currentObra.tipo_moneda)}</p></div>
@@ -2479,7 +2931,7 @@
             </div>
           )}
 
-          {/* VISTA: FORM (CREAR/EDITAR) - SOLO ACCESIBLE SI LOS DATOS ESTÁN CARGADOS */}
+          {/* VISTA: FORM (CREAR/EDITAR) */}
           {view === "form" && currentObra && (
             <div className="animate-fade-in bg-slate-50 dark:bg-slate-950 pb-safe-nav">
               <nav className="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50 p-4 flex justify-between items-center z-10 pt-safe">
@@ -2511,13 +2963,41 @@
                       />
                     </div>
                     <div>
-                      <AutocompleteInput
-                        label="Técnica"
-                        placeholder="Ej: Óleo sobre tela"
-                        value={currentObra.tipo_obra || ''}
-                        onChange={(value) => handleFormChange('tipo_obra', value)}
-                        suggestions={tecnicaSuggestions}
-                      />
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Técnica</label>
+                      <div className="flex gap-2">
+                        <select 
+                          className="flex-1 p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-xs" 
+                          value={currentObra.tipo_obra || ''} 
+                          onChange={e => {
+                            if (e.target.value === '__add_tecnica__') {
+                              handleOpenAddTec();
+                              e.target.value = currentObra.tipo_obra || '';
+                              return;
+                            }
+                            handleFormChange('tipo_obra', e.target.value);
+                          }}
+                        >
+                          <option value="">Seleccionar técnica</option>
+                          <option value="__add_tecnica__">+ Añadir Técnica</option>
+                          {tecnicas.map(t => (
+                            <option key={t.id} value={t.nombre}>
+                              {t.nombre} [{t.abreviatura}]
+                            </option>
+                          ))}
+                        </select>
+                        {currentObra.tipo_obra && (
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              const tec = tecnicas.find(t => t.nombre === currentObra.tipo_obra);
+                              if (tec) handleOpenEditTec(tec);
+                            }}
+                            className="p-3 bg-slate-100 dark:bg-slate-700 rounded-xl text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                          >
+                            <IconCog className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Provenance</label>
