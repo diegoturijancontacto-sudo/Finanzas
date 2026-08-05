@@ -400,6 +400,51 @@
     .dark .tec-modal .hint-text {
       color: #64748b;
     }
+
+    /* Estilos para el grid de imágenes */
+    .discover-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      padding: 2px;
+    }
+    .discover-grid .grid-item {
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      cursor: pointer;
+      background: #e2e8f0;
+      position: relative;
+    }
+    .dark .discover-grid .grid-item {
+      background: #1e293b;
+    }
+    .discover-grid .grid-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+    .discover-grid .grid-item:hover img {
+      transform: scale(1.05);
+    }
+    .discover-grid .grid-item .fallback-text {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      font-size: 10px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-align: center;
+      padding: 8px;
+      word-break: break-word;
+      background: #f1f5f9;
+    }
+    .dark .discover-grid .grid-item .fallback-text {
+      background: #0f172a;
+      color: #64748b;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen overscroll-y-none">
@@ -928,7 +973,7 @@
       const [responsables, setResponsables] = useState([]);
       const [comisiones, setComisiones] = useState([]);
       const [abreviaturas, setAbreviaturas] = useState([]);
-      const [tecnicas, setTecnicas] = useState([]); // Nueva lista para técnicas
+      const [tecnicas, setTecnicas] = useState([]);
       const [search, setSearch] = useState("");
 
       const [filterStatus, setFilterStatus] = useState("");
@@ -1103,7 +1148,6 @@
             setResponsables(data.responsables || []);
             setComisiones(data.comisiones || []);
 
-            // Cargar abreviaturas desde la API; si no existen, dejar la lista vacía
             if (data.abreviaturas) {
               setAbreviaturas(data.abreviaturas);
               setTecnicas(data.abreviaturas.filter(ab => ab.tipo && ab.tipo.startsWith('tec_')));
@@ -1112,7 +1156,6 @@
               setTecnicas([]);
             }
 
-            // Marcar que los datos están cargados
             setIsDataLoaded(true);
 
             const hash = window.location.hash.substring(1);
@@ -1156,7 +1199,6 @@
           fecha_registro: today,
           verificada: false
         };
-        // Generar clave con las abreviaturas disponibles
         newObra.clave = generateClave('', '', '', '', obras, abreviaturas, tecnicas);
         setCurrentObra(newObra);
         setPendingFiles([]);
@@ -1438,7 +1480,6 @@
 
       // --- FUNCIONES PARA TÉCNICA ---
 
-      // Abrir modal para añadir técnica
       const handleOpenAddTec = () => {
         setTecModalMode('add');
         setEditingTecId(null);
@@ -1448,7 +1489,6 @@
         setShowTecModal(true);
       };
 
-      // Abrir modal para editar técnica
       const handleOpenEditTec = (tec) => {
         setTecModalMode('edit');
         setEditingTecId(tec.id);
@@ -1458,7 +1498,6 @@
         setShowTecModal(true);
       };
 
-      // Guardar técnica (crear o actualizar)
       const handleSaveTec = async () => {
         setTecError('');
 
@@ -1480,7 +1519,6 @@
         setSavingTec(true);
         try {
           if (tecModalMode === 'add') {
-            // Crear nueva técnica
             const tecId = 'tec_' + (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2)));
 
             const payload = {
@@ -1508,7 +1546,6 @@
               setTecnicas(prev => [...prev, newTec]);
               setAbreviaturas(prev => [...prev, newTec]);
 
-              // Seleccionar automáticamente la nueva técnica
               handleFormChange('tipo_obra', name);
 
               setShowTecModal(false);
@@ -1517,7 +1554,6 @@
               setTecError(result.message || 'Error al crear técnica');
             }
           } else {
-            // Actualizar técnica existente
             const payload = {
               id: editingTecId,
               nombre: name,
@@ -1539,7 +1575,6 @@
                 a.id === editingTecId ? { ...a, nombre: name, abreviatura: abrev } : a
               ));
 
-              // Si la obra actual usa esta técnica, regenerar la clave
               if (currentObra && currentObra.tipo_obra === name) {
                 let provName = '';
                 const provVal = currentObra.provenance;
@@ -1567,7 +1602,6 @@
         }
       };
 
-      // Eliminar técnica
       const handleDeleteTec = async () => {
         if (!editingTecId) return;
         if (!confirm(`¿Estás seguro de eliminar la técnica "${newTecName}"?`)) return;
@@ -1954,38 +1988,6 @@
         );
       });
 
-      const categoriesDiscover = useMemo(() => {
-        const grouped = {};
-        obras.forEach(o => {
-          const cat = o.tipo_obra || 'Otras Categorías';
-          if (!grouped[cat]) grouped[cat] = [];
-          grouped[cat].push(o);
-        });
-        return grouped;
-      }, [obras]);
-
-      const DiscoverCard = ({ obra }) => {
-        const imgUrl = getFirstImage(obra);
-        return (
-          <div onClick={() => openDetail(obra)} className="relative w-64 h-80 rounded-[2rem] overflow-hidden shrink-0 snap-center shadow-md hover:shadow-xl transition-all cursor-pointer bg-slate-200 dark:bg-slate-800 group border border-slate-200/50 dark:border-slate-700/50">
-            {imgUrl ? (
-               <img src={imgUrl} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={obra.nombre_obra} />
-            ) : (
-               <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-700" />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/95 via-slate-900/30 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col justify-end">
-               <span className="text-[10px] font-black tracking-widest text-indigo-300 uppercase mb-1 drop-shadow-md">{obra.estatus}</span>
-               <h3 className="text-white font-extrabold text-xl leading-tight mb-2 truncate drop-shadow-md">{obra.nombre_obra || 'Sin nombre'}</h3>
-               <div className="flex justify-between items-center">
-                 <p className="text-slate-200 text-sm font-semibold">{formatCurrency(obra.precio_venta || obra.precio_lista, obra.tipo_moneda)}</p>
-                 <span className="text-slate-400 text-xs font-mono">#{obra.clave || '-'}</span>
-               </div>
-            </div>
-          </div>
-        );
-      };
-
       const isMainTab = ['discover', 'list', 'settings'].includes(view);
 
       return (
@@ -2159,28 +2161,41 @@
             </div>
           </div>
 
-          {/* VISTA: DISCOVER */}
+          {/* VISTA: DISCOVER - Grid de imágenes estilo Instagram */}
           {view === "discover" && (
             <div className="animate-fade-in">
-              <header className="px-6 pt-8 pb-4">
-                <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Descubrir</h1>
-                <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Explora tu colección por categorías</p>
+              <header className="px-4 pt-6 pb-2">
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Descubrir</h1>
+                <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">Explora tu colección</p>
               </header>
-              {loading ? <BoxLoader message="Cargando obras..." /> : (
-                <div className="space-y-8">
-                  {Object.entries(categoriesDiscover).sort(([a], [b]) => a.localeCompare(b)).map(([cat, items]) => (
-                    <section key={cat}>
-                      <div className="flex justify-between items-center px-6 mb-4">
-                        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">{cat} <span className="text-slate-400 font-normal text-sm ml-1">({items.length})</span></h2>
+              {loading ? (
+                <BoxLoader message="Cargando obras..." />
+              ) : obras.length === 0 ? (
+                <p className="text-center text-slate-500 mt-10">No hay obras registradas aún.</p>
+              ) : (
+                <div className="discover-grid">
+                  {obras.map(obra => {
+                    const imgUrl = getFirstImage(obra);
+                    return (
+                      <div
+                        key={obra.id}
+                        className="grid-item"
+                        onClick={() => openDetail(obra)}
+                      >
+                        {imgUrl ? (
+                          <img
+                            src={imgUrl}
+                            alt={obra.nombre_obra || 'Obra sin título'}
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="fallback-text">
+                            {obra.nombre_obra || 'Sin título'}
+                          </div>
+                        )}
                       </div>
-                      <div className="flex overflow-x-auto gap-4 px-6 pb-4 snap-x hide-scrollbar">
-                        {items.map(o => <DiscoverCard key={o.id} obra={o} />)}
-                      </div>
-                    </section>
-                  ))}
-                  {Object.keys(categoriesDiscover).length === 0 && (
-                    <p className="text-center text-slate-500 mt-10">No hay obras registradas aún.</p>
-                  )}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -2449,7 +2464,6 @@
                       )
                     })()}
 
-                    {/* SECCIÓN DE VERIFICACIÓN */}
                     <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/50">
                       <div className="flex items-center gap-3">
                         {currentObra.verificada ? (
