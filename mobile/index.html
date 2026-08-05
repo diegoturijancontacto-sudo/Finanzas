@@ -7,15 +7,16 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8fafc">
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#020617">
-  
+  <link rel="icon" type="image/png" href="./icon.png">
+
   <title>Gestor de Obras Pro</title>
-  
+
   <!-- CDN confiables de Tailwind y React -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.22.20/babel.min.js"></script>
-  
+
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -28,16 +29,16 @@
       }
     }
   </script>
-  
+
   <style>
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-      transition: background-color .2s ease, color .2s ease; 
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      transition: background-color .2s ease, color .2s ease;
       -webkit-tap-highlight-color: transparent;
     }
-    .glass-header { 
-      backdrop-filter: blur(20px); 
-      -webkit-backdrop-filter: blur(20px); 
+    .glass-header {
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
     }
     .glass-nav {
       backdrop-filter: blur(24px) saturate(180%);
@@ -47,17 +48,17 @@
       0%, 100% { transform: scaleY(0.3); opacity: 0.5; }
       50% { transform: scaleY(1); opacity: 1; }
     }
-    .animate-box-bounce { 
-      animation: bounce-custom 1s infinite ease-in-out; 
+    .animate-box-bounce {
+      animation: bounce-custom 1s infinite ease-in-out;
     }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    
+
     .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px;}
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
     .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #475569; }
-    
+
     .pb-safe-nav { padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
     .pt-safe { padding-top: env(safe-area-inset-top); }
 
@@ -408,7 +409,7 @@
     const { useState, useEffect, useMemo, useRef } = React;
 
     // URL de tu Apps Script
-    const API_URL = "https://script.google.com/macros/s/AKfycbxmPBIboe_Evn45ZHjtkjydbmlPRMuSax_sEiTc2iN8cqqi2i4-Pf_lOd6875cQXEd_yg/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxyBzZ7duM3pKtobXHj8A2NgFpIarP5WPS71TKTH2uFMOXXL8rzo68-blixF8kgCwvl8w/exec";
 
     // --- LISTA COMPLETA DE AUTORES Y ABREVIATURAS ---
     const AUTOR_ABREVIATURAS = {
@@ -479,13 +480,13 @@
 
         // --- BLOQUE 1: PROVENANCE (USANDO ABREVIATURAS DE LA HOJA) ---
         let provStr = 'RTB'; // Valor por defecto
-        
+
         if (provenanceName && provenanceName.trim() !== '') {
             const cleanProv = provenanceName.trim();
-            
+
             // Buscar en la lista de abreviaturas (de la hoja Abreviaturas)
             let abreviaturaEncontrada = null;
-            
+
             // Primero buscar por nombre exacto
             for (const abrev of abreviaturasList) {
                 if (abrev.nombre && abrev.nombre.toLowerCase() === cleanProv.toLowerCase()) {
@@ -493,7 +494,7 @@
                     break;
                 }
             }
-            
+
             // Si no se encontró, buscar por coincidencia parcial
             if (!abreviaturaEncontrada) {
                 const provLower = cleanProv.toLowerCase();
@@ -507,7 +508,7 @@
                     }
                 }
             }
-            
+
             // Si se encontró, usarla
             if (abreviaturaEncontrada) {
                 provStr = abreviaturaEncontrada;
@@ -528,14 +529,14 @@
             const cleanArtista = artista.trim();
             let abreviaturaEncontrada = null;
             const artistaLower = cleanArtista.toLowerCase();
-            
+
             for (const [nombreAutor, abreviatura] of Object.entries(AUTOR_ABREVIATURAS)) {
                 if (nombreAutor.toLowerCase() === artistaLower) {
                     abreviaturaEncontrada = abreviatura;
                     break;
                 }
             }
-            
+
             if (abreviaturaEncontrada) {
                 artistStr = abreviaturaEncontrada;
             } else {
@@ -555,7 +556,7 @@
         if (tecnica && tecnica.trim() !== '') {
             const cleanTecnica = tecnica.trim();
             let abreviaturaEncontrada = null;
-            
+
             // Buscar en la lista de técnicas (de la hoja Abreviaturas con tipo 'tec_')
             for (const tec of tecnicasList) {
                 if (tec.nombre && tec.nombre.toLowerCase() === cleanTecnica.toLowerCase()) {
@@ -563,7 +564,7 @@
                     break;
                 }
             }
-            
+
             // Si no se encontró, buscar por coincidencia parcial
             if (!abreviaturaEncontrada) {
                 const tecLower = cleanTecnica.toLowerCase();
@@ -577,7 +578,7 @@
                     }
                 }
             }
-            
+
             if (abreviaturaEncontrada) {
                 tecStr = abreviaturaEncontrada;
             } else {
@@ -604,13 +605,13 @@
     }
 
     // --- COMPONENTE DE AUTOCOMPLETADO ---
-    function AutocompleteInput({ 
-      value, 
-      onChange, 
-      suggestions, 
-      placeholder, 
+    function AutocompleteInput({
+      value,
+      onChange,
+      suggestions,
+      placeholder,
       label,
-      onSuggestionSelect 
+      onSuggestionSelect
     }) {
       const [showSuggestions, setShowSuggestions] = useState(false);
       const [filteredSuggestions, setFilteredSuggestions] = useState([]);
@@ -631,7 +632,7 @@
       useEffect(() => {
         if (value && value.trim().length > 0) {
           const lowerValue = value.toLowerCase().trim();
-          const filtered = suggestions.filter(s => 
+          const filtered = suggestions.filter(s =>
             s.toLowerCase().includes(lowerValue)
           );
           setFilteredSuggestions(filtered);
@@ -645,10 +646,10 @@
 
       const handleKeyDown = (e) => {
         if (!showSuggestions) return;
-        
+
         if (e.key === 'ArrowDown') {
           e.preventDefault();
-          setSelectedIndex(prev => 
+          setSelectedIndex(prev =>
             prev < filteredSuggestions.length - 1 ? prev + 1 : prev
           );
         } else if (e.key === 'ArrowUp') {
@@ -813,7 +814,7 @@
     const IconList = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>;
     const IconPlusCircle = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>;
     const IconSettings = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>;
-    
+
     const IconBack = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m15 18-6-6 6-6"/></svg>;
     const IconEdit = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>;
     const IconCopy = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>;
@@ -859,16 +860,16 @@
     };
 
     const RECENT_OBRAS_KEY = "recentObras";
-    const VIEWED_OBRAS_KEY = "obraViewedHistory"; 
+    const VIEWED_OBRAS_KEY = "obraViewedHistory";
     const UI_SETTINGS_KEY = "obraUiSettings";
     const MAX_RECENT = 3;
     const MEASURE_ROUND_FACTOR = 10000;
-    
+
     const DEFAULT_UI_SETTINGS = { darkMode: false, rotateMeasures: true };
     const DEFAULT_OBRA = {
-      id: '', nombre_obra: '', ubicacion: '', estatus: 'Disponible', tipo_obra: '', 
-      superficie: '', precio_lista: '', precio_venta: '', fecha_registro: '', fecha_adquisicion: '', 
-      cliente: '', observaciones: '', id_responsable: '', autor: '', 
+      id: '', nombre_obra: '', ubicacion: '', estatus: 'Disponible', tipo_obra: '',
+      superficie: '', precio_lista: '', precio_venta: '', fecha_registro: '', fecha_adquisicion: '',
+      cliente: '', observaciones: '', id_responsable: '', autor: '',
       asignacion: '', provenance: '', clave: '', ancho: '', alto: '', largo: '', peso: '', tags: [], tipo_moneda: 'MXN',
       documentos: [], adjuntos: [], verificada: false
     };
@@ -885,7 +886,7 @@
       if (!id) return;
       let ids = getViewedHistory().filter(x => x !== id);
       ids.unshift(id);
-      ids = ids.slice(0, 100); 
+      ids = ids.slice(0, 100);
       localStorage.setItem(VIEWED_OBRAS_KEY, JSON.stringify(ids));
       return ids;
     }
@@ -921,7 +922,7 @@
         largo: rotate ? obra?.ancho : obra?.largo
       });
 
-      const [view, setView] = useState("discover"); 
+      const [view, setView] = useState("discover");
       const [loading, setLoading] = useState(true);
       const [obras, setObras] = useState([]);
       const [responsables, setResponsables] = useState([]);
@@ -929,7 +930,7 @@
       const [abreviaturas, setAbreviaturas] = useState([]);
       const [tecnicas, setTecnicas] = useState([]); // Nueva lista para técnicas
       const [search, setSearch] = useState("");
-      
+
       const [filterStatus, setFilterStatus] = useState("");
       const [filterTipo, setFilterTipo] = useState("");
       const [filterProvenance, setFilterProvenance] = useState("");
@@ -937,20 +938,20 @@
       const [filterPriceMin, setFilterPriceMin] = useState("");
       const [filterPriceMax, setFilterPriceMax] = useState("");
       const [showFilters, setShowFilters] = useState(false);
-      
+
       const [currentObra, setCurrentObra] = useState(null);
       const [currentAuthor, setCurrentAuthor] = useState(null);
-      
+
       const [pendingFiles, setPendingFiles] = useState([]);
       const [selectedTechAdj, setSelectedTechAdj] = useState('RW');
       const [newDoc, setNewDoc] = useState({ tipo: '', nombre: '', url: '', fecha: '' });
       const [uploadingAdj, setUploadingAdj] = useState(false);
       const [portadaPreviewUrl, setPortadaPreviewUrl] = useState('');
-      
+
       const [toast, setToast] = useState({ message: '', type: '' });
       const [saving, setSaving] = useState(false);
       const [recentIds, setRecentIds] = useState(() => getRecentIds());
-      const [viewedIds, setViewedIds] = useState(() => getViewedHistory()); 
+      const [viewedIds, setViewedIds] = useState(() => getViewedHistory());
       const [uiSettings, setUiSettings] = useState(() => getUiSettings());
       const [togglingVerification, setTogglingVerification] = useState(false);
 
@@ -993,7 +994,7 @@
 
       useEffect(() => {
         localStorage.setItem(UI_SETTINGS_KEY, JSON.stringify(uiSettings));
-        if (uiSettings.darkMode) { document.documentElement.classList.add('dark'); } 
+        if (uiSettings.darkMode) { document.documentElement.classList.add('dark'); }
         else { document.documentElement.classList.remove('dark'); }
       }, [uiSettings]);
 
@@ -1101,7 +1102,7 @@
             setObras(fetchedObras);
             setResponsables(data.responsables || []);
             setComisiones(data.comisiones || []);
-            
+
             // Cargar abreviaturas desde la API; si no existen, dejar la lista vacía
             if (data.abreviaturas) {
               setAbreviaturas(data.abreviaturas);
@@ -1123,10 +1124,10 @@
             showToast("Error de formato API", "error");
             setIsDataLoaded(true);
           }
-        } catch (e) { 
+        } catch (e) {
           showToast("Error de conexión con el backend.", "error");
           setIsDataLoaded(true);
-        } 
+        }
         finally { setLoading(false); }
       };
 
@@ -1180,7 +1181,7 @@
       const handleFormChange = (field, value) => {
         if (!currentObra) return;
         const updated = { ...currentObra, [field]: value };
-        
+
         if (field === 'provenance' || field === 'autor' || field === 'tipo_obra') {
           let provName = '';
           const provVal = updated.provenance;
@@ -1190,7 +1191,7 @@
           }
           updated.clave = generateClave(provName, updated.autor, updated.tipo_obra, updated.clave, obras, abreviaturas, tecnicas);
         }
-        
+
         setCurrentObra(updated);
       };
 
@@ -1220,7 +1221,7 @@
       // --- Función para guardar Provenance ---
       const handleSaveProv = async () => {
         setProvError('');
-        
+
         const name = newProvName.trim();
         if (!name) {
           setProvError('El nombre de Provenance es obligatorio');
@@ -1245,7 +1246,7 @@
         try {
           if (provModalMode === 'add') {
             const comId = 'com_' + (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2)));
-            
+
             const payload = {
               id: comId,
               provenance: name,
@@ -1277,18 +1278,18 @@
               if (abrevResult.result === 'success') {
                 const newComision = { id: comId, provenance: name, porcentaje: percentage };
                 setComisiones(prev => [...prev, newComision]);
-                
-                const newAbrev = { 
-                  id: abrevId, 
-                  nombre: name, 
-                  abreviatura: abrev, 
+
+                const newAbrev = {
+                  id: abrevId,
+                  nombre: name,
+                  abreviatura: abrev,
                   tipo: comId,
                   fecha_registro: new Date().toISOString()
                 };
                 setAbreviaturas(prev => [...prev, newAbrev]);
-                
+
                 handleFormChange('provenance', comId);
-                
+
                 setShowProvModal(false);
                 showToast(`✅ Provenance "${name}" creado con ${percentage}% y abreviatura "${abrev}"`);
               } else {
@@ -1327,21 +1328,21 @@
                 const abrevResult = await abrevRes.json();
 
                 if (abrevResult.result === 'success') {
-                  setComisiones(prev => prev.map(c => 
+                  setComisiones(prev => prev.map(c =>
                     c.id === editingProvId ? { ...c, provenance: name, porcentaje: percentage } : c
                   ));
-                  setAbreviaturas(prev => prev.map(a => 
+                  setAbreviaturas(prev => prev.map(a =>
                     a.id === abrev.id ? { ...a, nombre: name, abreviatura: newProvAbrev.trim().toUpperCase() } : a
                   ));
-                  
+
                   if (currentObra && currentObra.provenance === editingProvId) {
-                    const newClave = generateClave(name, currentObra.autor, currentObra.tipo_obra, currentObra.clave, obras, 
+                    const newClave = generateClave(name, currentObra.autor, currentObra.tipo_obra, currentObra.clave, obras,
                       abreviaturas.map(a => a.id === abrev.id ? { ...a, abreviatura: newProvAbrev.trim().toUpperCase() } : a),
                       tecnicas
                     );
                     setCurrentObra(prev => ({ ...prev, clave: newClave }));
                   }
-                  
+
                   setShowProvModal(false);
                   showToast(`✅ Provenance "${name}" actualizado correctamente`);
                 } else {
@@ -1364,17 +1365,17 @@
                 const abrevResult = await abrevRes.json();
 
                 if (abrevResult.result === 'success') {
-                  setComisiones(prev => prev.map(c => 
+                  setComisiones(prev => prev.map(c =>
                     c.id === editingProvId ? { ...c, provenance: name, porcentaje: percentage } : c
                   ));
-                  setAbreviaturas(prev => [...prev, { 
-                    id: abrevId, 
-                    nombre: name, 
-                    abreviatura: newProvAbrev.trim().toUpperCase(), 
+                  setAbreviaturas(prev => [...prev, {
+                    id: abrevId,
+                    nombre: name,
+                    abreviatura: newProvAbrev.trim().toUpperCase(),
                     tipo: editingProvId,
                     fecha_registro: new Date().toISOString()
                   }]);
-                  
+
                   setShowProvModal(false);
                   showToast(`✅ Provenance "${name}" actualizado correctamente`);
                 } else {
@@ -1414,14 +1415,14 @@
                 body: JSON.stringify({ action: 'abreviatura_delete', data: { id: abrev.id } })
               });
             }
-            
+
             setComisiones(prev => prev.filter(c => c.id !== editingProvId));
             setAbreviaturas(prev => prev.filter(a => a.tipo !== editingProvId));
-            
+
             if (currentObra && currentObra.provenance === editingProvId) {
               setCurrentObra(prev => ({ ...prev, provenance: '' }));
             }
-            
+
             setShowProvModal(false);
             showToast(`✅ Provenance eliminado correctamente`);
           } else {
@@ -1460,7 +1461,7 @@
       // Guardar técnica (crear o actualizar)
       const handleSaveTec = async () => {
         setTecError('');
-        
+
         const name = newTecName.trim();
         if (!name) {
           setTecError('El nombre de la técnica es obligatorio');
@@ -1481,7 +1482,7 @@
           if (tecModalMode === 'add') {
             // Crear nueva técnica
             const tecId = 'tec_' + (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2)));
-            
+
             const payload = {
               id: tecId,
               nombre: name,
@@ -1497,19 +1498,19 @@
             const result = await res.json();
 
             if (result.result === 'success') {
-              const newTec = { 
-                id: tecId, 
-                nombre: name, 
-                abreviatura: abrev, 
+              const newTec = {
+                id: tecId,
+                nombre: name,
+                abreviatura: abrev,
                 tipo: 'tec_' + tecId,
                 fecha_registro: new Date().toISOString()
               };
               setTecnicas(prev => [...prev, newTec]);
               setAbreviaturas(prev => [...prev, newTec]);
-              
+
               // Seleccionar automáticamente la nueva técnica
               handleFormChange('tipo_obra', name);
-              
+
               setShowTecModal(false);
               showToast(`✅ Técnica "${name}" creada con abreviatura "${abrev}"`);
             } else {
@@ -1531,13 +1532,13 @@
             const result = await res.json();
 
             if (result.result === 'success') {
-              setTecnicas(prev => prev.map(t => 
+              setTecnicas(prev => prev.map(t =>
                 t.id === editingTecId ? { ...t, nombre: name, abreviatura: abrev } : t
               ));
-              setAbreviaturas(prev => prev.map(a => 
+              setAbreviaturas(prev => prev.map(a =>
                 a.id === editingTecId ? { ...a, nombre: name, abreviatura: abrev } : a
               ));
-              
+
               // Si la obra actual usa esta técnica, regenerar la clave
               if (currentObra && currentObra.tipo_obra === name) {
                 let provName = '';
@@ -1546,12 +1547,12 @@
                   const com = comisiones.find(c => c.id === provVal);
                   provName = com ? com.provenance : provVal;
                 }
-                const newClave = generateClave(provName, currentObra.autor, currentObra.tipo_obra, currentObra.clave, obras, abreviaturas, 
+                const newClave = generateClave(provName, currentObra.autor, currentObra.tipo_obra, currentObra.clave, obras, abreviaturas,
                   tecnicas.map(t => t.id === editingTecId ? { ...t, abreviatura: abrev } : t)
                 );
                 setCurrentObra(prev => ({ ...prev, clave: newClave }));
               }
-              
+
               setShowTecModal(false);
               showToast(`✅ Técnica "${name}" actualizada correctamente`);
             } else {
@@ -1582,11 +1583,11 @@
           if (result.result === 'success') {
             setTecnicas(prev => prev.filter(t => t.id !== editingTecId));
             setAbreviaturas(prev => prev.filter(a => a.id !== editingTecId));
-            
+
             if (currentObra && currentObra.tipo_obra === newTecName) {
               setCurrentObra(prev => ({ ...prev, tipo_obra: '' }));
             }
-            
+
             setShowTecModal(false);
             showToast(`✅ Técnica eliminada correctamente`);
           } else {
@@ -1603,12 +1604,12 @@
       const formatCurrency = (v, currencyCode = 'MXN') => {
         const val = parseFloat(v);
         if (!Number.isFinite(val)) return '-';
-        try { 
+        try {
           const formatted = new Intl.NumberFormat('es-MX', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
           }).format(val);
-          
+
           switch(currencyCode) {
             case 'USD':
               return `USD $${formatted}`;
@@ -1618,7 +1619,7 @@
             default:
               return `$${formatted}`;
           }
-        } 
+        }
         catch(e) { return `$${val.toLocaleString('es-MX')} ${currencyCode}`; }
       };
 
@@ -1637,10 +1638,10 @@
           showToast('Selecciona un responsable primero', 'error');
           return;
         }
-        
+
         const newVerificationState = !currentObra.verificada;
         setTogglingVerification(true);
-        
+
         try {
           const res = await fetch(API_URL, {
             method: 'POST',
@@ -1654,10 +1655,10 @@
             })
           });
           const result = await res.json();
-          
+
           if (result.result === 'success') {
             setCurrentObra({ ...currentObra, verificada: newVerificationState });
-            setObras(obras.map(o => 
+            setObras(obras.map(o =>
               o.id === currentObra.id ? { ...o, verificada: newVerificationState } : o
             ));
             showToast(newVerificationState ? '✅ Obra verificada' : '🔓 Verificación removida');
@@ -1817,16 +1818,16 @@
         setSaving(true);
         const isExisting = obras.some(o => o.id === currentObra.id);
         const action = isExisting ? 'registro_obra_update' : 'registro_obra_add';
-        
-        const tagsNormalized = Array.isArray(currentObra.tags) 
-          ? currentObra.tags 
+
+        const tagsNormalized = Array.isArray(currentObra.tags)
+          ? currentObra.tags
           : (currentObra.tags || '').toString().split(',').map(t => t.trim()).filter(Boolean);
 
-        const payload = { 
-          ...currentObra, 
-          ancho: normalizeMeasureValue(currentObra.ancho), 
-          alto: normalizeMeasureValue(currentObra.alto), 
-          largo: normalizeMeasureValue(currentObra.largo), 
+        const payload = {
+          ...currentObra,
+          ancho: normalizeMeasureValue(currentObra.ancho),
+          alto: normalizeMeasureValue(currentObra.alto),
+          largo: normalizeMeasureValue(currentObra.largo),
           superficie: parseFloat(currentObra.superficie) || 0,
           precio_lista: parseFloat(currentObra.precio_lista) || 0,
           precio_venta: parseFloat(currentObra.precio_venta) || 0,
@@ -1837,7 +1838,7 @@
         try {
           const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action, data: payload }) });
           const result = await res.json();
-          
+
           if (result && result.result === 'success') {
             if (!isExisting && pendingFiles.length > 0) {
               const actorId = getActorId() || payload.id_responsable;
@@ -1851,12 +1852,12 @@
                     method: 'POST',
                     body: JSON.stringify({
                       action: 'registro_obra_upload_adjunto',
-                      data: { 
-                        id_obra: payload.id, 
-                        id_actor: actorId, 
-                        filename: file.customName || file.name, 
-                        mimeType: file.type || 'application/octet-stream', 
-                        base64 
+                      data: {
+                        id_obra: payload.id,
+                        id_actor: actorId,
+                        filename: file.customName || file.name,
+                        mimeType: file.type || 'application/octet-stream',
+                        base64
                       }
                     })
                   });
@@ -1868,7 +1869,7 @@
             await fetchAllData();
             setView("list");
           } else { showToast("Error: " + (result?.message || 'Desconocido'), "error"); }
-        } catch (e) { showToast("Error al guardar la obra", "error"); } 
+        } catch (e) { showToast("Error al guardar la obra", "error"); }
         finally { setSaving(false); }
       };
 
@@ -1895,7 +1896,7 @@
         const textToCopy = `Ficha de Obra: ${currentObra.nombre_obra || 'N/A'}\nWORK ID: ${currentObra.clave || 'N/A'}\nEstatus: ${currentObra.estatus || 'N/A'}\nTipo: ${currentObra.tipo_obra || 'N/A'}\nAutor: ${currentObra.autor || 'N/A'}\nUbicación: ${currentObra.ubicacion || 'N/A'}\nPrecio Lista: ${formatCurrency(currentObra.precio_lista, currentObra.tipo_moneda)}\nPrecio Venta: ${formatCurrency(currentObra.precio_venta, currentObra.tipo_moneda)}\nPeso: ${currentObra.superficie || 0}\nCliente: ${currentObra.cliente || 'N/A'}\nResponsable: ${resp}\nProvenance: ${prov}\nVerificada: ${verificadaStr}\nObservaciones: ${currentObra.observaciones || 'Ninguna'}\nEnlace: ${window.location.origin}${window.location.pathname}#${currentObra.id}`.trim();
         const textArea = document.createElement("textarea");
         textArea.value = textToCopy; document.body.appendChild(textArea); textArea.select();
-        try { document.execCommand('copy'); showToast("Copiado al portapapeles"); } 
+        try { document.execCommand('copy'); showToast("Copiado al portapapeles"); }
         catch (err) { showToast("Error al copiar", "error"); }
         document.body.removeChild(textArea);
       };
@@ -1920,7 +1921,7 @@
         const obraUrl = `${window.location.origin}${window.location.pathname}#${currentObra.id}`;
         const msg = `Hola, quiero reportar un error en la obra: ${currentObra.nombre_obra} - ${obraUrl}`;
         const url = `https://bot-yy1q.onrender.com/send?number=5212202334062&message=${encodeURIComponent(msg)}`;
-        
+
         showToast("Enviando reporte...");
         try {
           await fetch(url, { mode: 'no-cors' });
@@ -1989,23 +1990,23 @@
 
       return (
         <div className="min-h-screen pb-24 pt-safe">
-          
+
           {/* MODAL PARA AÑADIR/EDITAR PROVENANCE */}
           <div className={`prov-modal-overlay ${showProvModal ? '' : 'hidden'}`}>
             <div className="prov-modal" onClick={(e) => e.stopPropagation()}>
               <h3>{provModalMode === 'add' ? 'Añadir Provenance' : 'Editar Provenance'}</h3>
               <p className="subtitle">
-                {provModalMode === 'add' 
-                  ? 'Registra una nueva fuente de origen para la obra.' 
+                {provModalMode === 'add'
+                  ? 'Registra una nueva fuente de origen para la obra.'
                   : 'Modifica los datos del Provenance seleccionado.'}
               </p>
-              
+
               <div className="space-y-4">
                 <div>
                   <label>Nombre del Provenance</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ej: Galería Norte" 
+                  <input
+                    type="text"
+                    placeholder="Ej: Galería Norte"
                     value={newProvName}
                     onChange={(e) => {
                       setNewProvName(e.target.value);
@@ -2016,10 +2017,10 @@
                 </div>
                 <div>
                   <label>Porcentaje de Comisión (%)</label>
-                  <input 
-                    type="number" 
-                    min="0" 
-                    max="100" 
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
                     step="0.01"
                     placeholder="0.00"
                     value={newProvPercentage}
@@ -2031,9 +2032,9 @@
                 </div>
                 <div>
                   <label>Abreviatura (2-5 caracteres)</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ej: GNT" 
+                  <input
+                    type="text"
+                    placeholder="Ej: GNT"
                     value={newProvAbrev}
                     onChange={(e) => {
                       setNewProvAbrev(e.target.value.toUpperCase());
@@ -2045,10 +2046,10 @@
                 </div>
                 <div className={`error-msg ${provError ? 'visible' : ''}`}>{provError}</div>
               </div>
-              
+
               <div className="btn-row">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="btn-cancel"
                   onClick={() => {
                     setShowProvModal(false);
@@ -2061,8 +2062,8 @@
                   Cancelar
                 </button>
                 {provModalMode === 'edit' && (
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className="btn-danger"
                     onClick={handleDeleteProv}
                     disabled={savingProv}
@@ -2070,8 +2071,8 @@
                     {savingProv ? 'Eliminando...' : '🗑 Eliminar'}
                   </button>
                 )}
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="btn-save"
                   onClick={handleSaveProv}
                   disabled={savingProv}
@@ -2087,17 +2088,17 @@
             <div className="tec-modal" onClick={(e) => e.stopPropagation()}>
               <h3>{tecModalMode === 'add' ? 'Añadir Técnica' : 'Editar Técnica'}</h3>
               <p className="subtitle">
-                {tecModalMode === 'add' 
-                  ? 'Registra una nueva técnica artística.' 
+                {tecModalMode === 'add'
+                  ? 'Registra una nueva técnica artística.'
                   : 'Modifica los datos de la técnica seleccionada.'}
               </p>
-              
+
               <div className="space-y-4">
                 <div>
                   <label>Nombre de la Técnica</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ej: Óleo sobre tela" 
+                  <input
+                    type="text"
+                    placeholder="Ej: Óleo sobre tela"
                     value={newTecName}
                     onChange={(e) => {
                       setNewTecName(e.target.value);
@@ -2108,9 +2109,9 @@
                 </div>
                 <div>
                   <label>Abreviatura (2-5 caracteres)</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ej: OLO" 
+                  <input
+                    type="text"
+                    placeholder="Ej: OLO"
                     value={newTecAbrev}
                     onChange={(e) => {
                       setNewTecAbrev(e.target.value.toUpperCase());
@@ -2122,10 +2123,10 @@
                 </div>
                 <div className={`error-msg ${tecError ? 'visible' : ''}`}>{tecError}</div>
               </div>
-              
+
               <div className="btn-row">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="btn-cancel"
                   onClick={() => {
                     setShowTecModal(false);
@@ -2137,8 +2138,8 @@
                   Cancelar
                 </button>
                 {tecModalMode === 'edit' && (
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className="btn-danger"
                     onClick={handleDeleteTec}
                     disabled={savingTec}
@@ -2146,8 +2147,8 @@
                     {savingTec ? 'Eliminando...' : '🗑 Eliminar'}
                   </button>
                 )}
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="btn-save"
                   onClick={handleSaveTec}
                   disabled={savingTec}
@@ -2237,7 +2238,7 @@
               <header className="pt-4 pb-2">
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Ajustes</h1>
               </header>
-              
+
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 space-y-6 shadow-sm">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
                   <div>
@@ -2261,7 +2262,7 @@
                   {viewedIds.length > 0 && <button onClick={() => setViewedIds(clearViewedHistory())} className="text-xs text-red-500 font-bold">Limpiar</button>}
                 </div>
                 <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar pr-2">
-                  {viewedIds.length === 0 ? <p className="text-sm text-slate-500 text-center py-4">No hay obras vistas recientemente.</p> : 
+                  {viewedIds.length === 0 ? <p className="text-sm text-slate-500 text-center py-4">No hay obras vistas recientemente.</p> :
                     viewedIds.map(id => {
                       const o = obras.find(x => x.id === id);
                       if (!o) return null;
@@ -2283,7 +2284,7 @@
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-bold text-slate-800 dark:text-slate-100">Gestionar Provenance</h3>
-                  <button 
+                  <button
                     onClick={handleOpenAddProv}
                     className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95"
                   >
@@ -2310,8 +2311,8 @@
                             </div>
                             <p className="text-xs text-slate-500">{c.porcentaje}% comisión</p>
                           </div>
-                          <button 
-                            onClick={() => handleOpenEditProv(c)} 
+                          <button
+                            onClick={() => handleOpenEditProv(c)}
                             className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                           >
                             <IconCog className="w-5 h-5" />
@@ -2327,7 +2328,7 @@
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-bold text-slate-800 dark:text-slate-100">Gestionar Técnicas</h3>
-                  <button 
+                  <button
                     onClick={handleOpenAddTec}
                     className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95"
                   >
@@ -2350,8 +2351,8 @@
                               </span>
                             </div>
                           </div>
-                          <button 
-                            onClick={() => handleOpenEditTec(t)} 
+                          <button
+                            onClick={() => handleOpenEditTec(t)}
                             className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                           >
                             <IconCog className="w-5 h-5" />
@@ -2407,7 +2408,7 @@
                   <button onClick={() => handleEditObra(currentObra)} className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors"><IconEdit /></button>
                 </div>
               </nav>
-              
+
               <div className="p-4 space-y-4 max-w-lg mx-auto">
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-800">
                   <div className="flex justify-between items-start mb-4">
@@ -2417,7 +2418,7 @@
                     </div>
                     <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase shrink-0">{currentObra.estatus}</span>
                   </div>
-                  
+
                   <div className="space-y-5 pt-4 border-t border-slate-100 dark:border-slate-800">
                     <div className="grid grid-cols-2 gap-4">
                       <div onClick={() => { setCurrentAuthor(currentObra.autor); setView("author"); }} className="cursor-pointer group p-2 -m-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
@@ -2436,7 +2437,7 @@
                       <div><p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Precio Lista</p><p className="text-lg font-black text-slate-700 dark:text-slate-300">{formatCurrency(currentObra.precio_lista, currentObra.tipo_moneda)}</p></div>
                       <div><p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Precio Venta</p><p className="text-lg font-black text-emerald-600 dark:text-emerald-400">{formatCurrency(currentObra.precio_venta, currentObra.tipo_moneda)}</p></div>
                     </div>
-                    
+
                     {(() => {
                       const m = getDisplayedMeasures(currentObra, uiSettings.rotateMeasures);
                       return (
@@ -2461,13 +2462,13 @@
                             {currentObra.verificada ? '✅ Verificada' : '⏳ Pendiente de verificación'}
                           </p>
                           <p className="text-[10px] text-slate-400">
-                            {currentObra.verificada 
-                              ? 'Esta obra ha sido verificada y validada' 
+                            {currentObra.verificada
+                              ? 'Esta obra ha sido verificada y validada'
                               : 'Esta obra aún no ha sido verificada'}
                           </p>
                         </div>
                       </div>
-                      <button 
+                      <button
                         onClick={handleToggleVerification}
                         disabled={togglingVerification}
                         className={`px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
@@ -2523,7 +2524,7 @@
                     ))}
                   </div>
                 )}
-                
+
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-800 space-y-4">
                   <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Información de Ficha Técnica</h3>
                   <div className="grid grid-cols-2 gap-4">
@@ -2561,7 +2562,7 @@
                 <h2 className="font-bold">{obras.find(o => o.id === currentObra.id) ? 'Editar Obra' : 'Nueva Obra'}</h2>
                 <div className="w-16"></div>
               </nav>
-              
+
               <form onSubmit={handleSave} className="p-4 space-y-6 max-w-2xl mx-auto">
                 <section className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm space-y-4">
                   <div className="flex items-center justify-between gap-3">
@@ -2587,9 +2588,9 @@
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Técnica</label>
                       <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-2 items-end">
-                        <select 
-                          className="w-full min-w-0 p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-xs" 
-                          value={currentObra.tipo_obra || ''} 
+                        <select
+                          className="w-full min-w-0 p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-xs"
+                          value={currentObra.tipo_obra || ''}
                           onChange={e => {
                             if (e.target.value === '__add_tecnica__') {
                               handleOpenAddTec();
@@ -2608,7 +2609,7 @@
                           ))}
                         </select>
                         {currentObra.tipo_obra && (
-                          <button 
+                          <button
                             type="button"
                             onClick={() => {
                               const tec = tecnicas.find(t => t.nombre === currentObra.tipo_obra);
@@ -2624,9 +2625,9 @@
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Provenance</label>
                       <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-2 items-end">
-                        <select 
-                          className="w-full min-w-0 p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-xs" 
-                          value={currentObra.provenance || ''} 
+                        <select
+                          className="w-full min-w-0 p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-xs"
+                          value={currentObra.provenance || ''}
                           onChange={e => {
                             if (e.target.value === '__add_provenance__') {
                               handleOpenAddProv();
@@ -2648,7 +2649,7 @@
                           })}
                         </select>
                         {currentObra.provenance && (
-                          <button 
+                          <button
                             type="button"
                             onClick={() => {
                               const prov = comisiones.find(c => c.id === currentObra.provenance);
@@ -2779,16 +2780,16 @@
                             {currentObra.verificada ? '✅ Verificada' : '⏳ Pendiente de verificación'}
                           </p>
                           <p className="text-[10px] text-slate-400">
-                            {currentObra.verificada 
-                              ? 'Esta obra ha sido verificada' 
+                            {currentObra.verificada
+                              ? 'Esta obra ha sido verificada'
                               : 'Marcar como verificada al guardar'}
                           </p>
                         </div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
                           checked={currentObra.verificada === true}
                           onChange={(e) => handleFormChange('verificada', e.target.checked)}
                         />
@@ -2838,10 +2839,10 @@
                       {!hasImageOriginalAdjunto() && (
                         <>
                           <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleUploadImagenOriginal} />
-                          <button 
-                            type="button" 
-                            disabled={uploadingAdj} 
-                            onClick={() => imageInputRef.current?.click()} 
+                          <button
+                            type="button"
+                            disabled={uploadingAdj}
+                            onClick={() => imageInputRef.current?.click()}
                             className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-600 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex justify-center items-center gap-2 disabled:opacity-50"
                           >
                             {uploadingAdj ? 'Subiendo...' : '⬆ Subir Imagen Original'}
@@ -2917,10 +2918,10 @@
                       )}
 
                       <input ref={techInputRef} type="file" multiple className="hidden" onChange={handleUploadTecnicos} />
-                      <button 
-                        type="button" 
-                        disabled={!hasImageOriginalAdjunto() || uploadingAdj} 
-                        onClick={() => techInputRef.current?.click()} 
+                      <button
+                        type="button"
+                        disabled={!hasImageOriginalAdjunto() || uploadingAdj}
+                        onClick={() => techInputRef.current?.click()}
                         className={`w-full py-3 border rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex justify-center items-center gap-2 ${hasImageOriginalAdjunto() && !uploadingAdj ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600' : 'bg-slate-200 dark:bg-slate-700 text-slate-400 border-slate-300 dark:border-slate-600 cursor-not-allowed'}`}
                       >
                         {uploadingAdj ? 'Subiendo...' : '⬆ Subir Documentos técnicos'}
@@ -2931,7 +2932,7 @@
                     </div>
                   </div>
                 </section>
-                
+
                 <button disabled={saving} type="submit" className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-lg flex justify-center items-center gap-2 active:scale-95 transition-all disabled:opacity-50">
                   {saving ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><IconSave /> Guardar Registro</>}
                 </button>
@@ -2957,8 +2958,8 @@
                   <IconList className="w-6 h-6" />
                   <span className="text-[10px] font-semibold">Obras</span>
                 </button>
-                <button 
-                  onClick={handleCreateNewObra} 
+                <button
+                  onClick={handleCreateNewObra}
                   className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${!isDataLoaded ? 'opacity-50 cursor-not-allowed' : 'hover:text-slate-600 dark:hover:text-slate-300'} text-slate-400`}
                   disabled={!isDataLoaded}
                   title={!isDataLoaded ? 'Espera a que los datos carguen' : 'Crear nueva obra'}
