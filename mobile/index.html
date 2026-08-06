@@ -401,12 +401,17 @@
       color: #64748b;
     }
 
-    /* Estilos para el grid de imágenes */
+    /* Estilos para el grid de imágenes - MODIFICADO para 6 en escritorio y 4 en móvil */
     .discover-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 2px;
       padding: 2px;
+    }
+    @media (min-width: 768px) {
+      .discover-grid {
+        grid-template-columns: repeat(6, 1fr);
+      }
     }
     .discover-grid .grid-item {
       aspect-ratio: 1 / 1;
@@ -444,6 +449,53 @@
     .dark .discover-grid .grid-item .fallback-text {
       background: #0f172a;
       color: #64748b;
+    }
+
+    /* Estilos para sugerencias de tags */
+    .tags-suggestions {
+      position: absolute;
+      z-index: 20;
+      width: 100%;
+      margin-top: 4px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      max-height: 160px;
+      overflow-y: auto;
+    }
+    .dark .tags-suggestions {
+      background: #1e293b;
+      border-color: #334155;
+    }
+    .tags-suggestion-item {
+      padding: 8px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .dark .tags-suggestion-item {
+      border-bottom-color: #334155;
+    }
+    .tags-suggestion-item:last-child {
+      border-bottom: none;
+    }
+    .tags-suggestion-item:hover {
+      background: #f1f5f9;
+    }
+    .dark .tags-suggestion-item:hover {
+      background: #334155;
+    }
+    .tags-suggestion-item .hash {
+      color: #6366f1;
+      font-weight: 700;
+    }
+    .dark .tags-suggestion-item .hash {
+      color: #818cf8;
     }
   </style>
 </head>
@@ -602,7 +654,7 @@
             const cleanTecnica = tecnica.trim();
             let abreviaturaEncontrada = null;
 
-            // Buscar en la lista de técnicas (de la hoja Abreviaturas con tipo 'tec_')
+            // Primero buscar coincidencia exacta (prioritario)
             for (const tec of tecnicasList) {
                 if (tec.nombre && tec.nombre.toLowerCase() === cleanTecnica.toLowerCase()) {
                     abreviaturaEncontrada = tec.abreviatura;
@@ -610,7 +662,7 @@
                 }
             }
 
-            // Si no se encontró, buscar por coincidencia parcial
+            // Si no se encontró exacta, buscar por coincidencia parcial
             if (!abreviaturaEncontrada) {
                 const tecLower = cleanTecnica.toLowerCase();
                 for (const tec of tecnicasList) {
@@ -1000,6 +1052,9 @@
       const [uiSettings, setUiSettings] = useState(() => getUiSettings());
       const [togglingVerification, setTogglingVerification] = useState(false);
 
+      // --- Estado para sugerencias de tags ---
+      const [tagsSuggestions, setTagsSuggestions] = useState([]);
+
       // --- Estado para el modal de Provenance ---
       const [showProvModal, setShowProvModal] = useState(false);
       const [provModalMode, setProvModalMode] = useState('add');
@@ -1024,9 +1079,86 @@
 
       const imageInputRef = useRef(null);
       const techInputRef = useRef(null);
+      const tagsInputRef = useRef(null);
 
       // Obtener listas de sugerencias (solo nombres, no abreviaturas)
       const autorSuggestions = useMemo(() => Object.keys(AUTOR_ABREVIATURAS).sort(), []);
+
+      // Extraer todas las tags únicas de las obras para sugerencias
+      const allTags = useMemo(() => {
+        const tagsSet = new Set();
+        obras.forEach(obra => {
+          if (obra.tags && Array.isArray(obra.tags)) {
+            obra.tags.forEach(tag => {
+              if (tag && tag.trim()) tagsSet.add(tag.trim());
+            });
+          }
+        });
+        return Array.from(tagsSet).sort();
+      }, [obras]);
+
+      // Función para obtener sugerencias de tags filtradas
+      const getTagsSuggestions = (input) => {
+        if (!input || !input.trim()) return [];
+        const inputLower = input.toLowerCase().trim();
+        const inputWords = inputLower.split(/[,\s]+/).filter(w => w.length > 0);
+        const lastWord = inputWords[inputWords.length - 1] || '';
+
+        if (!lastWord) return [];
+
+        return allTags.filter(tag =>
+          tag.toLowerCase().includes(lastWord) &&
+          !input.split(/[,\s]+/).map(w => w.trim().toLowerCase()).includes(tag.toLowerCase())
+        ).slice(0, 10);
+      };
+
+      // Función CORREGIDA para añadir una tag sugerida - reemplaza la palabra parcial
+      const addSuggestedTag = (suggestedTag) => {
+        if (!currentObra) return;
+        const currentValue = (currentObra.tags || '').toString();
+
+        // Obtener las palabras actuales
+        const words = currentValue.split(/[,\s]+/).filter(w => w.trim().length > 0);
+
+        // Si no hay palabras, simplemente añadir la tag
+        if (words.length === 0) {
+          handleFormChange('tags', suggestedTag);
+          setTagsSuggestions([]);
+          tagsInputRef.current?.focus();
+          return;
+        }
+
+        // Reemplazar la última palabra (la que se está escribiendo) por la tag sugerida
+        const lastWord = words[words.length - 1];
+        const lastWordIndex = currentValue.lastIndexOf(lastWord);
+
+        // Construir el nuevo valor: todo lo anterior + la tag sugerida
+        const beforeLastWord = currentValue.substring(0, lastWordIndex);
+        const afterLastWord = currentValue.substring(lastWordIndex + lastWord.length);
+
+        // Determinar si hay un separador antes de la última palabra (coma o espacio)
+        const trimmedBefore = beforeLastWord.trimEnd();
+        const hasSeparator = trimmedBefore.length > 0 && (trimmedBefore.endsWith(',') || trimmedBefore.endsWith(' '));
+
+        let newValue = '';
+        if (hasSeparator) {
+          // Si ya hay un separador, mantenerlo
+          newValue = trimmedBefore + ' ' + suggestedTag + afterLastWord;
+        } else if (trimmedBefore.length > 0) {
+          // Si no hay separador, añadir coma y espacio
+          newValue = trimmedBefore + ', ' + suggestedTag + afterLastWord;
+        } else {
+          // Si es la única palabra
+          newValue = suggestedTag + afterLastWord;
+        }
+
+        // Limpiar espacios redundantes
+        newValue = newValue.replace(/\s*,\s*/g, ', ').replace(/\s+/g, ' ').trim();
+
+        handleFormChange('tags', newValue);
+        setTagsSuggestions([]);
+        tagsInputRef.current?.focus();
+      };
 
       // Opciones de ubicación
       const ubicacionOptions = [
@@ -1220,6 +1352,7 @@
         setView("form");
       };
 
+      // --- Función handleFormChange CORREGIDA ---
       const handleFormChange = (field, value) => {
         if (!currentObra) return;
         const updated = { ...currentObra, [field]: value };
@@ -1231,7 +1364,29 @@
             const com = comisiones.find(c => c.id === provVal);
             provName = com ? com.provenance : provVal;
           }
-          updated.clave = generateClave(provName, updated.autor, updated.tipo_obra, updated.clave, obras, abreviaturas, tecnicas);
+
+          // Obtener el nombre de la técnica desde el valor actualizado
+          let tecName = updated.tipo_obra || '';
+
+          // Buscar la técnica en la lista actualizada de técnicas
+          let tecAbrev = '';
+          if (tecName) {
+            const tec = tecnicas.find(t => t.nombre === tecName);
+            if (tec) {
+              tecAbrev = tec.abreviatura;
+            }
+          }
+
+          // Generar la clave usando la técnica encontrada
+          updated.clave = generateClave(
+            provName,
+            updated.autor,
+            tecName,
+            updated.clave,
+            obras,
+            abreviaturas,
+            tecnicas
+          );
         }
 
         setCurrentObra(updated);
@@ -1478,7 +1633,7 @@
         }
       };
 
-      // --- FUNCIONES PARA TÉCNICA ---
+      // --- FUNCIONES PARA TÉCNICA CORREGIDAS ---
 
       const handleOpenAddTec = () => {
         setTecModalMode('add');
@@ -1543,10 +1698,40 @@
                 tipo: 'tec_' + tecId,
                 fecha_registro: new Date().toISOString()
               };
-              setTecnicas(prev => [...prev, newTec]);
-              setAbreviaturas(prev => [...prev, newTec]);
 
-              handleFormChange('tipo_obra', name);
+              // Actualizar ambas listas
+              const updatedTecnicas = [...tecnicas, newTec];
+              const updatedAbreviaturas = [...abreviaturas, newTec];
+
+              setTecnicas(updatedTecnicas);
+              setAbreviaturas(updatedAbreviaturas);
+
+              // Si hay una obra actual, actualizar su clave con la nueva técnica
+              if (currentObra) {
+                const provVal = currentObra.provenance;
+                let provName = '';
+                if (provVal) {
+                  const com = comisiones.find(c => c.id === provVal);
+                  provName = com ? com.provenance : provVal;
+                }
+
+                // Regenerar clave usando la nueva técnica
+                const newClave = generateClave(
+                  provName,
+                  currentObra.autor,
+                  name, // Usar el nombre exacto de la técnica
+                  currentObra.clave,
+                  obras,
+                  updatedAbreviaturas,
+                  updatedTecnicas
+                );
+
+                setCurrentObra(prev => ({
+                  ...prev,
+                  tipo_obra: name,
+                  clave: newClave
+                }));
+              }
 
               setShowTecModal(false);
               showToast(`✅ Técnica "${name}" creada con abreviatura "${abrev}"`);
@@ -1568,22 +1753,32 @@
             const result = await res.json();
 
             if (result.result === 'success') {
-              setTecnicas(prev => prev.map(t =>
+              const updatedTecnicas = tecnicas.map(t =>
                 t.id === editingTecId ? { ...t, nombre: name, abreviatura: abrev } : t
-              ));
-              setAbreviaturas(prev => prev.map(a =>
+              );
+              const updatedAbreviaturas = abreviaturas.map(a =>
                 a.id === editingTecId ? { ...a, nombre: name, abreviatura: abrev } : a
-              ));
+              );
 
+              setTecnicas(updatedTecnicas);
+              setAbreviaturas(updatedAbreviaturas);
+
+              // Si la obra actual usa esta técnica, actualizar la clave
               if (currentObra && currentObra.tipo_obra === name) {
-                let provName = '';
                 const provVal = currentObra.provenance;
+                let provName = '';
                 if (provVal) {
                   const com = comisiones.find(c => c.id === provVal);
                   provName = com ? com.provenance : provVal;
                 }
-                const newClave = generateClave(provName, currentObra.autor, currentObra.tipo_obra, currentObra.clave, obras, abreviaturas,
-                  tecnicas.map(t => t.id === editingTecId ? { ...t, abreviatura: abrev } : t)
+                const newClave = generateClave(
+                  provName,
+                  currentObra.autor,
+                  currentObra.tipo_obra,
+                  currentObra.clave,
+                  obras,
+                  updatedAbreviaturas,
+                  updatedTecnicas
                 );
                 setCurrentObra(prev => ({ ...prev, clave: newClave }));
               }
@@ -1855,7 +2050,7 @@
 
         const tagsNormalized = Array.isArray(currentObra.tags)
           ? currentObra.tags
-          : (currentObra.tags || '').toString().split(',').map(t => t.trim()).filter(Boolean);
+          : (currentObra.tags || '').toString().split(/[,\s]+/).map(t => t.trim()).filter(Boolean);
 
         const payload = {
           ...currentObra,
@@ -2161,12 +2356,12 @@
             </div>
           </div>
 
-          {/* VISTA: DISCOVER - Grid de imágenes estilo Instagram */}
+          {/* VISTA: DISCOVER - Grid de imágenes estilo Instagram - MODIFICADO: orden inverso y grid responsive */}
           {view === "discover" && (
             <div className="animate-fade-in">
               <header className="px-4 pt-6 pb-2">
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Descubrir</h1>
-                <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">Explora tu colección</p>
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Catalogo</h1>
+                <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">base de datos de obra</p>
               </header>
               {loading ? (
                 <BoxLoader message="Cargando obras..." />
@@ -2174,7 +2369,8 @@
                 <p className="text-center text-slate-500 mt-10">No hay obras registradas aún.</p>
               ) : (
                 <div className="discover-grid">
-                  {obras.map(obra => {
+                  {/* Mostrar las obras en orden inverso (más recientes primero) */}
+                  {[...obras].reverse().map(obra => {
                     const imgUrl = getFirstImage(obra);
                     return (
                       <div
@@ -2774,9 +2970,46 @@
                 <section className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm space-y-4">
                   <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Metadata</h3>
                   <div className="space-y-4">
-                    <div>
+                    <div className="relative">
                       <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Tags</label>
-                      <input type="text" placeholder="abstracto, oleo, gran_formato" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.tags || ''} onChange={e => handleFormChange('tags', e.target.value)} />
+                      <input
+                        ref={tagsInputRef}
+                        type="text"
+                        placeholder="abstracto, oleo, gran_formato"
+                        className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+                        value={currentObra.tags || ''}
+                        onChange={e => {
+                          handleFormChange('tags', e.target.value);
+                          const suggestions = getTagsSuggestions(e.target.value);
+                          setTagsSuggestions(suggestions);
+                        }}
+                        onFocus={e => {
+                          const suggestions = getTagsSuggestions(e.target.value);
+                          setTagsSuggestions(suggestions);
+                        }}
+                        onBlur={() => {
+                          setTimeout(() => setTagsSuggestions([]), 200);
+                        }}
+                      />
+
+                      {/* Sugerencias de tags */}
+                      {tagsSuggestions.length > 0 && (
+                        <div className="tags-suggestions">
+                          {tagsSuggestions.map(tag => (
+                            <div
+                              key={tag}
+                              className="tags-suggestion-item"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                addSuggestedTag(tag);
+                              }}
+                            >
+                              <span className="hash">#</span>
+                              <span>{tag}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Observaciones</label>
@@ -2966,7 +3199,7 @@
               <div className="flex justify-around items-center h-16 max-w-md mx-auto px-2">
                 <button onClick={() => setView('discover')} className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${view === 'discover' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}>
                   <IconCompass className="w-6 h-6" />
-                  <span className="text-[10px] font-semibold">Descubrir</span>
+                  <span className="text-[10px] font-semibold">Catalogo</span>
                 </button>
                 <button onClick={() => setView('list')} className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${view === 'list' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}>
                   <IconList className="w-6 h-6" />
