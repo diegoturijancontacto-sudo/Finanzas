@@ -401,6 +401,147 @@
       color: #64748b;
     }
 
+    /* Modal para Autor */
+    .autor-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+      animation: fadeIn 0.2s ease;
+    }
+    .autor-modal-overlay.hidden {
+      display: none;
+    }
+    .autor-modal {
+      background: white;
+      border-radius: 24px;
+      max-width: 480px;
+      width: 100%;
+      padding: 28px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      animation: slideUp 0.25s ease;
+    }
+    .dark .autor-modal {
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+    .autor-modal h3 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+    .dark .autor-modal h3 {
+      color: #f1f5f9;
+    }
+    .autor-modal .subtitle {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 20px;
+    }
+    .dark .autor-modal .subtitle {
+      color: #94a3b8;
+    }
+    .autor-modal label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      margin-bottom: 4px;
+    }
+    .autor-modal input, .autor-modal select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 15px;
+      background: #f8fafc;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .dark .autor-modal input, .dark .autor-modal select {
+      background: #0f172a;
+      border-color: #334155;
+      color: #f1f5f9;
+    }
+    .autor-modal input:focus, .autor-modal select:focus {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.35);
+    }
+    .autor-modal .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .autor-modal .btn-row button {
+      flex: 1;
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 14px;
+      transition: all 0.15s;
+      cursor: pointer;
+      border: none;
+    }
+    .autor-modal .btn-cancel {
+      background: #f1f5f9;
+      color: #475569;
+    }
+    .dark .autor-modal .btn-cancel {
+      background: #334155;
+      color: #94a3b8;
+    }
+    .autor-modal .btn-cancel:hover {
+      background: #e2e8f0;
+    }
+    .autor-modal .btn-save {
+      background: #4f46e5;
+      color: white;
+    }
+    .autor-modal .btn-save:hover {
+      background: #4338ca;
+    }
+    .autor-modal .btn-save:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .autor-modal .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+    .autor-modal .btn-danger:hover {
+      background: #dc2626;
+    }
+    .autor-modal .btn-danger:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .autor-modal .error-msg {
+      color: #ef4444;
+      font-size: 12px;
+      margin-top: 8px;
+      display: none;
+    }
+    .autor-modal .error-msg.visible {
+      display: block;
+    }
+    .autor-modal .hint-text {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+    .dark .autor-modal .hint-text {
+      color: #64748b;
+    }
+
     /* Estilos para el grid de imágenes - MODIFICADO para 6 en escritorio y 4 en móvil */
     .discover-grid {
       display: grid;
@@ -508,7 +649,7 @@
     // URL de tu Apps Script
     const API_URL = "https://script.google.com/macros/s/AKfycbxyBzZ7duM3pKtobXHj8A2NgFpIarP5WPS71TKTH2uFMOXXL8rzo68-blixF8kgCwvl8w/exec";
 
-    // --- LISTA COMPLETA DE AUTORES Y ABREVIATURAS ---
+    // --- LISTA COMPLETA DE AUTORES Y ABREVIATURAS (fallback) ---
     const AUTOR_ABREVIATURAS = {
         'Abelardo López': 'ALP',
         'Alberto Aragón': 'ARG',
@@ -555,7 +696,7 @@
     const TECH_ADJUNTO_CODE = 'TD';
 
     // --- FUNCIÓN DE GENERACIÓN DE CLAVE EXACTA (MODIFICADA para usar abreviaturas de la hoja) ---
-    function generateClave(provenanceName, artista, tecnica, claveActual, allRegistrosObra = [], abreviaturasList = [], tecnicasList = []) {
+    function generateClave(provenanceName, artista, tecnica, claveActual, allRegistrosObra = [], abreviaturasList = [], tecnicasList = [], autoresList = []) {
         let numStr = '0001';
 
         if (claveActual && claveActual.length >= 4) {
@@ -620,23 +761,48 @@
 
         const bloque1 = `${numStr}${provStr}`;
 
-        // --- BLOQUE 2: AUTOR ---
+        // --- BLOQUE 2: AUTOR (USANDO ABREVIATURAS DE LA HOJA) ---
         let artistStr = '';
         if (artista && artista.trim() !== '') {
             const cleanArtista = artista.trim();
             let abreviaturaEncontrada = null;
-            const artistaLower = cleanArtista.toLowerCase();
 
-            for (const [nombreAutor, abreviatura] of Object.entries(AUTOR_ABREVIATURAS)) {
-                if (nombreAutor.toLowerCase() === artistaLower) {
-                    abreviaturaEncontrada = abreviatura;
+            // Buscar en la lista de autores del backend
+            for (const autor of autoresList) {
+                if (autor.nombre && autor.nombre.toLowerCase() === cleanArtista.toLowerCase()) {
+                    abreviaturaEncontrada = autor.abreviatura;
                     break;
+                }
+            }
+
+            // Si no se encontró, buscar por coincidencia parcial
+            if (!abreviaturaEncontrada) {
+                const artistaLower = cleanArtista.toLowerCase();
+                for (const autor of autoresList) {
+                    if (autor.nombre) {
+                        const nombreLower = autor.nombre.toLowerCase();
+                        if (nombreLower.includes(artistaLower) || artistaLower.includes(nombreLower)) {
+                            abreviaturaEncontrada = autor.abreviatura;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Si no se encontró en el backend, usar el mapa de fallback
+            if (!abreviaturaEncontrada) {
+                for (const [nombreAutor, abreviatura] of Object.entries(AUTOR_ABREVIATURAS)) {
+                    if (nombreAutor.toLowerCase() === cleanArtista.toLowerCase()) {
+                        abreviaturaEncontrada = abreviatura;
+                        break;
+                    }
                 }
             }
 
             if (abreviaturaEncontrada) {
                 artistStr = abreviaturaEncontrada;
             } else {
+                // Si no, generar una abreviatura
                 const wordsArtista = cleanArtista.split(/\s+/);
                 const pNombre = wordsArtista[0] || '';
                 const sNombre = wordsArtista[1] || '';
@@ -1026,6 +1192,7 @@
       const [comisiones, setComisiones] = useState([]);
       const [abreviaturas, setAbreviaturas] = useState([]);
       const [tecnicas, setTecnicas] = useState([]);
+      const [autores, setAutores] = useState([]); // <-- Nuevo estado para autores
       const [search, setSearch] = useState("");
 
       const [filterStatus, setFilterStatus] = useState("");
@@ -1074,6 +1241,15 @@
       const [savingTec, setSavingTec] = useState(false);
       const [tecError, setTecError] = useState('');
 
+      // --- Estado para el modal de Autor ---
+      const [showAutorModal, setShowAutorModal] = useState(false);
+      const [autorModalMode, setAutorModalMode] = useState('add');
+      const [editingAutorId, setEditingAutorId] = useState(null);
+      const [newAutorName, setNewAutorName] = useState('');
+      const [newAutorAbrev, setNewAutorAbrev] = useState('');
+      const [savingAutor, setSavingAutor] = useState(false);
+      const [autorError, setAutorError] = useState('');
+
       // --- REF para controlar si se puede acceder al formulario ---
       const [isDataLoaded, setIsDataLoaded] = useState(false);
 
@@ -1082,7 +1258,7 @@
       const tagsInputRef = useRef(null);
 
       // Obtener listas de sugerencias (solo nombres, no abreviaturas)
-      const autorSuggestions = useMemo(() => Object.keys(AUTOR_ABREVIATURAS).sort(), []);
+      const autorSuggestions = useMemo(() => autores.map(a => a.nombre).sort(), [autores]);
 
       // Extraer todas las tags únicas de las obras para sugerencias
       const allTags = useMemo(() => {
@@ -1280,13 +1456,16 @@
             setResponsables(data.responsables || []);
             setComisiones(data.comisiones || []);
 
-            if (data.abreviaturas) {
-              setAbreviaturas(data.abreviaturas);
-              setTecnicas(data.abreviaturas.filter(ab => ab.tipo && ab.tipo.startsWith('tec_')));
-            } else {
-              setAbreviaturas([]);
-              setTecnicas([]);
-            }
+            // Cargar autores desde el backend (de la hoja Abreviaturas con tipo 'autor_')
+            const autoresData = (data.abreviaturas || []).filter(a => a.tipo && a.tipo.startsWith('autor_'));
+            setAutores(autoresData);
+
+            // Cargar técnicas (tipo 'tec_')
+            const tecnicasData = (data.abreviaturas || []).filter(a => a.tipo && a.tipo.startsWith('tec_'));
+            setTecnicas(tecnicasData);
+
+            // Cargar todas las abreviaturas
+            setAbreviaturas(data.abreviaturas || []);
 
             setIsDataLoaded(true);
 
@@ -1331,7 +1510,7 @@
           fecha_registro: today,
           verificada: false
         };
-        newObra.clave = generateClave('', '', '', '', obras, abreviaturas, tecnicas);
+        newObra.clave = generateClave('', '', '', '', obras, abreviaturas, tecnicas, autores);
         setCurrentObra(newObra);
         setPendingFiles([]);
         setSelectedTechAdj('RW');
@@ -1368,24 +1547,19 @@
           // Obtener el nombre de la técnica desde el valor actualizado
           let tecName = updated.tipo_obra || '';
 
-          // Buscar la técnica en la lista actualizada de técnicas
-          let tecAbrev = '';
-          if (tecName) {
-            const tec = tecnicas.find(t => t.nombre === tecName);
-            if (tec) {
-              tecAbrev = tec.abreviatura;
-            }
-          }
+          // Obtener el nombre del autor desde el valor actualizado
+          let autorName = updated.autor || '';
 
-          // Generar la clave usando la técnica encontrada
+          // Generar la clave usando el autor y la técnica
           updated.clave = generateClave(
             provName,
-            updated.autor,
+            autorName,
             tecName,
             updated.clave,
             obras,
             abreviaturas,
-            tecnicas
+            tecnicas,
+            autores
           );
         }
 
@@ -1535,7 +1709,8 @@
                   if (currentObra && currentObra.provenance === editingProvId) {
                     const newClave = generateClave(name, currentObra.autor, currentObra.tipo_obra, currentObra.clave, obras,
                       abreviaturas.map(a => a.id === abrev.id ? { ...a, abreviatura: newProvAbrev.trim().toUpperCase() } : a),
-                      tecnicas
+                      tecnicas,
+                      autores
                     );
                     setCurrentObra(prev => ({ ...prev, clave: newClave }));
                   }
@@ -1633,7 +1808,7 @@
         }
       };
 
-      // --- FUNCIONES PARA TÉCNICA CORREGIDAS ---
+      // --- FUNCIONES PARA TÉCNICA ---
 
       const handleOpenAddTec = () => {
         setTecModalMode('add');
@@ -1723,7 +1898,8 @@
                   currentObra.clave,
                   obras,
                   updatedAbreviaturas,
-                  updatedTecnicas
+                  updatedTecnicas,
+                  autores
                 );
 
                 setCurrentObra(prev => ({
@@ -1778,7 +1954,8 @@
                   currentObra.clave,
                   obras,
                   updatedAbreviaturas,
-                  updatedTecnicas
+                  updatedTecnicas,
+                  autores
                 );
                 setCurrentObra(prev => ({ ...prev, clave: newClave }));
               }
@@ -1827,6 +2004,203 @@
           setTecError('Error de conexión con el servidor');
         } finally {
           setSavingTec(false);
+        }
+      };
+
+      // --- FUNCIONES PARA AUTOR ---
+
+      const handleOpenAddAutor = () => {
+        setAutorModalMode('add');
+        setEditingAutorId(null);
+        setNewAutorName('');
+        setNewAutorAbrev('');
+        setAutorError('');
+        setShowAutorModal(true);
+      };
+
+      const handleOpenEditAutor = (autor) => {
+        setAutorModalMode('edit');
+        setEditingAutorId(autor.id);
+        setNewAutorName(autor.nombre || '');
+        setNewAutorAbrev(autor.abreviatura || '');
+        setAutorError('');
+        setShowAutorModal(true);
+      };
+
+      const handleSaveAutor = async () => {
+        setAutorError('');
+
+        const name = newAutorName.trim();
+        if (!name) {
+          setAutorError('El nombre del autor es obligatorio');
+          return;
+        }
+        const abrev = newAutorAbrev.trim().toUpperCase();
+        if (!abrev) {
+          setAutorError('La abreviatura es obligatoria');
+          return;
+        }
+        if (abrev.length < 2 || abrev.length > 5) {
+          setAutorError('La abreviatura debe tener entre 2 y 5 caracteres');
+          return;
+        }
+
+        setSavingAutor(true);
+        try {
+          if (autorModalMode === 'add') {
+            const autorId = 'autor_' + (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2)));
+
+            const payload = {
+              id: autorId,
+              nombre: name,
+              abreviatura: abrev,
+              tipo: 'autor_' + autorId,
+              fecha_registro: new Date().toISOString()
+            };
+
+            const res = await fetch(API_URL, {
+              method: 'POST',
+              body: JSON.stringify({ action: 'abreviatura_add', data: payload })
+            });
+            const result = await res.json();
+
+            if (result.result === 'success') {
+              const newAutor = {
+                id: autorId,
+                nombre: name,
+                abreviatura: abrev,
+                tipo: 'autor_' + autorId,
+                fecha_registro: new Date().toISOString()
+              };
+
+              const updatedAutores = [...autores, newAutor];
+              const updatedAbreviaturas = [...abreviaturas, newAutor];
+
+              setAutores(updatedAutores);
+              setAbreviaturas(updatedAbreviaturas);
+
+              // Si hay una obra actual, actualizar su clave con el nuevo autor
+              if (currentObra) {
+                const provVal = currentObra.provenance;
+                let provName = '';
+                if (provVal) {
+                  const com = comisiones.find(c => c.id === provVal);
+                  provName = com ? com.provenance : provVal;
+                }
+
+                const newClave = generateClave(
+                  provName,
+                  name, // Usar el nombre exacto del autor
+                  currentObra.tipo_obra,
+                  currentObra.clave,
+                  obras,
+                  updatedAbreviaturas,
+                  tecnicas,
+                  updatedAutores
+                );
+
+                setCurrentObra(prev => ({
+                  ...prev,
+                  autor: name,
+                  clave: newClave
+                }));
+              }
+
+              setShowAutorModal(false);
+              showToast(`✅ Autor "${name}" creado con abreviatura "${abrev}"`);
+            } else {
+              setAutorError(result.message || 'Error al crear autor');
+            }
+          } else {
+            const payload = {
+              id: editingAutorId,
+              nombre: name,
+              abreviatura: abrev,
+              tipo: 'autor_' + editingAutorId
+            };
+
+            const res = await fetch(API_URL, {
+              method: 'POST',
+              body: JSON.stringify({ action: 'abreviatura_update', data: payload })
+            });
+            const result = await res.json();
+
+            if (result.result === 'success') {
+              const updatedAutores = autores.map(a =>
+                a.id === editingAutorId ? { ...a, nombre: name, abreviatura: abrev } : a
+              );
+              const updatedAbreviaturas = abreviaturas.map(a =>
+                a.id === editingAutorId ? { ...a, nombre: name, abreviatura: abrev } : a
+              );
+
+              setAutores(updatedAutores);
+              setAbreviaturas(updatedAbreviaturas);
+
+              // Si la obra actual usa este autor, actualizar la clave
+              if (currentObra && currentObra.autor === name) {
+                const provVal = currentObra.provenance;
+                let provName = '';
+                if (provVal) {
+                  const com = comisiones.find(c => c.id === provVal);
+                  provName = com ? com.provenance : provVal;
+                }
+                const newClave = generateClave(
+                  provName,
+                  currentObra.autor,
+                  currentObra.tipo_obra,
+                  currentObra.clave,
+                  obras,
+                  updatedAbreviaturas,
+                  tecnicas,
+                  updatedAutores
+                );
+                setCurrentObra(prev => ({ ...prev, clave: newClave }));
+              }
+
+              setShowAutorModal(false);
+              showToast(`✅ Autor "${name}" actualizado correctamente`);
+            } else {
+              setAutorError(result.message || 'Error al actualizar autor');
+            }
+          }
+        } catch (error) {
+          console.error('Error al guardar autor:', error);
+          setAutorError('Error de conexión con el servidor');
+        } finally {
+          setSavingAutor(false);
+        }
+      };
+
+      const handleDeleteAutor = async () => {
+        if (!editingAutorId) return;
+        if (!confirm(`¿Estás seguro de eliminar el autor "${newAutorName}"?`)) return;
+
+        setSavingAutor(true);
+        try {
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'abreviatura_delete', data: { id: editingAutorId } })
+          });
+          const result = await res.json();
+
+          if (result.result === 'success') {
+            setAutores(prev => prev.filter(a => a.id !== editingAutorId));
+            setAbreviaturas(prev => prev.filter(a => a.id !== editingAutorId));
+
+            if (currentObra && currentObra.autor === newAutorName) {
+              setCurrentObra(prev => ({ ...prev, autor: '' }));
+            }
+
+            setShowAutorModal(false);
+            showToast(`✅ Autor eliminado correctamente`);
+          } else {
+            setAutorError(result.message || 'Error al eliminar autor');
+          }
+        } catch (error) {
+          console.error('Error al eliminar autor:', error);
+          setAutorError('Error de conexión con el servidor');
+        } finally {
+          setSavingAutor(false);
         }
       };
 
@@ -2356,6 +2730,82 @@
             </div>
           </div>
 
+          {/* MODAL PARA AÑADIR/EDITAR AUTOR */}
+          <div className={`autor-modal-overlay ${showAutorModal ? '' : 'hidden'}`}>
+            <div className="autor-modal" onClick={(e) => e.stopPropagation()}>
+              <h3>{autorModalMode === 'add' ? 'Añadir Autor' : 'Editar Autor'}</h3>
+              <p className="subtitle">
+                {autorModalMode === 'add'
+                  ? 'Registra un nuevo autor artístico.'
+                  : 'Modifica los datos del autor seleccionado.'}
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <label>Nombre del Autor</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Carlos Oviedo"
+                    value={newAutorName}
+                    onChange={(e) => {
+                      setNewAutorName(e.target.value);
+                      setAutorError('');
+                    }}
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label>Abreviatura (2-5 caracteres)</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: COV"
+                    value={newAutorAbrev}
+                    onChange={(e) => {
+                      setNewAutorAbrev(e.target.value.toUpperCase());
+                      setAutorError('');
+                    }}
+                    maxLength={5}
+                  />
+                  <p className="hint-text">Se usará en la generación del WORK ID</p>
+                </div>
+                <div className={`error-msg ${autorError ? 'visible' : ''}`}>{autorError}</div>
+              </div>
+
+              <div className="btn-row">
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  onClick={() => {
+                    setShowAutorModal(false);
+                    setNewAutorName('');
+                    setNewAutorAbrev('');
+                    setAutorError('');
+                  }}
+                >
+                  Cancelar
+                </button>
+                {autorModalMode === 'edit' && (
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    onClick={handleDeleteAutor}
+                    disabled={savingAutor}
+                  >
+                    {savingAutor ? 'Eliminando...' : '🗑 Eliminar'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn-save"
+                  onClick={handleSaveAutor}
+                  disabled={savingAutor}
+                >
+                  {savingAutor ? 'Guardando...' : (autorModalMode === 'add' ? 'Guardar' : 'Actualizar')}
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* VISTA: DISCOVER - Grid de imágenes estilo Instagram - MODIFICADO: orden inverso y grid responsive */}
           {view === "discover" && (
             <div className="animate-fade-in">
@@ -2564,6 +3014,46 @@
                           </div>
                           <button
                             onClick={() => handleOpenEditTec(t)}
+                            className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                          >
+                            <IconCog className="w-5 h-5" />
+                          </button>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* Sección de Autores */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-slate-800 dark:text-slate-100">Gestionar Autores</h3>
+                  <button
+                    onClick={handleOpenAddAutor}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95"
+                  >
+                    <IconPlus className="w-4 h-4" /> Nuevo
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mb-4">Administra los autores artísticos y sus abreviaturas.</p>
+                <div className="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-2">
+                  {autores.length === 0 ? (
+                    <p className="text-sm text-slate-500 text-center py-4">No hay autores registrados.</p>
+                  ) : (
+                    autores.map(a => {
+                      return (
+                        <div key={a.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{a.nombre}</p>
+                              <span className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded">
+                                {a.abreviatura}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleOpenEditAutor(a)}
                             className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                           >
                             <IconCog className="w-5 h-5" />
@@ -2787,13 +3277,41 @@
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <AutocompleteInput
-                        label="Artista"
-                        placeholder="Ej: Carlos Oviedo"
-                        value={currentObra.autor || ''}
-                        onChange={(value) => handleFormChange('autor', value)}
-                        suggestions={autorSuggestions}
-                      />
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Artista</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-2 items-end">
+                        <select
+                          className="w-full min-w-0 p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-xs"
+                          value={currentObra.autor || ''}
+                          onChange={e => {
+                            if (e.target.value === '__add_autor__') {
+                              handleOpenAddAutor();
+                              e.target.value = currentObra.autor || '';
+                              return;
+                            }
+                            handleFormChange('autor', e.target.value);
+                          }}
+                        >
+                          <option value="">Seleccionar autor</option>
+                          <option value="__add_autor__">+ Añadir Autor</option>
+                          {autores.map(a => (
+                            <option key={a.id} value={a.nombre}>
+                              {a.nombre} [{a.abreviatura}]
+                            </option>
+                          ))}
+                        </select>
+                        {currentObra.autor && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const autor = autores.find(a => a.nombre === currentObra.autor);
+                              if (autor) handleOpenEditAutor(autor);
+                            }}
+                            className="w-full sm:w-auto p-3 bg-slate-100 dark:bg-slate-700 rounded-xl text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors justify-center"
+                          >
+                            <IconCog className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Técnica</label>
