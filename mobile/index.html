@@ -695,6 +695,49 @@
     ];
     const TECH_ADJUNTO_CODE = 'TD';
 
+    // --- MAPEO DE TÉCNICA A CATEGORÍA (tags automáticas) ---
+    const TECNICA_CATEGORIA = {
+        'Óleo sobre tela': '#Pintura',
+        'Óleo sobre lino': '#Pintura',
+        'Óleo sobre papel': '#Pintura',
+        'Acrílico sobre tela': '#Pintura',
+        'Acrílico sobre lino': '#Pintura',
+        'Acrílico sobre papel': '#Pintura',
+        'Acrílico sobre masonite': '#Pintura',
+        'Acuarela sobre papel algodón': '#Pintura',
+        'Temple': '#Pintura',
+        'Gouache': '#Pintura',
+        'Fresco': '#Pintura',
+        'Bronce (fundición a la cera perdida)': '#Escultura',
+        'Cerámica (Terracota)': '#Escultura',
+        'Madera tallada': '#Escultura',
+        'Piedra tallada (Mármol)': '#Escultura',
+        'Piedra tallada (Granito)': '#Escultura',
+        'Resina polimérica': '#Escultura',
+        'Hierro forjado': '#Escultura',
+        'Yeso': '#Escultura',
+        'Papel maché': '#Escultura',
+        'Vidrio soplado': '#Escultura',
+        'Serigrafía': '#Gráfica',
+        'Litografía': '#Gráfica',
+        'Aguafuerte': '#Gráfica',
+        'Aguatinta': '#Gráfica',
+        'Xilografía (Grabado en madera)': '#Gráfica',
+        'Grabado en metal': '#Gráfica',
+        'Impresión Giclée': '#Gráfica',
+        'Fotograbado': '#Gráfica',
+        'Monotipo': '#Gráfica',
+        'Fotografía digital': '#Fotografía',
+        'Fotografía analógica': '#Fotografía',
+        'Técnica mixta': '#Pintura',
+        'Arte digital': '#Arte Digital',
+        'Instalación': '#Instalación',
+        'Textil / Tapiz': '#Objeto',
+        'Collage': '#Pintura',
+        'Ensamblaje': '#Objeto',
+        'Esmalte sobre metal': '#Objeto'
+    };
+
     // --- FUNCIÓN DE GENERACIÓN DE CLAVE EXACTA (MODIFICADA para usar abreviaturas de la hoja) ---
     function generateClave(provenanceName, artista, tecnica, claveActual, allRegistrosObra = [], abreviaturasList = [], tecnicasList = [], autoresList = []) {
         let numStr = '0001';
@@ -1561,6 +1604,24 @@
             tecnicas,
             autores
           );
+        }
+
+        // Si se cambió la técnica, añadir automáticamente la categoría como tag
+        if (field === 'tipo_obra') {
+          const categoria = TECNICA_CATEGORIA[value];
+          if (categoria) {
+            // Obtener tags actuales como string
+            const currentTags = updated.tags || '';
+            // Dividir tags existentes, limpiar y verificar si la categoría ya está presente
+            const existingTags = currentTags.split(/[,\s]+/).map(t => t.trim()).filter(Boolean);
+            if (!existingTags.includes(categoria)) {
+              // Añadir la nueva categoría
+              const newTags = existingTags.length > 0
+                ? [...existingTags, categoria].join(', ')
+                : categoria;
+              updated.tags = newTags;
+            }
+          }
         }
 
         setCurrentObra(updated);
