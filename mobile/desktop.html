@@ -10,7 +10,7 @@
       var isCoarsePointer = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
       var isNarrowViewport = Math.min(window.innerWidth, window.innerHeight) <= 820;
       if (isMobileUA || (isCoarsePointer && isNarrowViewport)) {
-        window.location.replace("./index.html");
+        window.location.replace("./mobile.html");
       }
     })();
   </script>
