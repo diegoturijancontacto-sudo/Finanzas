@@ -695,49 +695,6 @@
     ];
     const TECH_ADJUNTO_CODE = 'TD';
 
-    // --- MAPEO DE TÉCNICA A CATEGORÍA (tags automáticas) ---
-    const TECNICA_CATEGORIA = {
-        'Óleo sobre tela': '#Pintura',
-        'Óleo sobre lino': '#Pintura',
-        'Óleo sobre papel': '#Pintura',
-        'Acrílico sobre tela': '#Pintura',
-        'Acrílico sobre lino': '#Pintura',
-        'Acrílico sobre papel': '#Pintura',
-        'Acrílico sobre masonite': '#Pintura',
-        'Acuarela sobre papel algodón': '#Pintura',
-        'Temple': '#Pintura',
-        'Gouache': '#Pintura',
-        'Fresco': '#Pintura',
-        'Bronce (fundición a la cera perdida)': '#Escultura',
-        'Cerámica (Terracota)': '#Escultura',
-        'Madera tallada': '#Escultura',
-        'Piedra tallada (Mármol)': '#Escultura',
-        'Piedra tallada (Granito)': '#Escultura',
-        'Resina polimérica': '#Escultura',
-        'Hierro forjado': '#Escultura',
-        'Yeso': '#Escultura',
-        'Papel maché': '#Escultura',
-        'Vidrio soplado': '#Escultura',
-        'Serigrafía': '#Gráfica',
-        'Litografía': '#Gráfica',
-        'Aguafuerte': '#Gráfica',
-        'Aguatinta': '#Gráfica',
-        'Xilografía (Grabado en madera)': '#Gráfica',
-        'Grabado en metal': '#Gráfica',
-        'Impresión Giclée': '#Gráfica',
-        'Fotograbado': '#Gráfica',
-        'Monotipo': '#Gráfica',
-        'Fotografía digital': '#Fotografía',
-        'Fotografía analógica': '#Fotografía',
-        'Técnica mixta': '#Pintura',
-        'Arte digital': '#Arte Digital',
-        'Instalación': '#Instalación',
-        'Textil / Tapiz': '#Objeto',
-        'Collage': '#Pintura',
-        'Ensamblaje': '#Objeto',
-        'Esmalte sobre metal': '#Objeto'
-    };
-
     // --- FUNCIÓN DE GENERACIÓN DE CLAVE EXACTA (MODIFICADA para usar abreviaturas de la hoja) ---
     function generateClave(provenanceName, artista, tecnica, claveActual, allRegistrosObra = [], abreviaturasList = [], tecnicasList = [], autoresList = []) {
         let numStr = '0001';
@@ -1215,6 +1172,52 @@
     }
 
     // --- COMPONENTE PRINCIPAL ---
+    // Mapa de técnica -> categoría (tag) para autocompletar la categoría al elegir la técnica
+    const TECNICA_CATEGORIA_MAP = {
+      'Óleo sobre tela': '#Pintura',
+      'Óleo sobre lino': '#Pintura',
+      'Óleo sobre papel': '#Pintura',
+      'Acrílico sobre tela': '#Pintura',
+      'Acrílico sobre lino': '#Pintura',
+      'Acrílico sobre papel': '#Pintura',
+      'Acrílico sobre masonite': '#Pintura',
+      'Acuarela sobre papel algodón': '#Pintura',
+      'Temple': '#Pintura',
+      'Gouache': '#Pintura',
+      'Fresco': '#Pintura',
+      'Bronce (fundición a la cera perdida)': '#Escultura',
+      'Cerámica (Terracota)': '#Escultura',
+      'Madera tallada': '#Escultura',
+      'Piedra tallada (Mármol)': '#Escultura',
+      'Piedra tallada (Granito)': '#Escultura',
+      'Resina polimérica': '#Escultura',
+      'Hierro forjado': '#Escultura',
+      'Yeso': '#Escultura',
+      'Papel maché': '#Escultura',
+      'Vidrio soplado': '#Escultura',
+      'Serigrafía': '#Gráfica',
+      'Litografía': '#Gráfica',
+      'Aguafuerte': '#Gráfica',
+      'Aguatinta': '#Gráfica',
+      'Xilografía (Grabado en madera)': '#Gráfica',
+      'Grabado en metal': '#Gráfica',
+      'Impresión Giclée': '#Gráfica',
+      'Fotograbado': '#Gráfica',
+      'Monotipo': '#Gráfica',
+      'Fotografía digital': '#Fotografía',
+      'Fotografía analógica': '#Fotografía',
+      'Técnica mixta': '#Pintura',
+      'Arte digital': '#Arte Digital',
+      'Instalación': '#Instalación',
+      'Textil / Tapiz': '#Objeto',
+      'Collage': '#Pintura',
+      'Ensamblaje': '#Objeto',
+      'Esmalte sobre metal': '#Objeto'
+    };
+    // Conjunto de todas las categorías posibles, usado para reemplazar la categoría anterior
+    // cuando el usuario cambia de técnica, sin tocar el resto de las tags del usuario.
+    const CATEGORIA_TAGS_SET = new Set(Object.values(TECNICA_CATEGORIA_MAP));
+
     function App() {
       const normalizeMeasureValue = (value) => {
         if (value === '' || value === null || value === undefined) return '';
@@ -1579,6 +1582,23 @@
         if (!currentObra) return;
         const updated = { ...currentObra, [field]: value };
 
+        // Al elegir/cambiar la Técnica, autocompletar la categoría correspondiente en Tags
+        if (field === 'tipo_obra') {
+          const categoriaTag = TECNICA_CATEGORIA_MAP[value];
+          if (categoriaTag) {
+            const currentTagsStr = (updated.tags || '').toString();
+            const tagList = currentTagsStr
+              .split(/[,\s]+/)
+              .map(t => t.trim())
+              .filter(Boolean)
+              // Quitamos cualquier categoría anterior (#Pintura, #Escultura, etc.)
+              // para no acumular varias categorías si el usuario cambia de técnica.
+              .filter(t => !CATEGORIA_TAGS_SET.has(t));
+            tagList.push(categoriaTag);
+            updated.tags = tagList.join(', ');
+          }
+        }
+
         if (field === 'provenance' || field === 'autor' || field === 'tipo_obra') {
           let provName = '';
           const provVal = updated.provenance;
@@ -1604,24 +1624,6 @@
             tecnicas,
             autores
           );
-        }
-
-        // Si se cambió la técnica, añadir automáticamente la categoría como tag
-        if (field === 'tipo_obra') {
-          const categoria = TECNICA_CATEGORIA[value];
-          if (categoria) {
-            // Obtener tags actuales como string
-            const currentTags = updated.tags || '';
-            // Dividir tags existentes, limpiar y verificar si la categoría ya está presente
-            const existingTags = currentTags.split(/[,\s]+/).map(t => t.trim()).filter(Boolean);
-            if (!existingTags.includes(categoria)) {
-              // Añadir la nueva categoría
-              const newTags = existingTags.length > 0
-                ? [...existingTags, categoria].join(', ')
-                : categoria;
-              updated.tags = newTags;
-            }
-          }
         }
 
         setCurrentObra(updated);
