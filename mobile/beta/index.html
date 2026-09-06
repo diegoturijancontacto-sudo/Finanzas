@@ -592,104 +592,6 @@
       color: #64748b;
     }
 
-    /* Estilos para el modo selección */
-    .discover-grid .grid-item.selectable {
-      cursor: pointer;
-    }
-    .discover-grid .grid-item.selected {
-      outline: 3px solid #4f46e5;
-      outline-offset: -3px;
-      box-shadow: 0 0 20px rgba(79, 70, 229, 0.4);
-    }
-    .discover-grid .grid-item .selection-check {
-      position: absolute;
-      top: 6px;
-      right: 6px;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(4px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 700;
-      font-size: 14px;
-      border: 2px solid rgba(255,255,255,0.3);
-      transition: all 0.2s ease;
-      opacity: 0;
-      transform: scale(0.8);
-    }
-    .discover-grid .grid-item.selected .selection-check {
-      opacity: 1;
-      transform: scale(1);
-      background: #4f46e5;
-      border-color: #4f46e5;
-    }
-    .discover-grid .grid-item .selection-check.show {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    /* Barra de selección */
-    .selection-bar {
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 16px;
-      padding: 12px 20px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-      z-index: 40;
-      backdrop-filter: blur(12px);
-    }
-    .dark .selection-bar {
-      background: #0f172a;
-      border-color: #334155;
-    }
-    .selection-bar .count {
-      color: #94a3b8;
-      font-size: 13px;
-      font-weight: 600;
-    }
-    .selection-bar .count span {
-      color: #f1f5f9;
-    }
-    .selection-bar button {
-      padding: 8px 16px;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 13px;
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .selection-bar .btn-share {
-      background: #25D366;
-      color: white;
-    }
-    .selection-bar .btn-share:hover {
-      background: #1da851;
-    }
-    .selection-bar .btn-share:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    .selection-bar .btn-cancel {
-      background: #334155;
-      color: #94a3b8;
-    }
-    .selection-bar .btn-cancel:hover {
-      background: #475569;
-      color: #f1f5f9;
-    }
-
     /* Estilos para sugerencias de tags */
     .tags-suggestions {
       position: absolute;
@@ -1175,8 +1077,6 @@
     const IconList = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>;
     const IconPlusCircle = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>;
     const IconSettings = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>;
-    const IconCheck = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>;
-    const IconShare2 = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>;
 
     const IconBack = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m15 18-6-6 6-6"/></svg>;
     const IconEdit = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>;
@@ -1193,7 +1093,6 @@
     const IconPlus = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
     const IconCog = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>;
     const IconClose = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
-    const IconWhatsApp = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className={className}><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>;
 
     // --- ICONOS DE VERIFICACIÓN ---
     const IconVerified = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
@@ -1339,7 +1238,7 @@
       const [comisiones, setComisiones] = useState([]);
       const [abreviaturas, setAbreviaturas] = useState([]);
       const [tecnicas, setTecnicas] = useState([]);
-      const [autores, setAutores] = useState([]);
+      const [autores, setAutores] = useState([]); // <-- Nuevo estado para autores
       const [search, setSearch] = useState("");
 
       const [filterStatus, setFilterStatus] = useState("");
@@ -1349,6 +1248,10 @@
       const [filterPriceMin, setFilterPriceMin] = useState("");
       const [filterPriceMax, setFilterPriceMax] = useState("");
       const [showFilters, setShowFilters] = useState(false);
+
+      const [selectMode, setSelectMode] = useState(false);
+      const [selectedIds, setSelectedIds] = useState([]);
+      const [sharingSelected, setSharingSelected] = useState(false);
 
       const [currentObra, setCurrentObra] = useState(null);
       const [currentAuthor, setCurrentAuthor] = useState(null);
@@ -1365,11 +1268,6 @@
       const [viewedIds, setViewedIds] = useState(() => getViewedHistory());
       const [uiSettings, setUiSettings] = useState(() => getUiSettings());
       const [togglingVerification, setTogglingVerification] = useState(false);
-
-      // --- Estado para selección múltiple ---
-      const [selectionMode, setSelectionMode] = useState(false);
-      const [selectedIds, setSelectedIds] = useState([]);
-      const [sharingMultiple, setSharingMultiple] = useState(false);
 
       // --- Estado para sugerencias de tags ---
       const [tagsSuggestions, setTagsSuggestions] = useState([]);
@@ -1440,12 +1338,15 @@
         ).slice(0, 10);
       };
 
+      // Función CORREGIDA para añadir una tag sugerida - reemplaza la palabra parcial
       const addSuggestedTag = (suggestedTag) => {
         if (!currentObra) return;
         const currentValue = (currentObra.tags || '').toString();
 
+        // Obtener las palabras actuales
         const words = currentValue.split(/[,\s]+/).filter(w => w.trim().length > 0);
 
+        // Si no hay palabras, simplemente añadir la tag
         if (words.length === 0) {
           handleFormChange('tags', suggestedTag);
           setTagsSuggestions([]);
@@ -1453,24 +1354,31 @@
           return;
         }
 
+        // Reemplazar la última palabra (la que se está escribiendo) por la tag sugerida
         const lastWord = words[words.length - 1];
         const lastWordIndex = currentValue.lastIndexOf(lastWord);
 
+        // Construir el nuevo valor: todo lo anterior + la tag sugerida
         const beforeLastWord = currentValue.substring(0, lastWordIndex);
         const afterLastWord = currentValue.substring(lastWordIndex + lastWord.length);
 
+        // Determinar si hay un separador antes de la última palabra (coma o espacio)
         const trimmedBefore = beforeLastWord.trimEnd();
         const hasSeparator = trimmedBefore.length > 0 && (trimmedBefore.endsWith(',') || trimmedBefore.endsWith(' '));
 
         let newValue = '';
         if (hasSeparator) {
+          // Si ya hay un separador, mantenerlo
           newValue = trimmedBefore + ' ' + suggestedTag + afterLastWord;
         } else if (trimmedBefore.length > 0) {
+          // Si no hay separador, añadir coma y espacio
           newValue = trimmedBefore + ', ' + suggestedTag + afterLastWord;
         } else {
+          // Si es la única palabra
           newValue = suggestedTag + afterLastWord;
         }
 
+        // Limpiar espacios redundantes
         newValue = newValue.replace(/\s*,\s*/g, ', ').replace(/\s+/g, ' ').trim();
 
         handleFormChange('tags', newValue);
@@ -1509,106 +1417,6 @@
         window.addEventListener("hashchange", handleHashChange);
         return () => window.removeEventListener("hashchange", handleHashChange);
       }, [obras, view]);
-
-      // --- Funciones para selección múltiple ---
-      const toggleSelectionMode = () => {
-        if (selectionMode) {
-          // Salir del modo selección
-          setSelectionMode(false);
-          setSelectedIds([]);
-        } else {
-          setSelectionMode(true);
-          setSelectedIds([]);
-        }
-      };
-
-      const toggleSelectObra = (obraId) => {
-        if (!selectionMode) return;
-        setSelectedIds(prev =>
-          prev.includes(obraId)
-            ? prev.filter(id => id !== obraId)
-            : [...prev, obraId]
-        );
-      };
-
-      const getSelectedObras = () => {
-        return obras.filter(o => selectedIds.includes(o.id));
-      };
-
-      const shareMultipleToWhatsApp = async () => {
-        const selectedObras = getSelectedObras();
-        if (selectedObras.length === 0) {
-          showToast('No hay obras seleccionadas', 'error');
-          return;
-        }
-
-        setSharingMultiple(true);
-
-        try {
-          // Crear el mensaje con todas las obras seleccionadas
-          const obraList = selectedObras.map((obra, index) => {
-            const price = obra.precio_venta || obra.precio_lista;
-            const formattedPrice = price ? `$${Number(price).toLocaleString()} ${obra.tipo_moneda || 'MXN'}` : 'Precio no disponible';
-            const autor = obra.autor || 'Autor desconocido';
-            const tecnica = obra.tipo_obra || 'Técnica no especificada';
-            return `${index + 1}. *${obra.nombre_obra || 'Sin título'}*\n   ${autor} · ${tecnica}\n   ${formattedPrice}\n   ${obra.ubicacion || 'Ubicación no especificada'}`;
-          });
-
-          const message = `*${selectedObras.length} obras seleccionadas del catálogo RTBROK*\n\n${obraList.join('\n\n')}\n\n📌 Generado desde el catálogo RTBROK`;
-
-          // Intentar compartir con Web Share API
-          if (navigator.share && navigator.canShare) {
-            // Intentar compartir la primera imagen si es posible
-            const firstObra = selectedObras[0];
-            const firstImage = getFirstImage(firstObra);
-            let shareData = { text: message };
-
-            // Intentar obtener la imagen de la primera obra para compartir
-            if (firstImage) {
-              try {
-                const response = await fetch(firstImage);
-                if (response.ok) {
-                  const blob = await response.blob();
-                  if (blob.type.startsWith('image/')) {
-                    const file = new File([blob], `${firstObra.nombre_obra || 'obra'}.jpg`, { type: blob.type });
-                    if (navigator.canShare({ files: [file], text: message })) {
-                      shareData.files = [file];
-                    }
-                  }
-                }
-              } catch (e) {
-                // Si falla la imagen, compartir solo texto
-              }
-            }
-
-            await navigator.share(shareData);
-            showToast(`✅ ${selectedObras.length} obras compartidas`);
-          } else {
-            // Fallback: copiar al portapapeles
-            const textArea = document.createElement("textarea");
-            textArea.value = message;
-            document.body.appendChild(textArea);
-            textArea.select();
-            try {
-              document.execCommand('copy');
-              showToast(`✅ ${selectedObras.length} obras copiadas al portapapeles`);
-            } catch (err) {
-              showToast('Error al copiar', 'error');
-            }
-            document.body.removeChild(textArea);
-          }
-
-          // Salir del modo selección
-          setSelectionMode(false);
-          setSelectedIds([]);
-        } catch (error) {
-          if (error.name !== 'AbortError') {
-            showToast('Error al compartir', 'error');
-          }
-        } finally {
-          setSharingMultiple(false);
-        }
-      };
 
       const getImageOriginalAdjunto = () => {
         const existingAdjuntos = currentObra?.adjuntos || [];
@@ -1698,12 +1506,15 @@
             setResponsables(data.responsables || []);
             setComisiones(data.comisiones || []);
 
+            // Cargar autores desde el backend (de la hoja Abreviaturas con tipo 'autor_')
             const autoresData = (data.abreviaturas || []).filter(a => a.tipo && a.tipo.startsWith('autor_'));
             setAutores(autoresData);
 
+            // Cargar técnicas (tipo 'tec_')
             const tecnicasData = (data.abreviaturas || []).filter(a => a.tipo && a.tipo.startsWith('tec_'));
             setTecnicas(tecnicasData);
 
+            // Cargar todas las abreviaturas
             setAbreviaturas(data.abreviaturas || []);
 
             setIsDataLoaded(true);
@@ -1736,6 +1547,7 @@
         if (!isInitialLoad) window.location.hash = obra.id;
       };
 
+      // --- Función para crear nueva obra ---
       const handleCreateNewObra = () => {
         if (!isDataLoaded) {
           showToast('Espera a que los datos terminen de cargar', 'error');
@@ -1769,10 +1581,12 @@
         setView("form");
       };
 
+      // --- Función handleFormChange CORREGIDA ---
       const handleFormChange = (field, value) => {
         if (!currentObra) return;
         const updated = { ...currentObra, [field]: value };
 
+        // Al elegir/cambiar la Técnica, autocompletar la categoría correspondiente en Tags
         if (field === 'tipo_obra') {
           const categoriaTag = TECNICA_CATEGORIA_MAP[value];
           if (categoriaTag) {
@@ -1781,6 +1595,8 @@
               .split(/[,\s]+/)
               .map(t => t.trim())
               .filter(Boolean)
+              // Quitamos cualquier categoría anterior (#Pintura, #Escultura, etc.)
+              // para no acumular varias categorías si el usuario cambia de técnica.
               .filter(t => !CATEGORIA_TAGS_SET.has(t));
             tagList.push(categoriaTag);
             updated.tags = tagList.join(', ');
@@ -1795,9 +1611,13 @@
             provName = com ? com.provenance : provVal;
           }
 
+          // Obtener el nombre de la técnica desde el valor actualizado
           let tecName = updated.tipo_obra || '';
+
+          // Obtener el nombre del autor desde el valor actualizado
           let autorName = updated.autor || '';
 
+          // Generar la clave usando el autor y la técnica
           updated.clave = generateClave(
             provName,
             autorName,
@@ -1813,6 +1633,7 @@
         setCurrentObra(updated);
       };
 
+      // --- Función para abrir el modal de añadir Provenance ---
       const handleOpenAddProv = () => {
         setProvModalMode('add');
         setEditingProvId(null);
@@ -1823,6 +1644,7 @@
         setShowProvModal(true);
       };
 
+      // --- Función para abrir el modal de editar Provenance ---
       const handleOpenEditProv = (comision) => {
         setProvModalMode('edit');
         setEditingProvId(comision.id);
@@ -1834,6 +1656,7 @@
         setShowProvModal(true);
       };
 
+      // --- Función para guardar Provenance ---
       const handleSaveProv = async () => {
         setProvError('');
 
@@ -2010,6 +1833,7 @@
         }
       };
 
+      // --- Función para eliminar Provenance ---
       const handleDeleteProv = async () => {
         if (!editingProvId) return;
         if (!confirm(`¿Estás seguro de eliminar el Provenance "${newProvName}"?`)) return;
@@ -2117,12 +1941,14 @@
                 fecha_registro: new Date().toISOString()
               };
 
+              // Actualizar ambas listas
               const updatedTecnicas = [...tecnicas, newTec];
               const updatedAbreviaturas = [...abreviaturas, newTec];
 
               setTecnicas(updatedTecnicas);
               setAbreviaturas(updatedAbreviaturas);
 
+              // Si hay una obra actual, actualizar su clave con la nueva técnica
               if (currentObra) {
                 const provVal = currentObra.provenance;
                 let provName = '';
@@ -2131,10 +1957,11 @@
                   provName = com ? com.provenance : provVal;
                 }
 
+                // Regenerar clave usando la nueva técnica
                 const newClave = generateClave(
                   provName,
                   currentObra.autor,
-                  name,
+                  name, // Usar el nombre exacto de la técnica
                   currentObra.clave,
                   obras,
                   updatedAbreviaturas,
@@ -2179,6 +2006,7 @@
               setTecnicas(updatedTecnicas);
               setAbreviaturas(updatedAbreviaturas);
 
+              // Si la obra actual usa esta técnica, actualizar la clave
               if (currentObra && currentObra.tipo_obra === name) {
                 const provVal = currentObra.provenance;
                 let provName = '';
@@ -2318,6 +2146,7 @@
               setAutores(updatedAutores);
               setAbreviaturas(updatedAbreviaturas);
 
+              // Si hay una obra actual, actualizar su clave con el nuevo autor
               if (currentObra) {
                 const provVal = currentObra.provenance;
                 let provName = '';
@@ -2328,7 +2157,7 @@
 
                 const newClave = generateClave(
                   provName,
-                  name,
+                  name, // Usar el nombre exacto del autor
                   currentObra.tipo_obra,
                   currentObra.clave,
                   obras,
@@ -2374,6 +2203,7 @@
               setAutores(updatedAutores);
               setAbreviaturas(updatedAbreviaturas);
 
+              // Si la obra actual usa este autor, actualizar la clave
               if (currentObra && currentObra.autor === name) {
                 const provVal = currentObra.provenance;
                 let provName = '';
@@ -2756,6 +2586,93 @@
         }
       };
 
+      const toggleSelectMode = () => {
+        setSelectMode(prev => !prev);
+        setSelectedIds([]);
+      };
+
+      const toggleSelected = (id) => {
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+      };
+
+      const getArtworkWhatsAppDescription = (obra) => {
+        const prov = comisiones.find(c => c.id === obra.provenance)?.provenance || obra.provenance || 'No especificado';
+        const withoutLinks = (value) => String(value || '')
+          .replace(/(?:https?:\/\/|www\.)\S+/gi, '')
+          .replace(/\s{2,}/g, ' ')
+          .trim();
+        const measures = [
+          obra.ancho && `Ancho: ${obra.ancho} m`,
+          obra.alto && `Alto: ${obra.alto} m`,
+          obra.largo && `Largo: ${obra.largo} m`
+        ].filter(Boolean).join(' · ') || 'No especificadas';
+        const rows = [
+          ['Autor', obra.autor || 'No especificado'],
+          ['Tipo de obra', obra.tipo_obra || 'No especificado'],
+          ['Ubicación', obra.ubicacion || 'No especificada'],
+          ['Estatus', obra.estatus || 'Consolidación'],
+          ['Superficie', obra.superficie ? `${obra.superficie} m²` : 'No especificada'],
+          ['Medidas', measures],
+          ['Precio', formatCurrency(obra.precio_venta || obra.precio_lista, obra.tipo_moneda)],
+          ['Cliente', obra.cliente || 'No especificado'],
+          ['Provenance', prov],
+          ['Etiquetas', Array.isArray(obra.tags) && obra.tags.length ? obra.tags.join(', ') : (obra.tags || 'Sin etiquetas')],
+          ['Observaciones', obra.observaciones || 'Sin observaciones']
+        ];
+        return [
+          `*${withoutLinks(obra.nombre_obra) || 'Sin título'}*`,
+          'Ficha técnica',
+          '',
+          ...rows.map(([label, value]) => `*${withoutLinks(label)}:* ${withoutLinks(value) || 'No especificado'}`)
+        ].join('\n');
+      };
+
+      const getObraImageFile = async (obra) => {
+        const imageUrl = getFirstImage(obra);
+        if (!imageUrl) return null;
+        try {
+          const response = await fetch(imageUrl);
+          if (!response.ok) return null;
+          const blob = await response.blob();
+          if (!blob.type.startsWith('image/')) return null;
+          const safeName = (obra.nombre_obra || 'obra').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'obra';
+          const extension = blob.type.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+          return new File([blob], `${safeName}.${extension}`, { type: blob.type });
+        } catch (e) { return null; }
+      };
+
+      const handleShareSelected = async () => {
+        const selectedObras = obras.filter(o => selectedIds.includes(o.id));
+        if (selectedObras.length === 0) return;
+        setSharingSelected(true);
+        try {
+          const text = selectedObras.map(getArtworkWhatsAppDescription).join('\n\n───────────\n\n');
+          const files = (await Promise.all(selectedObras.map(getObraImageFile))).filter(Boolean);
+
+          if (navigator.share) {
+            try {
+              if (files.length > 0 && (!navigator.canShare || navigator.canShare({ files }))) {
+                await navigator.share({ files, text });
+              } else {
+                await navigator.share({ text });
+              }
+              setSelectMode(false);
+              setSelectedIds([]);
+            } catch (err) {
+              if (err.name !== 'AbortError') showToast('No fue posible compartir las obras', 'error');
+            }
+          } else {
+            const textArea = document.createElement('textarea');
+            textArea.value = text; document.body.appendChild(textArea); textArea.select();
+            try { document.execCommand('copy'); showToast('Fichas copiadas al portapapeles'); }
+            catch (err) { showToast('Error al copiar', 'error'); }
+            document.body.removeChild(textArea);
+          }
+        } finally {
+          setSharingSelected(false);
+        }
+      };
+
       const handleReportError = async () => {
         if (!currentObra) return;
         const obraUrl = `${window.location.origin}${window.location.pathname}#${currentObra.id}`;
@@ -3043,98 +2960,43 @@
             </div>
           </div>
 
-          {/* VISTA: DISCOVER - Grid de imágenes estilo Instagram con selección múltiple */}
+          {/* VISTA: DISCOVER - Grid de imágenes estilo Instagram - MODIFICADO: orden inverso y grid responsive */}
           {view === "discover" && (
             <div className="animate-fade-in">
-              <header className="px-4 pt-6 pb-2 flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Catalogo</h1>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">base de datos de obra</p>
-                </div>
-                <button
-                  onClick={toggleSelectionMode}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 ${
-                    selectionMode
-                      ? 'bg-red-500/10 text-red-500 border border-red-500/30'
-                      : 'bg-indigo-500/10 text-indigo-500 border border-indigo-500/30'
-                  }`}
-                >
-                  {selectionMode ? 'Cancelar' : 'Seleccionar'}
-                </button>
+              <header className="px-4 pt-6 pb-2">
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Catalogo</h1>
+                <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">base de datos de obra</p>
               </header>
               {loading ? (
                 <BoxLoader message="Cargando obras..." />
               ) : obras.length === 0 ? (
                 <p className="text-center text-slate-500 mt-10">No hay obras registradas aún.</p>
               ) : (
-                <>
-                  <div className="discover-grid">
-                    {[...obras].reverse().map(obra => {
-                      const imgUrl = getFirstImage(obra);
-                      const isSelected = selectedIds.includes(obra.id);
-                      return (
-                        <div
-                          key={obra.id}
-                          className={`grid-item ${selectionMode ? 'selectable' : ''} ${isSelected ? 'selected' : ''}`}
-                          onClick={() => {
-                            if (selectionMode) {
-                              toggleSelectObra(obra.id);
-                            } else {
-                              openDetail(obra);
-                            }
-                          }}
-                        >
-                          {imgUrl ? (
-                            <img
-                              src={imgUrl}
-                              alt={obra.nombre_obra || 'Obra sin título'}
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="fallback-text">
-                              {obra.nombre_obra || 'Sin título'}
-                            </div>
-                          )}
-                          <div className={`selection-check ${selectionMode ? 'show' : ''}`}>
-                            {isSelected ? '✓' : ''}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Barra de selección */}
-                  {selectionMode && (
-                    <div className="selection-bar">
-                      <div className="count">
-                        <span>{selectedIds.length}</span> seleccionadas
-                      </div>
-                      <button
-                        className="btn-share"
-                        onClick={shareMultipleToWhatsApp}
-                        disabled={selectedIds.length === 0 || sharingMultiple}
+                <div className="discover-grid">
+                  {/* Mostrar las obras en orden inverso (más recientes primero) */}
+                  {[...obras].reverse().map(obra => {
+                    const imgUrl = getFirstImage(obra);
+                    return (
+                      <div
+                        key={obra.id}
+                        className="grid-item"
+                        onClick={() => openDetail(obra)}
                       >
-                        {sharingMultiple ? (
-                          <span className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            Enviando...
-                          </span>
+                        {imgUrl ? (
+                          <img
+                            src={imgUrl}
+                            alt={obra.nombre_obra || 'Obra sin título'}
+                            loading="lazy"
+                          />
                         ) : (
-                          <span className="flex items-center gap-2">
-                            <IconWhatsApp className="w-4 h-4" />
-                            Compartir
-                          </span>
+                          <div className="fallback-text">
+                            {obra.nombre_obra || 'Sin título'}
+                          </div>
                         )}
-                      </button>
-                      <button
-                        className="btn-cancel"
-                        onClick={toggleSelectionMode}
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  )}
-                </>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           )}
@@ -3143,7 +3005,12 @@
           {view === "list" && (
             <div className="animate-fade-in max-w-xl mx-auto">
               <header className="sticky top-0 z-10 glass-header p-4 border-b bg-white/90 dark:bg-slate-900/90 border-slate-200 dark:border-slate-800 shadow-sm">
-                <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">Inventario de Obras</h1>
+                <div className="flex items-center justify-between mb-4">
+                  <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Inventario de Obras</h1>
+                  <button onClick={toggleSelectMode} className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${selectMode ? 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200' : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'}`}>
+                    {selectMode ? 'Cancelar' : 'Seleccionar'}
+                  </button>
+                </div>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><IconSearch /></span>
                   <input type="text" placeholder="Buscar nombre o clave..." className="w-full pl-10 pr-4 py-3 bg-slate-100 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100 placeholder-slate-500" value={search} onChange={e => setSearch(e.target.value)} />
@@ -3165,14 +3032,20 @@
               <main className="p-4 space-y-3">
                 {loading ? <BoxLoader message="Cargando inventario..." /> : filtered.map(o => {
                   const isNew = !viewedIds.includes(o.id);
+                  const isSelected = selectedIds.includes(o.id);
                   return (
-                    <div key={o.id} onClick={() => openDetail(o)} className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 active:scale-95 cursor-pointer transition-transform">
+                    <div key={o.id} onClick={() => selectMode ? toggleSelected(o.id) : openDetail(o)} className={`relative bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border active:scale-95 cursor-pointer transition-transform ${isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/40' : 'border-slate-200 dark:border-slate-800'}`}>
+                      {selectMode && (
+                        <div className={`absolute top-3 right-3 w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 dark:border-slate-600'}`}>
+                          {isSelected && <IconVerified className="w-4 h-4" />}
+                        </div>
+                      )}
                       <div className="flex justify-between items-start gap-3 mb-2">
                         <div className="flex flex-col gap-1 min-w-0">
                           <h3 className="font-bold text-slate-800 dark:text-slate-100 truncate">{o.nombre_obra}</h3>
                           {isNew && <span className="inline-flex w-fit items-center gap-1 bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[9px] font-black uppercase"><IconUnseen /> Nueva</span>}
                         </div>
-                        <span className="text-[10px] font-bold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded uppercase shrink-0">{o.estatus}</span>
+                        {!selectMode && <span className="text-[10px] font-bold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded uppercase shrink-0">{o.estatus}</span>}
                       </div>
                       <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/60">
                         <p className="text-slate-500 dark:text-slate-400 font-mono font-medium">#{o.clave || '-'}</p>
@@ -3182,6 +3055,21 @@
                   )
                 })}
               </main>
+
+              {selectMode && selectedIds.length > 0 && (
+                <div className="fixed bottom-24 left-0 right-0 z-20 px-4">
+                  <div className="max-w-xl mx-auto flex items-center justify-between gap-3 bg-slate-900 dark:bg-slate-800 text-white p-3 rounded-2xl shadow-2xl">
+                    <span className="text-sm font-bold pl-2">{selectedIds.length} seleccionada{selectedIds.length !== 1 ? 's' : ''}</span>
+                    <button
+                      onClick={handleShareSelected}
+                      disabled={sharingSelected}
+                      className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 px-4 py-2 rounded-xl text-sm font-bold transition-colors active:scale-95"
+                    >
+                      <IconShare /> {sharingSelected ? 'Preparando...' : 'Compartir'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
