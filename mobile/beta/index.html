@@ -7,11 +7,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8fafc">
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#020617">
+  <link rel="icon" type="image/png" href="./icon.png">
 
   <title>Gestor de Obras Pro</title>
-
-  <!-- Google API para Drive -->
-  <script src="https://apis.google.com/js/api.js"></script>
 
   <!-- CDN confiables de Tailwind y React -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -402,6 +400,342 @@
     .dark .tec-modal .hint-text {
       color: #64748b;
     }
+
+    /* Modal para Autor */
+    .autor-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+      animation: fadeIn 0.2s ease;
+    }
+    .autor-modal-overlay.hidden {
+      display: none;
+    }
+    .autor-modal {
+      background: white;
+      border-radius: 24px;
+      max-width: 480px;
+      width: 100%;
+      padding: 28px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      animation: slideUp 0.25s ease;
+    }
+    .dark .autor-modal {
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+    .autor-modal h3 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+    .dark .autor-modal h3 {
+      color: #f1f5f9;
+    }
+    .autor-modal .subtitle {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 20px;
+    }
+    .dark .autor-modal .subtitle {
+      color: #94a3b8;
+    }
+    .autor-modal label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      margin-bottom: 4px;
+    }
+    .autor-modal input, .autor-modal select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 15px;
+      background: #f8fafc;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .dark .autor-modal input, .dark .autor-modal select {
+      background: #0f172a;
+      border-color: #334155;
+      color: #f1f5f9;
+    }
+    .autor-modal input:focus, .autor-modal select:focus {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.35);
+    }
+    .autor-modal .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .autor-modal .btn-row button {
+      flex: 1;
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 14px;
+      transition: all 0.15s;
+      cursor: pointer;
+      border: none;
+    }
+    .autor-modal .btn-cancel {
+      background: #f1f5f9;
+      color: #475569;
+    }
+    .dark .autor-modal .btn-cancel {
+      background: #334155;
+      color: #94a3b8;
+    }
+    .autor-modal .btn-cancel:hover {
+      background: #e2e8f0;
+    }
+    .autor-modal .btn-save {
+      background: #4f46e5;
+      color: white;
+    }
+    .autor-modal .btn-save:hover {
+      background: #4338ca;
+    }
+    .autor-modal .btn-save:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .autor-modal .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+    .autor-modal .btn-danger:hover {
+      background: #dc2626;
+    }
+    .autor-modal .btn-danger:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .autor-modal .error-msg {
+      color: #ef4444;
+      font-size: 12px;
+      margin-top: 8px;
+      display: none;
+    }
+    .autor-modal .error-msg.visible {
+      display: block;
+    }
+    .autor-modal .hint-text {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+    .dark .autor-modal .hint-text {
+      color: #64748b;
+    }
+
+    /* Estilos para el grid de imágenes - MODIFICADO para 6 en escritorio y 4 en móvil */
+    .discover-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+      padding: 2px;
+    }
+    @media (min-width: 768px) {
+      .discover-grid {
+        grid-template-columns: repeat(6, 1fr);
+      }
+    }
+    .discover-grid .grid-item {
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      cursor: pointer;
+      background: #e2e8f0;
+      position: relative;
+    }
+    .dark .discover-grid .grid-item {
+      background: #1e293b;
+    }
+    .discover-grid .grid-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+    .discover-grid .grid-item:hover img {
+      transform: scale(1.05);
+    }
+    .discover-grid .grid-item .fallback-text {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      font-size: 10px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-align: center;
+      padding: 8px;
+      word-break: break-word;
+      background: #f1f5f9;
+    }
+    .dark .discover-grid .grid-item .fallback-text {
+      background: #0f172a;
+      color: #64748b;
+    }
+
+    /* Estilos para el modo selección */
+    .discover-grid .grid-item.selectable {
+      cursor: pointer;
+    }
+    .discover-grid .grid-item.selected {
+      outline: 3px solid #4f46e5;
+      outline-offset: -3px;
+      box-shadow: 0 0 20px rgba(79, 70, 229, 0.4);
+    }
+    .discover-grid .grid-item .selection-check {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      transition: all 0.2s ease;
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    .discover-grid .grid-item.selected .selection-check {
+      opacity: 1;
+      transform: scale(1);
+      background: #4f46e5;
+      border-color: #4f46e5;
+    }
+    .discover-grid .grid-item .selection-check.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Barra de selección */
+    .selection-bar {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      z-index: 40;
+      backdrop-filter: blur(12px);
+    }
+    .dark .selection-bar {
+      background: #0f172a;
+      border-color: #334155;
+    }
+    .selection-bar .count {
+      color: #94a3b8;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .selection-bar .count span {
+      color: #f1f5f9;
+    }
+    .selection-bar button {
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 13px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .selection-bar .btn-share {
+      background: #25D366;
+      color: white;
+    }
+    .selection-bar .btn-share:hover {
+      background: #1da851;
+    }
+    .selection-bar .btn-share:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .selection-bar .btn-cancel {
+      background: #334155;
+      color: #94a3b8;
+    }
+    .selection-bar .btn-cancel:hover {
+      background: #475569;
+      color: #f1f5f9;
+    }
+
+    /* Estilos para sugerencias de tags */
+    .tags-suggestions {
+      position: absolute;
+      z-index: 20;
+      width: 100%;
+      margin-top: 4px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      max-height: 160px;
+      overflow-y: auto;
+    }
+    .dark .tags-suggestions {
+      background: #1e293b;
+      border-color: #334155;
+    }
+    .tags-suggestion-item {
+      padding: 8px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .dark .tags-suggestion-item {
+      border-bottom-color: #334155;
+    }
+    .tags-suggestion-item:last-child {
+      border-bottom: none;
+    }
+    .tags-suggestion-item:hover {
+      background: #f1f5f9;
+    }
+    .dark .tags-suggestion-item:hover {
+      background: #334155;
+    }
+    .tags-suggestion-item .hash {
+      color: #6366f1;
+      font-weight: 700;
+    }
+    .dark .tags-suggestion-item .hash {
+      color: #818cf8;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen overscroll-y-none">
@@ -413,180 +747,7 @@
     // URL de tu Apps Script
     const API_URL = "https://script.google.com/macros/s/AKfycbxyBzZ7duM3pKtobXHj8A2NgFpIarP5WPS71TKTH2uFMOXXL8rzo68-blixF8kgCwvl8w/exec";
 
-    // ============================================================
-    // CONFIGURACIÓN DE GOOGLE DRIVE (SUBIADA DIRECTA)
-    // ============================================================
-    // ¡REEMPLAZA CON TU CLIENT ID!
-    const CLIENT_ID = '906938405804-72qqtaqgo8fesv8dvioadaf0np041ddm.apps.googleusercontent.com';
-    const FOLDER_ID = '1IKdpJc0ezb6ZwtUzXJm6I91WZIO3s7FS';
-
-    // Estado para el token de Google
-    let googleAccessToken = null;
-    let isGoogleAuthInitialized = false;
-    let isGoogleAuthLoading = false;
-
-    // Inicializar Google Auth
-    async function initGoogleAuth() {
-      if (isGoogleAuthInitialized) return;
-      if (isGoogleAuthLoading) {
-        // Esperar a que termine la carga
-        return new Promise((resolve) => {
-          const checkInterval = setInterval(() => {
-            if (isGoogleAuthInitialized) {
-              clearInterval(checkInterval);
-              resolve();
-            }
-          }, 100);
-        });
-      }
-
-      isGoogleAuthLoading = true;
-      return new Promise((resolve, reject) => {
-        if (typeof gapi === 'undefined') {
-          isGoogleAuthLoading = false;
-          reject(new Error('Google API no cargada'));
-          return;
-        }
-
-        gapi.load('client:auth2', () => {
-          gapi.client.init({
-            clientId: CLIENT_ID,
-            scope: 'https://www.googleapis.com/auth/drive.file',
-          }).then(() => {
-            isGoogleAuthInitialized = true;
-            isGoogleAuthLoading = false;
-            resolve();
-          }).catch((err) => {
-            isGoogleAuthLoading = false;
-            reject(err);
-          });
-        });
-      });
-    }
-
-    // Obtener token de acceso (con manejo de sesión)
-    async function getGoogleAccessToken() {
-      try {
-        await initGoogleAuth();
-
-        const authInstance = gapi.auth2.getAuthInstance();
-        const isSignedIn = authInstance.isSignedIn.get();
-
-        if (!isSignedIn) {
-          await authInstance.signIn();
-        }
-
-        const user = authInstance.currentUser.get();
-        const authResponse = user.getAuthResponse(true);
-        googleAccessToken = authResponse.access_token;
-        return googleAccessToken;
-      } catch (error) {
-        console.error('Error al obtener token:', error);
-        throw error;
-      }
-    }
-
-    // Subir archivo directamente a Drive (sin base64)
-    async function uploadToDriveDirect(file, folderId = FOLDER_ID, onProgress = null) {
-      try {
-        const token = await getGoogleAccessToken();
-
-        const metadata = {
-          name: file.customName || file.name,
-          parents: [folderId]
-        };
-
-        const formData = new FormData();
-        formData.append('metadata', new Blob([JSON.stringify(metadata)], {
-          type: 'application/json'
-        }));
-        formData.append('file', file);
-
-        // Usar XMLHttpRequest para progreso
-        return new Promise((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.open('POST', 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart');
-          xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-
-          if (onProgress) {
-            xhr.upload.addEventListener('progress', (e) => {
-              if (e.lengthComputable) {
-                onProgress(e.loaded / e.total);
-              }
-            });
-          }
-
-          xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              try {
-                const result = JSON.parse(xhr.responseText);
-                resolve({
-                  id: result.id,
-                  name: result.name,
-                  url: `https://drive.google.com/file/d/${result.id}/view`,
-                  mimeType: file.type || 'application/octet-stream'
-                });
-              } catch (e) {
-                reject(new Error('Error al parsear respuesta'));
-              }
-            } else {
-              try {
-                const error = JSON.parse(xhr.responseText);
-                reject(new Error(error.error?.message || `Error ${xhr.status}`));
-              } catch (e) {
-                reject(new Error(`Error ${xhr.status}: ${xhr.statusText}`));
-              }
-            }
-          };
-
-          xhr.onerror = () => reject(new Error('Error de red al subir a Drive'));
-          xhr.send(formData);
-        });
-      } catch (error) {
-        console.error('Error en uploadToDriveDirect:', error);
-        throw error;
-      }
-    }
-
-    // Registrar archivo en el backend (solo el ID/URL)
-    async function registerFileInBackend(fileInfo, obraId, actorId) {
-      try {
-        const res = await fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({
-            action: 'registro_obra_adjunto_registrar',
-            data: {
-              id_obra: obraId,
-              id_actor: actorId,
-              fileId: fileInfo.id,
-              fileName: fileInfo.name,
-              fileUrl: fileInfo.url,
-              mimeType: fileInfo.mimeType || 'application/octet-stream'
-            }
-          })
-        });
-        const result = await res.json();
-        return result;
-      } catch (error) {
-        console.error('Error al registrar archivo:', error);
-        throw error;
-      }
-    }
-
-    // Verificar si el usuario está autenticado en Google
-    async function checkGoogleAuth() {
-      try {
-        await initGoogleAuth();
-        const authInstance = gapi.auth2.getAuthInstance();
-        return authInstance.isSignedIn.get();
-      } catch (e) {
-        return false;
-      }
-    }
-
-    // ============================================================
-    // LISTA COMPLETA DE AUTORES Y ABREVIATURAS
-    // ============================================================
+    // --- LISTA COMPLETA DE AUTORES Y ABREVIATURAS (fallback) ---
     const AUTOR_ABREVIATURAS = {
         'Abelardo López': 'ALP',
         'Alberto Aragón': 'ARG',
@@ -632,8 +793,8 @@
     ];
     const TECH_ADJUNTO_CODE = 'TD';
 
-    // --- FUNCIÓN DE GENERACIÓN DE CLAVE EXACTA ---
-    function generateClave(provenanceName, artista, tecnica, claveActual, allRegistrosObra = [], abreviaturasList = [], tecnicasList = []) {
+    // --- FUNCIÓN DE GENERACIÓN DE CLAVE EXACTA (MODIFICADA para usar abreviaturas de la hoja) ---
+    function generateClave(provenanceName, artista, tecnica, claveActual, allRegistrosObra = [], abreviaturasList = [], tecnicasList = [], autoresList = []) {
         let numStr = '0001';
 
         if (claveActual && claveActual.length >= 4) {
@@ -653,13 +814,16 @@
             }
         }
 
-        // --- BLOQUE 1: PROVENANCE ---
-        let provStr = 'RTB';
+        // --- BLOQUE 1: PROVENANCE (USANDO ABREVIATURAS DE LA HOJA) ---
+        let provStr = 'RTB'; // Valor por defecto
 
         if (provenanceName && provenanceName.trim() !== '') {
             const cleanProv = provenanceName.trim();
+
+            // Buscar en la lista de abreviaturas (de la hoja Abreviaturas)
             let abreviaturaEncontrada = null;
 
+            // Primero buscar por nombre exacto
             for (const abrev of abreviaturasList) {
                 if (abrev.nombre && abrev.nombre.toLowerCase() === cleanProv.toLowerCase()) {
                     abreviaturaEncontrada = abrev.abreviatura;
@@ -667,6 +831,7 @@
                 }
             }
 
+            // Si no se encontró, buscar por coincidencia parcial
             if (!abreviaturaEncontrada) {
                 const provLower = cleanProv.toLowerCase();
                 for (const abrev of abreviaturasList) {
@@ -680,9 +845,11 @@
                 }
             }
 
+            // Si se encontró, usarla
             if (abreviaturaEncontrada) {
                 provStr = abreviaturaEncontrada;
             } else {
+                // Si no, generar una abreviatura
                 const cleanProvFallback = cleanProv.replace(/\s+/g, '').toUpperCase();
                 if (cleanProvFallback.length > 0) {
                     provStr = cleanProvFallback.substring(0, 3).padEnd(3, 'X');
@@ -692,23 +859,48 @@
 
         const bloque1 = `${numStr}${provStr}`;
 
-        // --- BLOQUE 2: AUTOR ---
+        // --- BLOQUE 2: AUTOR (USANDO ABREVIATURAS DE LA HOJA) ---
         let artistStr = '';
         if (artista && artista.trim() !== '') {
             const cleanArtista = artista.trim();
             let abreviaturaEncontrada = null;
-            const artistaLower = cleanArtista.toLowerCase();
 
-            for (const [nombreAutor, abreviatura] of Object.entries(AUTOR_ABREVIATURAS)) {
-                if (nombreAutor.toLowerCase() === artistaLower) {
-                    abreviaturaEncontrada = abreviatura;
+            // Buscar en la lista de autores del backend
+            for (const autor of autoresList) {
+                if (autor.nombre && autor.nombre.toLowerCase() === cleanArtista.toLowerCase()) {
+                    abreviaturaEncontrada = autor.abreviatura;
                     break;
+                }
+            }
+
+            // Si no se encontró, buscar por coincidencia parcial
+            if (!abreviaturaEncontrada) {
+                const artistaLower = cleanArtista.toLowerCase();
+                for (const autor of autoresList) {
+                    if (autor.nombre) {
+                        const nombreLower = autor.nombre.toLowerCase();
+                        if (nombreLower.includes(artistaLower) || artistaLower.includes(nombreLower)) {
+                            abreviaturaEncontrada = autor.abreviatura;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Si no se encontró en el backend, usar el mapa de fallback
+            if (!abreviaturaEncontrada) {
+                for (const [nombreAutor, abreviatura] of Object.entries(AUTOR_ABREVIATURAS)) {
+                    if (nombreAutor.toLowerCase() === cleanArtista.toLowerCase()) {
+                        abreviaturaEncontrada = abreviatura;
+                        break;
+                    }
                 }
             }
 
             if (abreviaturaEncontrada) {
                 artistStr = abreviaturaEncontrada;
             } else {
+                // Si no, generar una abreviatura
                 const wordsArtista = cleanArtista.split(/\s+/);
                 const pNombre = wordsArtista[0] || '';
                 const sNombre = wordsArtista[1] || '';
@@ -720,12 +912,13 @@
             }
         }
 
-        // --- BLOQUE 3: TÉCNICA ---
+        // --- BLOQUE 3: TÉCNICA (USANDO ABREVIATURAS DE LA HOJA) ---
         let tecStr = '';
         if (tecnica && tecnica.trim() !== '') {
             const cleanTecnica = tecnica.trim();
             let abreviaturaEncontrada = null;
 
+            // Primero buscar coincidencia exacta (prioritario)
             for (const tec of tecnicasList) {
                 if (tec.nombre && tec.nombre.toLowerCase() === cleanTecnica.toLowerCase()) {
                     abreviaturaEncontrada = tec.abreviatura;
@@ -733,6 +926,7 @@
                 }
             }
 
+            // Si no se encontró exacta, buscar por coincidencia parcial
             if (!abreviaturaEncontrada) {
                 const tecLower = cleanTecnica.toLowerCase();
                 for (const tec of tecnicasList) {
@@ -749,6 +943,7 @@
             if (abreviaturaEncontrada) {
                 tecStr = abreviaturaEncontrada;
             } else {
+                // Si no, generar una abreviatura
                 const wordsTec = cleanTecnica.split(/\s+/);
                 const pPalabraTec = wordsTec[0] || '';
 
@@ -940,6 +1135,7 @@
         onChange(raw);
       };
 
+      // Obtener el símbolo de la moneda
       const getCurrencySymbol = (curr) => {
         switch(curr) {
           case 'USD': return 'USD $';
@@ -979,6 +1175,8 @@
     const IconList = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>;
     const IconPlusCircle = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>;
     const IconSettings = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>;
+    const IconCheck = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>;
+    const IconShare2 = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>;
 
     const IconBack = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m15 18-6-6 6-6"/></svg>;
     const IconEdit = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>;
@@ -995,6 +1193,7 @@
     const IconPlus = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
     const IconCog = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>;
     const IconClose = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+    const IconWhatsApp = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className={className}><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>;
 
     // --- ICONOS DE VERIFICACIÓN ---
     const IconVerified = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
@@ -1074,6 +1273,52 @@
     }
 
     // --- COMPONENTE PRINCIPAL ---
+    // Mapa de técnica -> categoría (tag) para autocompletar la categoría al elegir la técnica
+    const TECNICA_CATEGORIA_MAP = {
+      'Óleo sobre tela': '#Pintura',
+      'Óleo sobre lino': '#Pintura',
+      'Óleo sobre papel': '#Pintura',
+      'Acrílico sobre tela': '#Pintura',
+      'Acrílico sobre lino': '#Pintura',
+      'Acrílico sobre papel': '#Pintura',
+      'Acrílico sobre masonite': '#Pintura',
+      'Acuarela sobre papel algodón': '#Pintura',
+      'Temple': '#Pintura',
+      'Gouache': '#Pintura',
+      'Fresco': '#Pintura',
+      'Bronce (fundición a la cera perdida)': '#Escultura',
+      'Cerámica (Terracota)': '#Escultura',
+      'Madera tallada': '#Escultura',
+      'Piedra tallada (Mármol)': '#Escultura',
+      'Piedra tallada (Granito)': '#Escultura',
+      'Resina polimérica': '#Escultura',
+      'Hierro forjado': '#Escultura',
+      'Yeso': '#Escultura',
+      'Papel maché': '#Escultura',
+      'Vidrio soplado': '#Escultura',
+      'Serigrafía': '#Gráfica',
+      'Litografía': '#Gráfica',
+      'Aguafuerte': '#Gráfica',
+      'Aguatinta': '#Gráfica',
+      'Xilografía (Grabado en madera)': '#Gráfica',
+      'Grabado en metal': '#Gráfica',
+      'Impresión Giclée': '#Gráfica',
+      'Fotograbado': '#Gráfica',
+      'Monotipo': '#Gráfica',
+      'Fotografía digital': '#Fotografía',
+      'Fotografía analógica': '#Fotografía',
+      'Técnica mixta': '#Pintura',
+      'Arte digital': '#Arte Digital',
+      'Instalación': '#Instalación',
+      'Textil / Tapiz': '#Objeto',
+      'Collage': '#Pintura',
+      'Ensamblaje': '#Objeto',
+      'Esmalte sobre metal': '#Objeto'
+    };
+    // Conjunto de todas las categorías posibles, usado para reemplazar la categoría anterior
+    // cuando el usuario cambia de técnica, sin tocar el resto de las tags del usuario.
+    const CATEGORIA_TAGS_SET = new Set(Object.values(TECNICA_CATEGORIA_MAP));
+
     function App() {
       const normalizeMeasureValue = (value) => {
         if (value === '' || value === null || value === undefined) return '';
@@ -1094,6 +1339,7 @@
       const [comisiones, setComisiones] = useState([]);
       const [abreviaturas, setAbreviaturas] = useState([]);
       const [tecnicas, setTecnicas] = useState([]);
+      const [autores, setAutores] = useState([]);
       const [search, setSearch] = useState("");
 
       const [filterStatus, setFilterStatus] = useState("");
@@ -1112,7 +1358,6 @@
       const [newDoc, setNewDoc] = useState({ tipo: '', nombre: '', url: '', fecha: '' });
       const [uploadingAdj, setUploadingAdj] = useState(false);
       const [portadaPreviewUrl, setPortadaPreviewUrl] = useState('');
-      const [uploadProgress, setUploadProgress] = useState(0);
 
       const [toast, setToast] = useState({ message: '', type: '' });
       const [saving, setSaving] = useState(false);
@@ -1120,7 +1365,14 @@
       const [viewedIds, setViewedIds] = useState(() => getViewedHistory());
       const [uiSettings, setUiSettings] = useState(() => getUiSettings());
       const [togglingVerification, setTogglingVerification] = useState(false);
-      const [isGoogleConnected, setIsGoogleConnected] = useState(false);
+
+      // --- Estado para selección múltiple ---
+      const [selectionMode, setSelectionMode] = useState(false);
+      const [selectedIds, setSelectedIds] = useState([]);
+      const [sharingMultiple, setSharingMultiple] = useState(false);
+
+      // --- Estado para sugerencias de tags ---
+      const [tagsSuggestions, setTagsSuggestions] = useState([]);
 
       // --- Estado para el modal de Provenance ---
       const [showProvModal, setShowProvModal] = useState(false);
@@ -1141,14 +1393,90 @@
       const [savingTec, setSavingTec] = useState(false);
       const [tecError, setTecError] = useState('');
 
+      // --- Estado para el modal de Autor ---
+      const [showAutorModal, setShowAutorModal] = useState(false);
+      const [autorModalMode, setAutorModalMode] = useState('add');
+      const [editingAutorId, setEditingAutorId] = useState(null);
+      const [newAutorName, setNewAutorName] = useState('');
+      const [newAutorAbrev, setNewAutorAbrev] = useState('');
+      const [savingAutor, setSavingAutor] = useState(false);
+      const [autorError, setAutorError] = useState('');
+
       // --- REF para controlar si se puede acceder al formulario ---
       const [isDataLoaded, setIsDataLoaded] = useState(false);
 
       const imageInputRef = useRef(null);
       const techInputRef = useRef(null);
+      const tagsInputRef = useRef(null);
 
-      // Obtener listas de sugerencias
-      const autorSuggestions = useMemo(() => Object.keys(AUTOR_ABREVIATURAS).sort(), []);
+      // Obtener listas de sugerencias (solo nombres, no abreviaturas)
+      const autorSuggestions = useMemo(() => autores.map(a => a.nombre).sort(), [autores]);
+
+      // Extraer todas las tags únicas de las obras para sugerencias
+      const allTags = useMemo(() => {
+        const tagsSet = new Set();
+        obras.forEach(obra => {
+          if (obra.tags && Array.isArray(obra.tags)) {
+            obra.tags.forEach(tag => {
+              if (tag && tag.trim()) tagsSet.add(tag.trim());
+            });
+          }
+        });
+        return Array.from(tagsSet).sort();
+      }, [obras]);
+
+      // Función para obtener sugerencias de tags filtradas
+      const getTagsSuggestions = (input) => {
+        if (!input || !input.trim()) return [];
+        const inputLower = input.toLowerCase().trim();
+        const inputWords = inputLower.split(/[,\s]+/).filter(w => w.length > 0);
+        const lastWord = inputWords[inputWords.length - 1] || '';
+
+        if (!lastWord) return [];
+
+        return allTags.filter(tag =>
+          tag.toLowerCase().includes(lastWord) &&
+          !input.split(/[,\s]+/).map(w => w.trim().toLowerCase()).includes(tag.toLowerCase())
+        ).slice(0, 10);
+      };
+
+      const addSuggestedTag = (suggestedTag) => {
+        if (!currentObra) return;
+        const currentValue = (currentObra.tags || '').toString();
+
+        const words = currentValue.split(/[,\s]+/).filter(w => w.trim().length > 0);
+
+        if (words.length === 0) {
+          handleFormChange('tags', suggestedTag);
+          setTagsSuggestions([]);
+          tagsInputRef.current?.focus();
+          return;
+        }
+
+        const lastWord = words[words.length - 1];
+        const lastWordIndex = currentValue.lastIndexOf(lastWord);
+
+        const beforeLastWord = currentValue.substring(0, lastWordIndex);
+        const afterLastWord = currentValue.substring(lastWordIndex + lastWord.length);
+
+        const trimmedBefore = beforeLastWord.trimEnd();
+        const hasSeparator = trimmedBefore.length > 0 && (trimmedBefore.endsWith(',') || trimmedBefore.endsWith(' '));
+
+        let newValue = '';
+        if (hasSeparator) {
+          newValue = trimmedBefore + ' ' + suggestedTag + afterLastWord;
+        } else if (trimmedBefore.length > 0) {
+          newValue = trimmedBefore + ', ' + suggestedTag + afterLastWord;
+        } else {
+          newValue = suggestedTag + afterLastWord;
+        }
+
+        newValue = newValue.replace(/\s*,\s*/g, ', ').replace(/\s+/g, ' ').trim();
+
+        handleFormChange('tags', newValue);
+        setTagsSuggestions([]);
+        tagsInputRef.current?.focus();
+      };
 
       // Opciones de ubicación
       const ubicacionOptions = [
@@ -1156,19 +1484,6 @@
         'Bodega LF',
         'Provenance'
       ];
-
-      // Verificar conexión con Google al cargar
-      useEffect(() => {
-        const checkConnection = async () => {
-          try {
-            const connected = await checkGoogleAuth();
-            setIsGoogleConnected(connected);
-          } catch (e) {
-            setIsGoogleConnected(false);
-          }
-        };
-        checkConnection();
-      }, []);
 
       useEffect(() => { fetchAllData(); }, []);
 
@@ -1194,6 +1509,106 @@
         window.addEventListener("hashchange", handleHashChange);
         return () => window.removeEventListener("hashchange", handleHashChange);
       }, [obras, view]);
+
+      // --- Funciones para selección múltiple ---
+      const toggleSelectionMode = () => {
+        if (selectionMode) {
+          // Salir del modo selección
+          setSelectionMode(false);
+          setSelectedIds([]);
+        } else {
+          setSelectionMode(true);
+          setSelectedIds([]);
+        }
+      };
+
+      const toggleSelectObra = (obraId) => {
+        if (!selectionMode) return;
+        setSelectedIds(prev =>
+          prev.includes(obraId)
+            ? prev.filter(id => id !== obraId)
+            : [...prev, obraId]
+        );
+      };
+
+      const getSelectedObras = () => {
+        return obras.filter(o => selectedIds.includes(o.id));
+      };
+
+      const shareMultipleToWhatsApp = async () => {
+        const selectedObras = getSelectedObras();
+        if (selectedObras.length === 0) {
+          showToast('No hay obras seleccionadas', 'error');
+          return;
+        }
+
+        setSharingMultiple(true);
+
+        try {
+          // Crear el mensaje con todas las obras seleccionadas
+          const obraList = selectedObras.map((obra, index) => {
+            const price = obra.precio_venta || obra.precio_lista;
+            const formattedPrice = price ? `$${Number(price).toLocaleString()} ${obra.tipo_moneda || 'MXN'}` : 'Precio no disponible';
+            const autor = obra.autor || 'Autor desconocido';
+            const tecnica = obra.tipo_obra || 'Técnica no especificada';
+            return `${index + 1}. *${obra.nombre_obra || 'Sin título'}*\n   ${autor} · ${tecnica}\n   ${formattedPrice}\n   ${obra.ubicacion || 'Ubicación no especificada'}`;
+          });
+
+          const message = `*${selectedObras.length} obras seleccionadas del catálogo RTBROK*\n\n${obraList.join('\n\n')}\n\n📌 Generado desde el catálogo RTBROK`;
+
+          // Intentar compartir con Web Share API
+          if (navigator.share && navigator.canShare) {
+            // Intentar compartir la primera imagen si es posible
+            const firstObra = selectedObras[0];
+            const firstImage = getFirstImage(firstObra);
+            let shareData = { text: message };
+
+            // Intentar obtener la imagen de la primera obra para compartir
+            if (firstImage) {
+              try {
+                const response = await fetch(firstImage);
+                if (response.ok) {
+                  const blob = await response.blob();
+                  if (blob.type.startsWith('image/')) {
+                    const file = new File([blob], `${firstObra.nombre_obra || 'obra'}.jpg`, { type: blob.type });
+                    if (navigator.canShare({ files: [file], text: message })) {
+                      shareData.files = [file];
+                    }
+                  }
+                }
+              } catch (e) {
+                // Si falla la imagen, compartir solo texto
+              }
+            }
+
+            await navigator.share(shareData);
+            showToast(`✅ ${selectedObras.length} obras compartidas`);
+          } else {
+            // Fallback: copiar al portapapeles
+            const textArea = document.createElement("textarea");
+            textArea.value = message;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+              document.execCommand('copy');
+              showToast(`✅ ${selectedObras.length} obras copiadas al portapapeles`);
+            } catch (err) {
+              showToast('Error al copiar', 'error');
+            }
+            document.body.removeChild(textArea);
+          }
+
+          // Salir del modo selección
+          setSelectionMode(false);
+          setSelectedIds([]);
+        } catch (error) {
+          if (error.name !== 'AbortError') {
+            showToast('Error al compartir', 'error');
+          }
+        } finally {
+          setSharingMultiple(false);
+        }
+      };
 
       const getImageOriginalAdjunto = () => {
         const existingAdjuntos = currentObra?.adjuntos || [];
@@ -1283,13 +1698,13 @@
             setResponsables(data.responsables || []);
             setComisiones(data.comisiones || []);
 
-            if (data.abreviaturas) {
-              setAbreviaturas(data.abreviaturas);
-              setTecnicas(data.abreviaturas.filter(ab => ab.tipo && ab.tipo.startsWith('tec_')));
-            } else {
-              setAbreviaturas([]);
-              setTecnicas([]);
-            }
+            const autoresData = (data.abreviaturas || []).filter(a => a.tipo && a.tipo.startsWith('autor_'));
+            setAutores(autoresData);
+
+            const tecnicasData = (data.abreviaturas || []).filter(a => a.tipo && a.tipo.startsWith('tec_'));
+            setTecnicas(tecnicasData);
+
+            setAbreviaturas(data.abreviaturas || []);
 
             setIsDataLoaded(true);
 
@@ -1333,7 +1748,7 @@
           fecha_registro: today,
           verificada: false
         };
-        newObra.clave = generateClave('', '', '', '', obras, abreviaturas, tecnicas);
+        newObra.clave = generateClave('', '', '', '', obras, abreviaturas, tecnicas, autores);
         setCurrentObra(newObra);
         setPendingFiles([]);
         setSelectedTechAdj('RW');
@@ -1358,6 +1773,20 @@
         if (!currentObra) return;
         const updated = { ...currentObra, [field]: value };
 
+        if (field === 'tipo_obra') {
+          const categoriaTag = TECNICA_CATEGORIA_MAP[value];
+          if (categoriaTag) {
+            const currentTagsStr = (updated.tags || '').toString();
+            const tagList = currentTagsStr
+              .split(/[,\s]+/)
+              .map(t => t.trim())
+              .filter(Boolean)
+              .filter(t => !CATEGORIA_TAGS_SET.has(t));
+            tagList.push(categoriaTag);
+            updated.tags = tagList.join(', ');
+          }
+        }
+
         if (field === 'provenance' || field === 'autor' || field === 'tipo_obra') {
           let provName = '';
           const provVal = updated.provenance;
@@ -1365,13 +1794,25 @@
             const com = comisiones.find(c => c.id === provVal);
             provName = com ? com.provenance : provVal;
           }
-          updated.clave = generateClave(provName, updated.autor, updated.tipo_obra, updated.clave, obras, abreviaturas, tecnicas);
+
+          let tecName = updated.tipo_obra || '';
+          let autorName = updated.autor || '';
+
+          updated.clave = generateClave(
+            provName,
+            autorName,
+            tecName,
+            updated.clave,
+            obras,
+            abreviaturas,
+            tecnicas,
+            autores
+          );
         }
 
         setCurrentObra(updated);
       };
 
-      // --- Funciones para Provenance ---
       const handleOpenAddProv = () => {
         setProvModalMode('add');
         setEditingProvId(null);
@@ -1512,7 +1953,8 @@
                   if (currentObra && currentObra.provenance === editingProvId) {
                     const newClave = generateClave(name, currentObra.autor, currentObra.tipo_obra, currentObra.clave, obras,
                       abreviaturas.map(a => a.id === abrev.id ? { ...a, abreviatura: newProvAbrev.trim().toUpperCase() } : a),
-                      tecnicas
+                      tecnicas,
+                      autores
                     );
                     setCurrentObra(prev => ({ ...prev, clave: newClave }));
                   }
@@ -1609,7 +2051,8 @@
         }
       };
 
-      // --- Funciones para Técnica ---
+      // --- FUNCIONES PARA TÉCNICA ---
+
       const handleOpenAddTec = () => {
         setTecModalMode('add');
         setEditingTecId(null);
@@ -1673,10 +2116,38 @@
                 tipo: 'tec_' + tecId,
                 fecha_registro: new Date().toISOString()
               };
-              setTecnicas(prev => [...prev, newTec]);
-              setAbreviaturas(prev => [...prev, newTec]);
 
-              handleFormChange('tipo_obra', name);
+              const updatedTecnicas = [...tecnicas, newTec];
+              const updatedAbreviaturas = [...abreviaturas, newTec];
+
+              setTecnicas(updatedTecnicas);
+              setAbreviaturas(updatedAbreviaturas);
+
+              if (currentObra) {
+                const provVal = currentObra.provenance;
+                let provName = '';
+                if (provVal) {
+                  const com = comisiones.find(c => c.id === provVal);
+                  provName = com ? com.provenance : provVal;
+                }
+
+                const newClave = generateClave(
+                  provName,
+                  currentObra.autor,
+                  name,
+                  currentObra.clave,
+                  obras,
+                  updatedAbreviaturas,
+                  updatedTecnicas,
+                  autores
+                );
+
+                setCurrentObra(prev => ({
+                  ...prev,
+                  tipo_obra: name,
+                  clave: newClave
+                }));
+              }
 
               setShowTecModal(false);
               showToast(`✅ Técnica "${name}" creada con abreviatura "${abrev}"`);
@@ -1698,22 +2169,32 @@
             const result = await res.json();
 
             if (result.result === 'success') {
-              setTecnicas(prev => prev.map(t =>
+              const updatedTecnicas = tecnicas.map(t =>
                 t.id === editingTecId ? { ...t, nombre: name, abreviatura: abrev } : t
-              ));
-              setAbreviaturas(prev => prev.map(a =>
+              );
+              const updatedAbreviaturas = abreviaturas.map(a =>
                 a.id === editingTecId ? { ...a, nombre: name, abreviatura: abrev } : a
-              ));
+              );
+
+              setTecnicas(updatedTecnicas);
+              setAbreviaturas(updatedAbreviaturas);
 
               if (currentObra && currentObra.tipo_obra === name) {
-                let provName = '';
                 const provVal = currentObra.provenance;
+                let provName = '';
                 if (provVal) {
                   const com = comisiones.find(c => c.id === provVal);
                   provName = com ? com.provenance : provVal;
                 }
-                const newClave = generateClave(provName, currentObra.autor, currentObra.tipo_obra, currentObra.clave, obras, abreviaturas,
-                  tecnicas.map(t => t.id === editingTecId ? { ...t, abreviatura: abrev } : t)
+                const newClave = generateClave(
+                  provName,
+                  currentObra.autor,
+                  currentObra.tipo_obra,
+                  currentObra.clave,
+                  obras,
+                  updatedAbreviaturas,
+                  updatedTecnicas,
+                  autores
                 );
                 setCurrentObra(prev => ({ ...prev, clave: newClave }));
               }
@@ -1762,6 +2243,201 @@
           setTecError('Error de conexión con el servidor');
         } finally {
           setSavingTec(false);
+        }
+      };
+
+      // --- FUNCIONES PARA AUTOR ---
+
+      const handleOpenAddAutor = () => {
+        setAutorModalMode('add');
+        setEditingAutorId(null);
+        setNewAutorName('');
+        setNewAutorAbrev('');
+        setAutorError('');
+        setShowAutorModal(true);
+      };
+
+      const handleOpenEditAutor = (autor) => {
+        setAutorModalMode('edit');
+        setEditingAutorId(autor.id);
+        setNewAutorName(autor.nombre || '');
+        setNewAutorAbrev(autor.abreviatura || '');
+        setAutorError('');
+        setShowAutorModal(true);
+      };
+
+      const handleSaveAutor = async () => {
+        setAutorError('');
+
+        const name = newAutorName.trim();
+        if (!name) {
+          setAutorError('El nombre del autor es obligatorio');
+          return;
+        }
+        const abrev = newAutorAbrev.trim().toUpperCase();
+        if (!abrev) {
+          setAutorError('La abreviatura es obligatoria');
+          return;
+        }
+        if (abrev.length < 2 || abrev.length > 5) {
+          setAutorError('La abreviatura debe tener entre 2 y 5 caracteres');
+          return;
+        }
+
+        setSavingAutor(true);
+        try {
+          if (autorModalMode === 'add') {
+            const autorId = 'autor_' + (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2)));
+
+            const payload = {
+              id: autorId,
+              nombre: name,
+              abreviatura: abrev,
+              tipo: 'autor_' + autorId,
+              fecha_registro: new Date().toISOString()
+            };
+
+            const res = await fetch(API_URL, {
+              method: 'POST',
+              body: JSON.stringify({ action: 'abreviatura_add', data: payload })
+            });
+            const result = await res.json();
+
+            if (result.result === 'success') {
+              const newAutor = {
+                id: autorId,
+                nombre: name,
+                abreviatura: abrev,
+                tipo: 'autor_' + autorId,
+                fecha_registro: new Date().toISOString()
+              };
+
+              const updatedAutores = [...autores, newAutor];
+              const updatedAbreviaturas = [...abreviaturas, newAutor];
+
+              setAutores(updatedAutores);
+              setAbreviaturas(updatedAbreviaturas);
+
+              if (currentObra) {
+                const provVal = currentObra.provenance;
+                let provName = '';
+                if (provVal) {
+                  const com = comisiones.find(c => c.id === provVal);
+                  provName = com ? com.provenance : provVal;
+                }
+
+                const newClave = generateClave(
+                  provName,
+                  name,
+                  currentObra.tipo_obra,
+                  currentObra.clave,
+                  obras,
+                  updatedAbreviaturas,
+                  tecnicas,
+                  updatedAutores
+                );
+
+                setCurrentObra(prev => ({
+                  ...prev,
+                  autor: name,
+                  clave: newClave
+                }));
+              }
+
+              setShowAutorModal(false);
+              showToast(`✅ Autor "${name}" creado con abreviatura "${abrev}"`);
+            } else {
+              setAutorError(result.message || 'Error al crear autor');
+            }
+          } else {
+            const payload = {
+              id: editingAutorId,
+              nombre: name,
+              abreviatura: abrev,
+              tipo: 'autor_' + editingAutorId
+            };
+
+            const res = await fetch(API_URL, {
+              method: 'POST',
+              body: JSON.stringify({ action: 'abreviatura_update', data: payload })
+            });
+            const result = await res.json();
+
+            if (result.result === 'success') {
+              const updatedAutores = autores.map(a =>
+                a.id === editingAutorId ? { ...a, nombre: name, abreviatura: abrev } : a
+              );
+              const updatedAbreviaturas = abreviaturas.map(a =>
+                a.id === editingAutorId ? { ...a, nombre: name, abreviatura: abrev } : a
+              );
+
+              setAutores(updatedAutores);
+              setAbreviaturas(updatedAbreviaturas);
+
+              if (currentObra && currentObra.autor === name) {
+                const provVal = currentObra.provenance;
+                let provName = '';
+                if (provVal) {
+                  const com = comisiones.find(c => c.id === provVal);
+                  provName = com ? com.provenance : provVal;
+                }
+                const newClave = generateClave(
+                  provName,
+                  currentObra.autor,
+                  currentObra.tipo_obra,
+                  currentObra.clave,
+                  obras,
+                  updatedAbreviaturas,
+                  tecnicas,
+                  updatedAutores
+                );
+                setCurrentObra(prev => ({ ...prev, clave: newClave }));
+              }
+
+              setShowAutorModal(false);
+              showToast(`✅ Autor "${name}" actualizado correctamente`);
+            } else {
+              setAutorError(result.message || 'Error al actualizar autor');
+            }
+          }
+        } catch (error) {
+          console.error('Error al guardar autor:', error);
+          setAutorError('Error de conexión con el servidor');
+        } finally {
+          setSavingAutor(false);
+        }
+      };
+
+      const handleDeleteAutor = async () => {
+        if (!editingAutorId) return;
+        if (!confirm(`¿Estás seguro de eliminar el autor "${newAutorName}"?`)) return;
+
+        setSavingAutor(true);
+        try {
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'abreviatura_delete', data: { id: editingAutorId } })
+          });
+          const result = await res.json();
+
+          if (result.result === 'success') {
+            setAutores(prev => prev.filter(a => a.id !== editingAutorId));
+            setAbreviaturas(prev => prev.filter(a => a.id !== editingAutorId));
+
+            if (currentObra && currentObra.autor === newAutorName) {
+              setCurrentObra(prev => ({ ...prev, autor: '' }));
+            }
+
+            setShowAutorModal(false);
+            showToast(`✅ Autor eliminado correctamente`);
+          } else {
+            setAutorError(result.message || 'Error al eliminar autor');
+          }
+        } catch (error) {
+          console.error('Error al eliminar autor:', error);
+          setAutorError('Error de conexión con el servidor');
+        } finally {
+          setSavingAutor(false);
         }
       };
 
@@ -1854,69 +2530,66 @@
         return `${claveBase}-${tipoCode}${seqStr}${ext}`;
       };
 
-      // ============================================================
-      // NUEVA FUNCIÓN DE SUBIDA CON DRIVE DIRECT (REEMPLAZA LA ANTERIOR)
-      // ============================================================
       const uploadAdjuntoFile = async (file, tipoCode) => {
         if (!file) return;
 
         const customName = generateAdjuntoName(tipoCode, file.name);
         const isExisting = obras.some(o => o.id === currentObra.id);
 
-        // Si es nueva obra (no guardada), guardar en cola
         if (!isExisting) {
           file.customName = customName;
           file.typeCode = tipoCode;
           setPendingFiles(prev => [...prev, file]);
-          showToast(`📁 En cola: ${customName}`);
+          showToast(`Guardado en cola como: ${customName}`);
           return;
         }
 
-        // Para obras existentes, subir directamente a Drive
         const actorId = getActorId();
         setUploadingAdj(true);
-        setUploadProgress(0);
-        showToast("⬆ Subiendo a Drive...");
-
+        showToast("Subiendo archivo a Drive...");
         try {
-          // Crear un nuevo File con el nombre personalizado
-          const fileWithName = new File([file], customName, { type: file.type || 'application/octet-stream' });
-          fileWithName.customName = customName;
-          fileWithName.typeCode = tipoCode;
+          const base64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = ev => resolve(ev.target.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
 
-          // Subir directamente a Drive con progreso
-          const driveResult = await uploadToDriveDirect(
-            fileWithName,
-            FOLDER_ID,
-            (progress) => {
-              setUploadProgress(Math.round(progress * 100));
-            }
-          );
-
-          // Registrar en el backend
-          await registerFileInBackend(driveResult, currentObra.id, actorId);
-
-          // Actualizar el estado local
-          const newAdj = {
-            id: driveResult.id,
-            name: driveResult.name,
-            url: driveResult.url,
-            kind: 'adjunto_obra',
-            typeCode: tipoCode,
-            uploadedBy: actorId,
-            createdAt: new Date().toISOString(),
-            mimeType: driveResult.mimeType || file.type || 'application/octet-stream'
-          };
-
-          const updatedAdj = [...(currentObra.adjuntos || []), newAdj];
-          setCurrentObra({ ...currentObra, adjuntos: updatedAdj });
-          showToast(`✅ Archivo subido: ${driveResult.name}`);
-
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'registro_obra_upload_adjunto',
+              data: {
+                id_obra: currentObra.id,
+                id_actor: actorId,
+                filename: customName,
+                mimeType: file.type || 'application/octet-stream',
+                base64
+              }
+            })
+          });
+          const result = await res.json();
+          if (result.result === 'success') {
+            const newAdj = {
+              id: result.fileId,
+              name: customName,
+              url: result.url,
+              kind: 'adjunto_obra',
+              typeCode: tipoCode,
+              uploadedBy: actorId,
+              createdAt: new Date().toISOString(),
+              mimeType: file.type || 'application/octet-stream'
+            };
+            const updatedAdj = [...(currentObra.adjuntos || []), newAdj];
+            setCurrentObra({ ...currentObra, adjuntos: updatedAdj });
+            showToast("Subido a Drive con éxito");
+          } else {
+            showToast("Error subiendo archivo", "error");
+          }
         } catch (e) {
-          showToast(`❌ Error al subir: ${e.message}`, "error");
+          showToast("Error al subir archivo", "error");
         } finally {
           setUploadingAdj(false);
-          setUploadProgress(0);
         }
       };
 
@@ -1939,7 +2612,7 @@
         if (files.length === 0) return;
 
         if (!hasImageOriginalAdjunto()) {
-          showToast('Primero sube la Imagen Original', 'error');
+          showToast('La caja se desbloqueará después de subir la Imagen Original', 'error');
           e.target.value = '';
           return;
         }
@@ -1977,20 +2650,18 @@
       const handleSave = async (e) => {
         e.preventDefault();
         if (!currentObra) return;
-
         const hasAttachments = (currentObra.adjuntos && currentObra.adjuntos.length > 0) || pendingFiles.length > 0;
         if (!hasAttachments) {
           showToast('Debes subir al menos un adjunto antes de guardar la obra', 'error');
           return;
         }
-
         setSaving(true);
         const isExisting = obras.some(o => o.id === currentObra.id);
         const action = isExisting ? 'registro_obra_update' : 'registro_obra_add';
 
         const tagsNormalized = Array.isArray(currentObra.tags)
           ? currentObra.tags
-          : (currentObra.tags || '').toString().split(',').map(t => t.trim()).filter(Boolean);
+          : (currentObra.tags || '').toString().split(/[,\s]+/).map(t => t.trim()).filter(Boolean);
 
         const payload = {
           ...currentObra,
@@ -2005,63 +2676,41 @@
         };
 
         try {
-          // Guardar la obra en el backend
-          const res = await fetch(API_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action, data: payload })
-          });
+          const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action, data: payload }) });
           const result = await res.json();
 
           if (result && result.result === 'success') {
-            // Si hay archivos pendientes y es una obra nueva, subirlos
             if (!isExisting && pendingFiles.length > 0) {
               const actorId = getActorId() || payload.id_responsable;
-              showToast(`⬆ Subiendo ${pendingFiles.length} archivos pendientes...`);
-
-              let uploadedCount = 0;
+              showToast("Subiendo adjuntos pendientes...");
               for (const file of pendingFiles) {
                 try {
-                  const fileWithName = new File([file], file.customName || file.name, { type: file.type || 'application/octet-stream' });
-                  const driveResult = await uploadToDriveDirect(fileWithName);
-
-                  await registerFileInBackend(driveResult, payload.id, actorId);
-
-                  uploadedCount++;
-                  showToast(`⬆ ${uploadedCount}/${pendingFiles.length} archivos subidos`);
-
-                  // Actualizar el estado local
-                  const newAdj = {
-                    id: driveResult.id,
-                    name: driveResult.name,
-                    url: driveResult.url,
-                    kind: 'adjunto_obra',
-                    typeCode: file.typeCode || 'TD',
-                    uploadedBy: actorId,
-                    createdAt: new Date().toISOString(),
-                    mimeType: driveResult.mimeType || file.type || 'application/octet-stream'
-                  };
-                  setCurrentObra(prev => ({
-                    ...prev,
-                    adjuntos: [...(prev.adjuntos || []), newAdj]
-                  }));
-                } catch (err) {
-                  console.error('Error subiendo archivo pendiente:', err);
-                }
+                  const base64 = await new Promise((res, rej) => {
+                    const r = new FileReader(); r.onload = ev => res(ev.target.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(file);
+                  });
+                  await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                      action: 'registro_obra_upload_adjunto',
+                      data: {
+                        id_obra: payload.id,
+                        id_actor: actorId,
+                        filename: file.customName || file.name,
+                        mimeType: file.type || 'application/octet-stream',
+                        base64
+                      }
+                    })
+                  });
+                } catch (_) {}
               }
-              setPendingFiles([]);
             }
 
-            showToast("✅ Obra guardada correctamente");
+            showToast("Obra guardada correctamente");
             await fetchAllData();
             setView("list");
-          } else {
-            showToast("❌ Error: " + (result?.message || 'Desconocido'), "error");
-          }
-        } catch (e) {
-          showToast("❌ Error al guardar la obra", "error");
-        } finally {
-          setSaving(false);
-        }
+          } else { showToast("Error: " + (result?.message || 'Desconocido'), "error"); }
+        } catch (e) { showToast("Error al guardar la obra", "error"); }
+        finally { setSaving(false); }
       };
 
       const handleDeleteObra = async () => {
@@ -2122,18 +2771,6 @@
         }
       };
 
-      // Función para conectar con Google Drive desde Settings
-      const handleConnectGoogle = async () => {
-        try {
-          await getGoogleAccessToken();
-          setIsGoogleConnected(true);
-          showToast('✅ Conectado a Google Drive');
-        } catch (e) {
-          setIsGoogleConnected(false);
-          showToast('❌ Error al conectar: ' + e.message, 'error');
-        }
-      };
-
       const tagsAsText = (tags) => Array.isArray(tags) ? tags.join(', ') : (tags || '');
       const uniqueValues = (items) => [...new Set(items.filter(Boolean).map(x => x.toString().trim()))].sort((a, b) => a.localeCompare(b, 'es-MX'));
       const parseNumeric = (value) => { const p = parseFloat(value); return Number.isFinite(p) ? p : null; };
@@ -2156,38 +2793,6 @@
           (!filterAutor || (o.autor || '') === filterAutor) && matchesPriceRange(selectedPrice, minPriceValue, maxPriceValue)
         );
       });
-
-      const categoriesDiscover = useMemo(() => {
-        const grouped = {};
-        obras.forEach(o => {
-          const cat = o.tipo_obra || 'Otras Categorías';
-          if (!grouped[cat]) grouped[cat] = [];
-          grouped[cat].push(o);
-        });
-        return grouped;
-      }, [obras]);
-
-      const DiscoverCard = ({ obra }) => {
-        const imgUrl = getFirstImage(obra);
-        return (
-          <div onClick={() => openDetail(obra)} className="relative w-64 h-80 rounded-[2rem] overflow-hidden shrink-0 snap-center shadow-md hover:shadow-xl transition-all cursor-pointer bg-slate-200 dark:bg-slate-800 group border border-slate-200/50 dark:border-slate-700/50">
-            {imgUrl ? (
-               <img src={imgUrl} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={obra.nombre_obra} />
-            ) : (
-               <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-700" />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/95 via-slate-900/30 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col justify-end">
-               <span className="text-[10px] font-black tracking-widest text-indigo-300 uppercase mb-1 drop-shadow-md">{obra.estatus}</span>
-               <h3 className="text-white font-extrabold text-xl leading-tight mb-2 truncate drop-shadow-md">{obra.nombre_obra || 'Sin nombre'}</h3>
-               <div className="flex justify-between items-center">
-                 <p className="text-slate-200 text-sm font-semibold">{formatCurrency(obra.precio_venta || obra.precio_lista, obra.tipo_moneda)}</p>
-                 <span className="text-slate-400 text-xs font-mono">#{obra.clave || '-'}</span>
-               </div>
-            </div>
-          </div>
-        );
-      };
 
       const isMainTab = ['discover', 'list', 'settings'].includes(view);
 
@@ -2362,29 +2967,174 @@
             </div>
           </div>
 
-          {/* VISTA: DISCOVER */}
+          {/* MODAL PARA AÑADIR/EDITAR AUTOR */}
+          <div className={`autor-modal-overlay ${showAutorModal ? '' : 'hidden'}`}>
+            <div className="autor-modal" onClick={(e) => e.stopPropagation()}>
+              <h3>{autorModalMode === 'add' ? 'Añadir Autor' : 'Editar Autor'}</h3>
+              <p className="subtitle">
+                {autorModalMode === 'add'
+                  ? 'Registra un nuevo autor artístico.'
+                  : 'Modifica los datos del autor seleccionado.'}
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <label>Nombre del Autor</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Carlos Oviedo"
+                    value={newAutorName}
+                    onChange={(e) => {
+                      setNewAutorName(e.target.value);
+                      setAutorError('');
+                    }}
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label>Abreviatura (2-5 caracteres)</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: COV"
+                    value={newAutorAbrev}
+                    onChange={(e) => {
+                      setNewAutorAbrev(e.target.value.toUpperCase());
+                      setAutorError('');
+                    }}
+                    maxLength={5}
+                  />
+                  <p className="hint-text">Se usará en la generación del WORK ID</p>
+                </div>
+                <div className={`error-msg ${autorError ? 'visible' : ''}`}>{autorError}</div>
+              </div>
+
+              <div className="btn-row">
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  onClick={() => {
+                    setShowAutorModal(false);
+                    setNewAutorName('');
+                    setNewAutorAbrev('');
+                    setAutorError('');
+                  }}
+                >
+                  Cancelar
+                </button>
+                {autorModalMode === 'edit' && (
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    onClick={handleDeleteAutor}
+                    disabled={savingAutor}
+                  >
+                    {savingAutor ? 'Eliminando...' : '🗑 Eliminar'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn-save"
+                  onClick={handleSaveAutor}
+                  disabled={savingAutor}
+                >
+                  {savingAutor ? 'Guardando...' : (autorModalMode === 'add' ? 'Guardar' : 'Actualizar')}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* VISTA: DISCOVER - Grid de imágenes estilo Instagram con selección múltiple */}
           {view === "discover" && (
             <div className="animate-fade-in">
-              <header className="px-6 pt-8 pb-4">
-                <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Descubrir</h1>
-                <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Explora tu colección por categorías</p>
-              </header>
-              {loading ? <BoxLoader message="Cargando obras..." /> : (
-                <div className="space-y-8">
-                  {Object.entries(categoriesDiscover).sort(([a], [b]) => a.localeCompare(b)).map(([cat, items]) => (
-                    <section key={cat}>
-                      <div className="flex justify-between items-center px-6 mb-4">
-                        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">{cat} <span className="text-slate-400 font-normal text-sm ml-1">({items.length})</span></h2>
-                      </div>
-                      <div className="flex overflow-x-auto gap-4 px-6 pb-4 snap-x hide-scrollbar">
-                        {items.map(o => <DiscoverCard key={o.id} obra={o} />)}
-                      </div>
-                    </section>
-                  ))}
-                  {Object.keys(categoriesDiscover).length === 0 && (
-                    <p className="text-center text-slate-500 mt-10">No hay obras registradas aún.</p>
-                  )}
+              <header className="px-4 pt-6 pb-2 flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Catalogo</h1>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">base de datos de obra</p>
                 </div>
+                <button
+                  onClick={toggleSelectionMode}
+                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 ${
+                    selectionMode
+                      ? 'bg-red-500/10 text-red-500 border border-red-500/30'
+                      : 'bg-indigo-500/10 text-indigo-500 border border-indigo-500/30'
+                  }`}
+                >
+                  {selectionMode ? 'Cancelar' : 'Seleccionar'}
+                </button>
+              </header>
+              {loading ? (
+                <BoxLoader message="Cargando obras..." />
+              ) : obras.length === 0 ? (
+                <p className="text-center text-slate-500 mt-10">No hay obras registradas aún.</p>
+              ) : (
+                <>
+                  <div className="discover-grid">
+                    {[...obras].reverse().map(obra => {
+                      const imgUrl = getFirstImage(obra);
+                      const isSelected = selectedIds.includes(obra.id);
+                      return (
+                        <div
+                          key={obra.id}
+                          className={`grid-item ${selectionMode ? 'selectable' : ''} ${isSelected ? 'selected' : ''}`}
+                          onClick={() => {
+                            if (selectionMode) {
+                              toggleSelectObra(obra.id);
+                            } else {
+                              openDetail(obra);
+                            }
+                          }}
+                        >
+                          {imgUrl ? (
+                            <img
+                              src={imgUrl}
+                              alt={obra.nombre_obra || 'Obra sin título'}
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="fallback-text">
+                              {obra.nombre_obra || 'Sin título'}
+                            </div>
+                          )}
+                          <div className={`selection-check ${selectionMode ? 'show' : ''}`}>
+                            {isSelected ? '✓' : ''}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Barra de selección */}
+                  {selectionMode && (
+                    <div className="selection-bar">
+                      <div className="count">
+                        <span>{selectedIds.length}</span> seleccionadas
+                      </div>
+                      <button
+                        className="btn-share"
+                        onClick={shareMultipleToWhatsApp}
+                        disabled={selectedIds.length === 0 || sharingMultiple}
+                      >
+                        {sharingMultiple ? (
+                          <span className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            Enviando...
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-2">
+                            <IconWhatsApp className="w-4 h-4" />
+                            Compartir
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        className="btn-cancel"
+                        onClick={toggleSelectionMode}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -2441,33 +3191,6 @@
               <header className="pt-4 pb-2">
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Ajustes</h1>
               </header>
-
-              {/* Conexión con Google Drive */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-bold text-slate-800 dark:text-slate-100">Google Drive</h3>
-                    <p className="text-xs text-slate-500">
-                      {isGoogleConnected ? '✅ Conectado' : '🔴 No conectado'}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleConnectGoogle}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                      isGoogleConnected
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                        : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                    }`}
-                  >
-                    {isGoogleConnected ? '✅ Conectado' : '🔑 Conectar'}
-                  </button>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-2">
-                  {isGoogleConnected
-                    ? 'Puedes subir archivos directamente a Drive'
-                    : 'Conéctate para subir archivos directamente a Drive sin base64'}
-                </p>
-              </div>
 
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 space-y-6 shadow-sm">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
@@ -2594,6 +3317,46 @@
                 </div>
               </div>
 
+              {/* Sección de Autores */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-slate-800 dark:text-slate-100">Gestionar Autores</h3>
+                  <button
+                    onClick={handleOpenAddAutor}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95"
+                  >
+                    <IconPlus className="w-4 h-4" /> Nuevo
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mb-4">Administra los autores artísticos y sus abreviaturas.</p>
+                <div className="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-2">
+                  {autores.length === 0 ? (
+                    <p className="text-sm text-slate-500 text-center py-4">No hay autores registrados.</p>
+                  ) : (
+                    autores.map(a => {
+                      return (
+                        <div key={a.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{a.nombre}</p>
+                              <span className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded">
+                                {a.abreviatura}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleOpenEditAutor(a)}
+                            className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                          >
+                            <IconCog className="w-5 h-5" />
+                          </button>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
+
             </div>
           )}
 
@@ -2679,7 +3442,6 @@
                       )
                     })()}
 
-                    {/* SECCIÓN DE VERIFICACIÓN */}
                     <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/50">
                       <div className="flex items-center gap-3">
                         {currentObra.verificada ? (
@@ -2807,13 +3569,41 @@
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <AutocompleteInput
-                        label="Artista"
-                        placeholder="Ej: Carlos Oviedo"
-                        value={currentObra.autor || ''}
-                        onChange={(value) => handleFormChange('autor', value)}
-                        suggestions={autorSuggestions}
-                      />
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Artista</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-2 items-end">
+                        <select
+                          className="w-full min-w-0 p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-xs"
+                          value={currentObra.autor || ''}
+                          onChange={e => {
+                            if (e.target.value === '__add_autor__') {
+                              handleOpenAddAutor();
+                              e.target.value = currentObra.autor || '';
+                              return;
+                            }
+                            handleFormChange('autor', e.target.value);
+                          }}
+                        >
+                          <option value="">Seleccionar autor</option>
+                          <option value="__add_autor__">+ Añadir Autor</option>
+                          {autores.map(a => (
+                            <option key={a.id} value={a.nombre}>
+                              {a.nombre} [{a.abreviatura}]
+                            </option>
+                          ))}
+                        </select>
+                        {currentObra.autor && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const autor = autores.find(a => a.nombre === currentObra.autor);
+                              if (autor) handleOpenEditAutor(autor);
+                            }}
+                            className="w-full sm:w-auto p-3 bg-slate-100 dark:bg-slate-700 rounded-xl text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors justify-center"
+                          >
+                            <IconCog className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Técnica</label>
@@ -2990,9 +3780,46 @@
                 <section className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm space-y-4">
                   <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Metadata</h3>
                   <div className="space-y-4">
-                    <div>
+                    <div className="relative">
                       <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Tags</label>
-                      <input type="text" placeholder="abstracto, oleo, gran_formato" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.tags || ''} onChange={e => handleFormChange('tags', e.target.value)} />
+                      <input
+                        ref={tagsInputRef}
+                        type="text"
+                        placeholder="abstracto, oleo, gran_formato"
+                        className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+                        value={currentObra.tags || ''}
+                        onChange={e => {
+                          handleFormChange('tags', e.target.value);
+                          const suggestions = getTagsSuggestions(e.target.value);
+                          setTagsSuggestions(suggestions);
+                        }}
+                        onFocus={e => {
+                          const suggestions = getTagsSuggestions(e.target.value);
+                          setTagsSuggestions(suggestions);
+                        }}
+                        onBlur={() => {
+                          setTimeout(() => setTagsSuggestions([]), 200);
+                        }}
+                      />
+
+                      {/* Sugerencias de tags */}
+                      {tagsSuggestions.length > 0 && (
+                        <div className="tags-suggestions">
+                          {tagsSuggestions.map(tag => (
+                            <div
+                              key={tag}
+                              className="tags-suggestion-item"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                addSuggestedTag(tag);
+                              }}
+                            >
+                              <span className="hash">#</span>
+                              <span>{tag}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Observaciones</label>
@@ -3042,13 +3869,6 @@
                         <IconPaperclip className="w-5 h-5 text-slate-400 shrink-0" />
                       </div>
 
-                      {uploadingAdj && uploadProgress > 0 && (
-                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                          <div className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
-                          <p className="text-[10px] text-slate-500 mt-1 text-right">{uploadProgress}%</p>
-                        </div>
-                      )}
-
                       {getImageOriginalAdjunto() && (
                         <div className="space-y-2">
                           {(() => {
@@ -3057,7 +3877,7 @@
                             return (
                               <div className="flex justify-between items-center p-3 bg-white dark:bg-slate-800 rounded-xl text-xs border border-slate-100 dark:border-slate-700">
                                 <span className="truncate font-mono font-medium min-w-0 pr-2">{primaryAdjunto.name || primaryAdjunto.id}</span>
-                                <span className="text-[10px] font-bold text-emerald-600 uppercase">Subido</span>
+                                <span className="text-[10px] font-bold text-emerald-600 uppercase">Bloqueada</span>
                               </div>
                             );
                           })()}
@@ -3132,13 +3952,6 @@
                         </select>
                       </div>
 
-                      {uploadingAdj && uploadProgress > 0 && (
-                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                          <div className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
-                          <p className="text-[10px] text-slate-500 mt-1 text-right">{uploadProgress}%</p>
-                        </div>
-                      )}
-
                       {getTechnicalPendingFiles().length > 0 && (
                         <div className="space-y-2">
                           {getTechnicalPendingFiles().map((f, i) => (
@@ -3196,7 +4009,7 @@
               <div className="flex justify-around items-center h-16 max-w-md mx-auto px-2">
                 <button onClick={() => setView('discover')} className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${view === 'discover' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}>
                   <IconCompass className="w-6 h-6" />
-                  <span className="text-[10px] font-semibold">Descubrir</span>
+                  <span className="text-[10px] font-semibold">Catalogo</span>
                 </button>
                 <button onClick={() => setView('list')} className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${view === 'list' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}>
                   <IconList className="w-6 h-6" />
