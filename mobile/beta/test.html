@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Galería + WhatsApp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <div id="app" class="max-w-4xl mx-auto p-4">
+        <!-- Encabezado -->
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">📸 Galería</h1>
+            <button id="sendSelectedBtn" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-full flex items-center gap-2 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                <span>📤</span> Enviar seleccionadas
+            </button>
+        </div>
+
+        <!-- Grid de imágenes -->
+        <div id="galleryGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+
+        <!-- Modal para editar descripción antes de enviar -->
+        <div id="modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
+            <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">✏️ Editar descripciones</h2>
+                    <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                </div>
+                <p class="text-sm text-gray-500 mb-4">Cada imagen se enviará con su descripción personalizada.</p>
+
+                <div id="modalList" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2"></div>
+
+                <div class="flex gap-3 mt-6 pt-4 border-t border-gray-200">
+                    <button id="cancelModalBtn" class="flex-1 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
+                    <button id="confirmSendBtn" class="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl flex items-center justify-center gap-2 transition shadow-md">
+                        <span>📤</span> Enviar por WhatsApp
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ====== DATOS DE EJEMPLO (imágenes locales o públicas) ======
+        // Puedes reemplazar estas imágenes con las tuyas.
+        // Cada objeto: { id, src, alt, description }
+        const galleryItems = [
+            {
+                id: 1,
+                src: 'https://picsum.photos/id/1015/400/400',
+                alt: 'Paisaje montañoso',
+                description: '🏔️ Paisaje montañoso al atardecer.'
+            },
+            {
+                id: 2,
+                src: 'https://picsum.photos/id/1016/400/400',
+                alt: 'Calle estrecha',
+                description: '🏘️ Calle empedrada en un pueblo europeo.'
+            },
+            {
+                id: 3,
+                src: 'https://picsum.photos/id/1018/400/400',
+                alt: 'Montañas y niebla',
+                description: '🌫️ Montañas cubiertas de niebla matutina.'
+            },
+            {
+                id: 4,
+                src: 'https://picsum.photos/id/1020/400/400',
+                alt: 'Perro en la nieve',
+                description: '🐕 Perro jugando en la nieve.'
+            },
+            {
+                id: 5,
+                src: 'https://picsum.photos/id/1024/400/400',
+                alt: 'Ave posada',
+                description: '🐦 Pájaro posado en una rama.'
+            },
+            {
+                id: 6,
+                src: 'https://picsum.photos/id/1025/400/400',
+                alt: 'Río y bosque',
+                description: '🌲 Río serpenteando entre el bosque.'
+            },
+            {
+                id: 7,
+                src: 'https://picsum.photos/id/1027/400/400',
+                alt: 'Mariposa sobre flor',
+                description: '🦋 Mariposa monarca sobre una flor.'
+            },
+            {
+                id: 8,
+                src: 'https://picsum.photos/id/1035/400/400',
+                alt: 'Cascada',
+                description: '💦 Cascada en medio de la selva.'
+            }
+        ];
+
+        // ====== ESTADO ======
+        let selectedIds = new Set(); // ids de imágenes seleccionadas
+
+        // ====== REFERENCIAS DOM ======
+        const galleryGrid = document.getElementById('galleryGrid');
+        const sendBtn = document.getElementById('sendSelectedBtn');
+        const modal = document.getElementById('modal');
+        const modalList = document.getElementById('modalList');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const cancelModalBtn = document.getElementById('cancelModalBtn');
+        const confirmSendBtn = document.getElementById('confirmSendBtn');
+
+        // ====== RENDERIZAR GALERÍA ======
+        function renderGallery() {
+            galleryGrid.innerHTML = '';
+            galleryItems.forEach(item => {
+                const isSelected = selectedIds.has(item.id);
+                const div = document.createElement('div');
+                div.className = `relative group rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow bg-white cursor-pointer border-2 ${isSelected ? 'border-green-500 ring-4 ring-green-200' : 'border-transparent'}`;
+                div.dataset.id = item.id;
+
+                // Imagen
+                const img = document.createElement('img');
+                img.src = item.src;
+                img.alt = item.alt;
+                img.className = 'w-full aspect-square object-cover';
+                img.loading = 'lazy';
+
+                // Overlay de selección
+                const overlay = document.createElement('div');
+                overlay.className =
+                    `absolute inset-0 flex items-center justify-center transition-opacity ${isSelected ? 'opacity-100 bg-green-500/20' : 'opacity-0 group-hover:opacity-100 bg-black/30'}`;
+
+                const checkIcon = document.createElement('span');
+                checkIcon.className = `text-white text-4xl font-bold drop-shadow-lg ${isSelected ? '' : 'hidden'}`;
+                checkIcon.textContent = '✓';
+
+                overlay.appendChild(checkIcon);
+                div.appendChild(img);
+                div.appendChild(overlay);
+
+                // Pie con descripción breve
+                const footer = document.createElement('div');
+                footer.className = 'p-2 bg-white text-sm text-gray-700 truncate';
+                footer.textContent = item.description || 'Sin descripción';
+                div.appendChild(footer);
+
+                // Click para seleccionar/deseleccionar
+                div.addEventListener('click', () => {
+                    if (selectedIds.has(item.id)) {
+                        selectedIds.delete(item.id);
+                    } else {
+                        selectedIds.add(item.id);
+                    }
+                    renderGallery();
+                    updateSendButton();
+                });
+
+                galleryGrid.appendChild(div);
+            });
+        }
+
+        // ====== ACTUALIZAR BOTÓN DE ENVÍO ======
+        function updateSendButton() {
+            const count = selectedIds.size;
+            sendBtn.disabled = count === 0;
+            sendBtn.textContent = count === 0 ? '📤 Enviar seleccionadas' : `📤 Enviar ${count} seleccionada${count > 1 ? 's' : ''}`;
+        }
+
+        // ====== ABRIR MODAL CON LAS DESCRIPCIONES ======
+        function openModal() {
+            modal.classList.remove('hidden');
+            modalList.innerHTML = '';
+
+            const selectedItems = galleryItems.filter(item => selectedIds.has(item.id));
+
+            if (selectedItems.length === 0) {
+                modalList.innerHTML = '<p class="text-gray-400 text-center py-8">No hay imágenes seleccionadas.</p>';
+                return;
+            }
+
+            selectedItems.forEach(item => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex items-center gap-4 p-3 bg-gray-50 rounded-xl';
+
+                // Miniatura
+                const thumb = document.createElement('img');
+                thumb.src = item.src;
+                thumb.alt = item.alt;
+                thumb.className = 'w-16 h-16 rounded-lg object-cover flex-shrink-0';
+
+                // Contenedor texto + input
+                const info = document.createElement('div');
+                info.className = 'flex-1 min-w-0';
+
+                const label = document.createElement('label');
+                label.className = 'text-xs font-medium text-gray-500 block';
+                label.textContent = `Descripción para #${item.id}`;
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = item.description || '';
+                input.className = 'w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-400';
+                input.placeholder = 'Escribe una descripción...';
+                // Guardar cambios en el objeto original
+                input.addEventListener('input', () => {
+                    item.description = input.value;
+                });
+
+                info.appendChild(label);
+                info.appendChild(input);
+                wrapper.appendChild(thumb);
+                wrapper.appendChild(info);
+                modalList.appendChild(wrapper);
+            });
+        }
+
+        // ====== ENVIAR POR WHATSAPP ======
+        function sendToWhatsApp() {
+            const selectedItems = galleryItems.filter(item => selectedIds.has(item.id));
+            if (selectedItems.length === 0) return;
+
+            // Construir mensaje con descripciones (sin enlaces)
+            let message = '📸 *Imágenes seleccionadas:*\n\n';
+            selectedItems.forEach((item, index) => {
+                const desc = item.description?.trim() || 'Sin descripción';
+                message += `${index + 1}. ${desc}\n`;
+            });
+
+            // Número de teléfono (cámbialo por el que quieras)
+            // Formato internacional sin + ni espacios: 521234567890
+            const phoneNumber = '521234567890'; // <-- REEMPLAZA CON TU NÚMERO
+
+            const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+
+            // Abrir WhatsApp en nueva pestaña
+            window.open(url, '_blank');
+
+            // Opcional: limpiar selección después de enviar
+            // selectedIds.clear();
+            // renderGallery();
+            // updateSendButton();
+            // modal.classList.add('hidden');
+        }
+
+        // ====== EVENTOS ======
+        sendBtn.addEventListener('click', openModal);
+
+        closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
+        cancelModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
+
+        // Cerrar modal al hacer clic fuera
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.classList.add('hidden');
+        });
+
+        confirmSendBtn.addEventListener('click', () => {
+            sendToWhatsApp();
+            // Cerrar modal después de enviar
+            modal.classList.add('hidden');
+        });
+
+        // ====== INICIALIZAR ======
+        renderGallery();
+        updateSendButton();
+    </script>
+
+</body>
+</html>
