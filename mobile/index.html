@@ -24,7 +24,6 @@
 
   <title>Gestor de Obras Pro — Escritorio</title>
 
-  <!-- CDN confiables de Tailwind y React -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
@@ -75,7 +74,6 @@
     .pb-safe-nav { padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
     .pt-safe { padding-top: env(safe-area-inset-top); }
 
-    /* Barra de menús superior estilo Photoshop (siempre visible, tipo app de escritorio) */
     .ps-topbar {
       height: 52px;
       background: #2b2b2b;
@@ -164,7 +162,6 @@
       white-space: nowrap;
     }
 
-    /* Estilos para sugerencias de autocompletado */
     .suggestions-dropdown {
       position: absolute;
       top: 100%;
@@ -213,7 +210,6 @@
       position: relative;
     }
 
-    /* Modal para añadir/editar Provenance */
     .prov-modal-overlay {
       position: fixed;
       inset: 0;
@@ -362,7 +358,6 @@
       color: #64748b;
     }
 
-    /* Modal para Técnica */
     .tec-modal-overlay {
       position: fixed;
       inset: 0;
@@ -503,7 +498,6 @@
       color: #64748b;
     }
 
-    /* Modal para Autor */
     .autor-modal-overlay {
       position: fixed;
       inset: 0;
@@ -644,7 +638,6 @@
       color: #64748b;
     }
 
-    /* Estilos para el grid de imágenes - MODIFICADO para 6 en escritorio y 4 en móvil */
     .discover-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -694,7 +687,6 @@
       color: #64748b;
     }
 
-    /* Estilos para sugerencias de tags */
     .tags-suggestions {
       position: absolute;
       z-index: 20;
@@ -740,6 +732,37 @@
     .dark .tags-suggestion-item .hash {
       color: #818cf8;
     }
+
+    /* Toggle switch para tipo de comisión */
+    .commission-type-toggle {
+      display: inline-flex;
+      background: #f1f5f9;
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+    }
+    .dark .commission-type-toggle {
+      background: #1e293b;
+    }
+    .commission-type-toggle button {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      transition: all 0.15s ease;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: #64748b;
+    }
+    .dark .commission-type-toggle button {
+      color: #94a3b8;
+    }
+    .commission-type-toggle button.active {
+      background: #4f46e5;
+      color: white;
+      box-shadow: 0 1px 4px rgba(79, 70, 229, 0.35);
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen overscroll-y-none">
@@ -751,7 +774,6 @@
     // URL de tu Apps Script
     const API_URL = "https://script.google.com/macros/s/AKfycbxyBzZ7duM3pKtobXHj8A2NgFpIarP5WPS71TKTH2uFMOXXL8rzo68-blixF8kgCwvl8w/exec";
 
-    // --- LISTA COMPLETA DE AUTORES Y ABREVIATURAS (fallback) ---
     const AUTOR_ABREVIATURAS = {
         'Abelardo López': 'ALP',
         'Alberto Aragón': 'ARG',
@@ -786,7 +808,6 @@
         'Vladimir Cora': 'VCR'
     };
 
-    // --- CATÁLOGO DE TIPOS DE ADJUNTO Y CÓDIGOS ---
     const TIPOS_ADJUNTO = [
       { code: 'RW', label: 'Imagen Original (RW)' },
       { code: 'RD', label: 'Imagen Editada (RD)' },
@@ -797,7 +818,6 @@
     ];
     const TECH_ADJUNTO_CODE = 'TD';
 
-    // --- FUNCIÓN DE GENERACIÓN DE CLAVE EXACTA (MODIFICADA para usar abreviaturas de la hoja) ---
     function generateClave(provenanceName, artista, tecnica, claveActual, allRegistrosObra = [], abreviaturasList = [], tecnicasList = [], autoresList = []) {
         let numStr = '0001';
 
@@ -818,16 +838,12 @@
             }
         }
 
-        // --- BLOQUE 1: PROVENANCE (USANDO ABREVIATURAS DE LA HOJA) ---
-        let provStr = 'RTB'; // Valor por defecto
+        let provStr = 'RTB';
 
         if (provenanceName && provenanceName.trim() !== '') {
             const cleanProv = provenanceName.trim();
-
-            // Buscar en la lista de abreviaturas (de la hoja Abreviaturas)
             let abreviaturaEncontrada = null;
 
-            // Primero buscar por nombre exacto
             for (const abrev of abreviaturasList) {
                 if (abrev.nombre && abrev.nombre.toLowerCase() === cleanProv.toLowerCase()) {
                     abreviaturaEncontrada = abrev.abreviatura;
@@ -835,7 +851,6 @@
                 }
             }
 
-            // Si no se encontró, buscar por coincidencia parcial
             if (!abreviaturaEncontrada) {
                 const provLower = cleanProv.toLowerCase();
                 for (const abrev of abreviaturasList) {
@@ -849,11 +864,9 @@
                 }
             }
 
-            // Si se encontró, usarla
             if (abreviaturaEncontrada) {
                 provStr = abreviaturaEncontrada;
             } else {
-                // Si no, generar una abreviatura
                 const cleanProvFallback = cleanProv.replace(/\s+/g, '').toUpperCase();
                 if (cleanProvFallback.length > 0) {
                     provStr = cleanProvFallback.substring(0, 3).padEnd(3, 'X');
@@ -863,13 +876,11 @@
 
         const bloque1 = `${numStr}${provStr}`;
 
-        // --- BLOQUE 2: AUTOR (USANDO ABREVIATURAS DE LA HOJA) ---
         let artistStr = '';
         if (artista && artista.trim() !== '') {
             const cleanArtista = artista.trim();
             let abreviaturaEncontrada = null;
 
-            // Buscar en la lista de autores del backend
             for (const autor of autoresList) {
                 if (autor.nombre && autor.nombre.toLowerCase() === cleanArtista.toLowerCase()) {
                     abreviaturaEncontrada = autor.abreviatura;
@@ -877,7 +888,6 @@
                 }
             }
 
-            // Si no se encontró, buscar por coincidencia parcial
             if (!abreviaturaEncontrada) {
                 const artistaLower = cleanArtista.toLowerCase();
                 for (const autor of autoresList) {
@@ -891,7 +901,6 @@
                 }
             }
 
-            // Si no se encontró en el backend, usar el mapa de fallback
             if (!abreviaturaEncontrada) {
                 for (const [nombreAutor, abreviatura] of Object.entries(AUTOR_ABREVIATURAS)) {
                     if (nombreAutor.toLowerCase() === cleanArtista.toLowerCase()) {
@@ -904,7 +913,6 @@
             if (abreviaturaEncontrada) {
                 artistStr = abreviaturaEncontrada;
             } else {
-                // Si no, generar una abreviatura
                 const wordsArtista = cleanArtista.split(/\s+/);
                 const pNombre = wordsArtista[0] || '';
                 const sNombre = wordsArtista[1] || '';
@@ -916,13 +924,11 @@
             }
         }
 
-        // --- BLOQUE 3: TÉCNICA (USANDO ABREVIATURAS DE LA HOJA) ---
         let tecStr = '';
         if (tecnica && tecnica.trim() !== '') {
             const cleanTecnica = tecnica.trim();
             let abreviaturaEncontrada = null;
 
-            // Primero buscar coincidencia exacta (prioritario)
             for (const tec of tecnicasList) {
                 if (tec.nombre && tec.nombre.toLowerCase() === cleanTecnica.toLowerCase()) {
                     abreviaturaEncontrada = tec.abreviatura;
@@ -930,7 +936,6 @@
                 }
             }
 
-            // Si no se encontró exacta, buscar por coincidencia parcial
             if (!abreviaturaEncontrada) {
                 const tecLower = cleanTecnica.toLowerCase();
                 for (const tec of tecnicasList) {
@@ -947,7 +952,6 @@
             if (abreviaturaEncontrada) {
                 tecStr = abreviaturaEncontrada;
             } else {
-                // Si no, generar una abreviatura
                 const wordsTec = cleanTecnica.split(/\s+/);
                 const pPalabraTec = wordsTec[0] || '';
 
@@ -969,7 +973,6 @@
         return bloque1;
     }
 
-    // --- COMPONENTE DE AUTOCOMPLETADO ---
     function AutocompleteInput({
       value,
       onChange,
@@ -1092,7 +1095,6 @@
       );
     }
 
-    // --- COMPONENTE DE INPUT DE PRECIO CON FORMATO ---
     function PriceInput({ value, onChange, currency, label }) {
       const [displayValue, setDisplayValue] = useState('');
       const [isEditing, setIsEditing] = useState(false);
@@ -1139,7 +1141,6 @@
         onChange(raw);
       };
 
-      // Obtener el símbolo de la moneda
       const getCurrencySymbol = (curr) => {
         switch(curr) {
           case 'USD': return 'USD $';
@@ -1196,11 +1197,9 @@
     const IconCog = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>;
     const IconClose = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
 
-    // --- ICONOS DE VERIFICACIÓN ---
     const IconVerified = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
     const IconUnverified = ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
 
-    // --- CARGADOR E INDICADORES ---
     const BoxLoader = ({ message = "Cargando datos..." }) => (
       <div className="flex flex-col items-center justify-center p-12 space-y-6">
         <div className="flex items-end justify-center space-x-2 h-10">
@@ -1231,12 +1230,15 @@
     const MEASURE_ROUND_FACTOR = 10000;
 
     const DEFAULT_UI_SETTINGS = { darkMode: false, rotateMeasures: true };
+
+    // ✅ ACTUALIZADO: incluye comision_valor y comision_tipo
     const DEFAULT_OBRA = {
       id: '', nombre_obra: '', ubicacion: '', estatus: 'Disponible', tipo_obra: '',
       superficie: '', precio_lista: '', precio_venta: '', fecha_registro: '', fecha_adquisicion: '',
       cliente: '', observaciones: '', id_responsable: '', autor: '',
       asignacion: '', provenance: '', clave: '', ancho: '', alto: '', largo: '', peso: '', tags: [], tipo_moneda: 'MXN',
-      documentos: [], adjuntos: [], verificada: false
+      documentos: [], adjuntos: [], verificada: false,
+      comision_valor: 0, comision_tipo: 'porcentaje'
     };
 
     function getRecentIds() { try { return JSON.parse(localStorage.getItem(RECENT_OBRAS_KEY) || "[]"); } catch (e) { return []; } }
@@ -1273,8 +1275,6 @@
         return null;
     }
 
-    // --- COMPONENTE PRINCIPAL ---
-    // Mapa de técnica -> categoría (tag) para autocompletar la categoría al elegir la técnica
     const TECNICA_CATEGORIA_MAP = {
       'Óleo sobre tela': '#Pintura',
       'Óleo sobre lino': '#Pintura',
@@ -1316,8 +1316,6 @@
       'Ensamblaje': '#Objeto',
       'Esmalte sobre metal': '#Objeto'
     };
-    // Conjunto de todas las categorías posibles, usado para reemplazar la categoría anterior
-    // cuando el usuario cambia de técnica, sin tocar el resto de las tags del usuario.
     const CATEGORIA_TAGS_SET = new Set(Object.values(TECNICA_CATEGORIA_MAP));
 
     function App() {
@@ -1340,7 +1338,7 @@
       const [comisiones, setComisiones] = useState([]);
       const [abreviaturas, setAbreviaturas] = useState([]);
       const [tecnicas, setTecnicas] = useState([]);
-      const [autores, setAutores] = useState([]); // <-- Nuevo estado para autores
+      const [autores, setAutores] = useState([]);
       const [search, setSearch] = useState("");
 
       const [filterStatus, setFilterStatus] = useState("");
@@ -1367,10 +1365,8 @@
       const [uiSettings, setUiSettings] = useState(() => getUiSettings());
       const [togglingVerification, setTogglingVerification] = useState(false);
 
-      // --- Estado para sugerencias de tags ---
       const [tagsSuggestions, setTagsSuggestions] = useState([]);
 
-      // --- Estado para el modal de Provenance ---
       const [showProvModal, setShowProvModal] = useState(false);
       const [provModalMode, setProvModalMode] = useState('add');
       const [editingProvId, setEditingProvId] = useState(null);
@@ -1380,7 +1376,6 @@
       const [savingProv, setSavingProv] = useState(false);
       const [provError, setProvError] = useState('');
 
-      // --- Estado para el modal de Técnica ---
       const [showTecModal, setShowTecModal] = useState(false);
       const [tecModalMode, setTecModalMode] = useState('add');
       const [editingTecId, setEditingTecId] = useState(null);
@@ -1389,7 +1384,6 @@
       const [savingTec, setSavingTec] = useState(false);
       const [tecError, setTecError] = useState('');
 
-      // --- Estado para el modal de Autor ---
       const [showAutorModal, setShowAutorModal] = useState(false);
       const [autorModalMode, setAutorModalMode] = useState('add');
       const [editingAutorId, setEditingAutorId] = useState(null);
@@ -1398,17 +1392,14 @@
       const [savingAutor, setSavingAutor] = useState(false);
       const [autorError, setAutorError] = useState('');
 
-      // --- REF para controlar si se puede acceder al formulario ---
       const [isDataLoaded, setIsDataLoaded] = useState(false);
 
       const imageInputRef = useRef(null);
       const techInputRef = useRef(null);
       const tagsInputRef = useRef(null);
 
-      // Obtener listas de sugerencias (solo nombres, no abreviaturas)
       const autorSuggestions = useMemo(() => autores.map(a => a.nombre).sort(), [autores]);
 
-      // Extraer todas las tags únicas de las obras para sugerencias
       const allTags = useMemo(() => {
         const tagsSet = new Set();
         obras.forEach(obra => {
@@ -1421,7 +1412,6 @@
         return Array.from(tagsSet).sort();
       }, [obras]);
 
-      // Función para obtener sugerencias de tags filtradas
       const getTagsSuggestions = (input) => {
         if (!input || !input.trim()) return [];
         const inputLower = input.toLowerCase().trim();
@@ -1436,15 +1426,12 @@
         ).slice(0, 10);
       };
 
-      // Función CORREGIDA para añadir una tag sugerida - reemplaza la palabra parcial
       const addSuggestedTag = (suggestedTag) => {
         if (!currentObra) return;
         const currentValue = (currentObra.tags || '').toString();
 
-        // Obtener las palabras actuales
         const words = currentValue.split(/[,\s]+/).filter(w => w.trim().length > 0);
 
-        // Si no hay palabras, simplemente añadir la tag
         if (words.length === 0) {
           handleFormChange('tags', suggestedTag);
           setTagsSuggestions([]);
@@ -1452,31 +1439,24 @@
           return;
         }
 
-        // Reemplazar la última palabra (la que se está escribiendo) por la tag sugerida
         const lastWord = words[words.length - 1];
         const lastWordIndex = currentValue.lastIndexOf(lastWord);
 
-        // Construir el nuevo valor: todo lo anterior + la tag sugerida
         const beforeLastWord = currentValue.substring(0, lastWordIndex);
         const afterLastWord = currentValue.substring(lastWordIndex + lastWord.length);
 
-        // Determinar si hay un separador antes de la última palabra (coma o espacio)
         const trimmedBefore = beforeLastWord.trimEnd();
         const hasSeparator = trimmedBefore.length > 0 && (trimmedBefore.endsWith(',') || trimmedBefore.endsWith(' '));
 
         let newValue = '';
         if (hasSeparator) {
-          // Si ya hay un separador, mantenerlo
           newValue = trimmedBefore + ' ' + suggestedTag + afterLastWord;
         } else if (trimmedBefore.length > 0) {
-          // Si no hay separador, añadir coma y espacio
           newValue = trimmedBefore + ', ' + suggestedTag + afterLastWord;
         } else {
-          // Si es la única palabra
           newValue = suggestedTag + afterLastWord;
         }
 
-        // Limpiar espacios redundantes
         newValue = newValue.replace(/\s*,\s*/g, ', ').replace(/\s+/g, ' ').trim();
 
         handleFormChange('tags', newValue);
@@ -1484,7 +1464,6 @@
         tagsInputRef.current?.focus();
       };
 
-      // Opciones de ubicación
       const ubicacionOptions = [
         'Bodega SP',
         'Bodega LF',
@@ -1590,6 +1569,7 @@
           if (!res.ok) throw new Error("Fallo en la red");
           const data = await res.json();
           if (data && data.registrosObra) {
+            // ✅ ACTUALIZADO: normalizar comision_valor y comision_tipo
             const fetchedObras = data.registrosObra.map(o => ({
               ...o,
               ancho: normalizeMeasureValue(o.ancho),
@@ -1598,21 +1578,20 @@
               tipo_moneda: o.tipo_moneda || 'MXN',
               documentos: Array.isArray(o.documentos) ? o.documentos : [],
               adjuntos: Array.isArray(o.adjuntos) ? o.adjuntos : [],
-              verificada: o.verificada === true || o.verificada === 'Sí' || o.verificada === 'true'
+              verificada: o.verificada === true || o.verificada === 'Sí' || o.verificada === 'true',
+              comision_valor: parseFloat(o.comision_valor) || 0,
+              comision_tipo: (o.comision_tipo === 'monto') ? 'monto' : 'porcentaje'
             }));
             setObras(fetchedObras);
             setResponsables(data.responsables || []);
             setComisiones(data.comisiones || []);
 
-            // Cargar autores desde el backend (de la hoja Abreviaturas con tipo 'autor_')
             const autoresData = (data.abreviaturas || []).filter(a => a.tipo && a.tipo.startsWith('autor_'));
             setAutores(autoresData);
 
-            // Cargar técnicas (tipo 'tec_')
             const tecnicasData = (data.abreviaturas || []).filter(a => a.tipo && a.tipo.startsWith('tec_'));
             setTecnicas(tecnicasData);
 
-            // Cargar todas las abreviaturas
             setAbreviaturas(data.abreviaturas || []);
 
             setIsDataLoaded(true);
@@ -1645,7 +1624,6 @@
         if (!isInitialLoad) window.location.hash = obra.id;
       };
 
-      // --- Función para crear nueva obra ---
       const handleCreateNewObra = () => {
         if (!isDataLoaded) {
           showToast('Espera a que los datos terminen de cargar', 'error');
@@ -1666,25 +1644,26 @@
         window.history.pushState("", document.title, window.location.pathname + window.location.search);
       };
 
+      // ✅ ACTUALIZADO: normaliza comision_valor y comision_tipo
       const handleEditObra = (obra) => {
         const today = new Date().toISOString().split('T')[0];
         setCurrentObra({
           ...obra,
           tags: Array.isArray(obra.tags) ? obra.tags.join(', ') : (obra.tags || ''),
           fecha_adquisicion: today,
-          verificada: obra.verificada === true || obra.verificada === 'Sí' || obra.verificada === 'true'
+          verificada: obra.verificada === true || obra.verificada === 'Sí' || obra.verificada === 'true',
+          comision_valor: parseFloat(obra.comision_valor) || 0,
+          comision_tipo: (obra.comision_tipo === 'monto') ? 'monto' : 'porcentaje'
         });
         setPendingFiles([]);
         setSelectedTechAdj('RW');
         setView("form");
       };
 
-      // --- Función handleFormChange CORREGIDA ---
       const handleFormChange = (field, value) => {
         if (!currentObra) return;
         const updated = { ...currentObra, [field]: value };
 
-        // Al elegir/cambiar la Técnica, autocompletar la categoría correspondiente en Tags
         if (field === 'tipo_obra') {
           const categoriaTag = TECNICA_CATEGORIA_MAP[value];
           if (categoriaTag) {
@@ -1693,8 +1672,6 @@
               .split(/[,\s]+/)
               .map(t => t.trim())
               .filter(Boolean)
-              // Quitamos cualquier categoría anterior (#Pintura, #Escultura, etc.)
-              // para no acumular varias categorías si el usuario cambia de técnica.
               .filter(t => !CATEGORIA_TAGS_SET.has(t));
             tagList.push(categoriaTag);
             updated.tags = tagList.join(', ');
@@ -1709,13 +1686,9 @@
             provName = com ? com.provenance : provVal;
           }
 
-          // Obtener el nombre de la técnica desde el valor actualizado
           let tecName = updated.tipo_obra || '';
-
-          // Obtener el nombre del autor desde el valor actualizado
           let autorName = updated.autor || '';
 
-          // Generar la clave usando el autor y la técnica
           updated.clave = generateClave(
             provName,
             autorName,
@@ -1731,7 +1704,6 @@
         setCurrentObra(updated);
       };
 
-      // --- Función para abrir el modal de añadir Provenance ---
       const handleOpenAddProv = () => {
         setProvModalMode('add');
         setEditingProvId(null);
@@ -1742,7 +1714,6 @@
         setShowProvModal(true);
       };
 
-      // --- Función para abrir el modal de editar Provenance ---
       const handleOpenEditProv = (comision) => {
         setProvModalMode('edit');
         setEditingProvId(comision.id);
@@ -1754,7 +1725,6 @@
         setShowProvModal(true);
       };
 
-      // --- Función para guardar Provenance ---
       const handleSaveProv = async () => {
         setProvError('');
 
@@ -1931,7 +1901,6 @@
         }
       };
 
-      // --- Función para eliminar Provenance ---
       const handleDeleteProv = async () => {
         if (!editingProvId) return;
         if (!confirm(`¿Estás seguro de eliminar el Provenance "${newProvName}"?`)) return;
@@ -1972,8 +1941,6 @@
           setSavingProv(false);
         }
       };
-
-      // --- FUNCIONES PARA TÉCNICA ---
 
       const handleOpenAddTec = () => {
         setTecModalMode('add');
@@ -2039,14 +2006,12 @@
                 fecha_registro: new Date().toISOString()
               };
 
-              // Actualizar ambas listas
               const updatedTecnicas = [...tecnicas, newTec];
               const updatedAbreviaturas = [...abreviaturas, newTec];
 
               setTecnicas(updatedTecnicas);
               setAbreviaturas(updatedAbreviaturas);
 
-              // Si hay una obra actual, actualizar su clave con la nueva técnica
               if (currentObra) {
                 const provVal = currentObra.provenance;
                 let provName = '';
@@ -2055,11 +2020,10 @@
                   provName = com ? com.provenance : provVal;
                 }
 
-                // Regenerar clave usando la nueva técnica
                 const newClave = generateClave(
                   provName,
                   currentObra.autor,
-                  name, // Usar el nombre exacto de la técnica
+                  name,
                   currentObra.clave,
                   obras,
                   updatedAbreviaturas,
@@ -2104,7 +2068,6 @@
               setTecnicas(updatedTecnicas);
               setAbreviaturas(updatedAbreviaturas);
 
-              // Si la obra actual usa esta técnica, actualizar la clave
               if (currentObra && currentObra.tipo_obra === name) {
                 const provVal = currentObra.provenance;
                 let provName = '';
@@ -2171,8 +2134,6 @@
           setSavingTec(false);
         }
       };
-
-      // --- FUNCIONES PARA AUTOR ---
 
       const handleOpenAddAutor = () => {
         setAutorModalMode('add');
@@ -2244,7 +2205,6 @@
               setAutores(updatedAutores);
               setAbreviaturas(updatedAbreviaturas);
 
-              // Si hay una obra actual, actualizar su clave con el nuevo autor
               if (currentObra) {
                 const provVal = currentObra.provenance;
                 let provName = '';
@@ -2255,7 +2215,7 @@
 
                 const newClave = generateClave(
                   provName,
-                  name, // Usar el nombre exacto del autor
+                  name,
                   currentObra.tipo_obra,
                   currentObra.clave,
                   obras,
@@ -2301,7 +2261,6 @@
               setAutores(updatedAutores);
               setAbreviaturas(updatedAbreviaturas);
 
-              // Si la obra actual usa este autor, actualizar la clave
               if (currentObra && currentObra.autor === name) {
                 const provVal = currentObra.provenance;
                 let provName = '';
@@ -2575,6 +2534,7 @@
         } catch (e) { showToast("Error en la llamada", "error"); }
       };
 
+      // ✅ ACTUALIZADO: incluye comision_valor y comision_tipo en el payload
       const handleSave = async (e) => {
         e.preventDefault();
         if (!currentObra) return;
@@ -2591,6 +2551,9 @@
           ? currentObra.tags
           : (currentObra.tags || '').toString().split(/[,\s]+/).map(t => t.trim()).filter(Boolean);
 
+        const comisionValor = parseFloat(currentObra.comision_valor);
+        const comisionTipo = (currentObra.comision_tipo === 'monto') ? 'monto' : 'porcentaje';
+
         const payload = {
           ...currentObra,
           ancho: normalizeMeasureValue(currentObra.ancho),
@@ -2600,7 +2563,9 @@
           precio_lista: parseFloat(currentObra.precio_lista) || 0,
           precio_venta: parseFloat(currentObra.precio_venta) || 0,
           tags: tagsNormalized,
-          verificada: currentObra.verificada === true || currentObra.verificada === 'Sí' || currentObra.verificada === 'true'
+          verificada: currentObra.verificada === true || currentObra.verificada === 'Sí' || currentObra.verificada === 'true',
+          comision_valor: Number.isFinite(comisionValor) && comisionValor >= 0 ? comisionValor : 0,
+          comision_tipo: comisionTipo
         };
 
         try {
@@ -2661,7 +2626,21 @@
         const prov = comisiones.find(c => c.id === currentObra.provenance)?.provenance || currentObra.provenance || "No definida";
         const resp = responsables.find(r => r.id === currentObra.id_responsable)?.nombre || currentObra.id_responsable || "Sin asignar";
         const verificadaStr = currentObra.verificada ? '✅ Verificada' : '❌ No verificada';
-        const textToCopy = `Ficha de Obra: ${currentObra.nombre_obra || 'N/A'}\nWORK ID: ${currentObra.clave || 'N/A'}\nEstatus: ${currentObra.estatus || 'N/A'}\nTipo: ${currentObra.tipo_obra || 'N/A'}\nAutor: ${currentObra.autor || 'N/A'}\nUbicación: ${currentObra.ubicacion || 'N/A'}\nPrecio Lista: ${formatCurrency(currentObra.precio_lista, currentObra.tipo_moneda)}\nPrecio Venta: ${formatCurrency(currentObra.precio_venta, currentObra.tipo_moneda)}\nPeso: ${currentObra.superficie || 0}\nCliente: ${currentObra.cliente || 'N/A'}\nResponsable: ${resp}\nProvenance: ${prov}\nVerificada: ${verificadaStr}\nObservaciones: ${currentObra.observaciones || 'Ninguna'}\nEnlace: ${window.location.origin}${window.location.pathname}#${currentObra.id}`.trim();
+
+        // ✅ ACTUALIZADO: incluir comisión en el texto copiado
+        let comisionStr = 'N/A';
+        const cv = parseFloat(currentObra.comision_valor) || 0;
+        if (cv > 0) {
+          if (currentObra.comision_tipo === 'monto') {
+            comisionStr = `${formatCurrency(cv, currentObra.tipo_moneda)} (monto fijo)`;
+          } else {
+            const pv = parseFloat(currentObra.precio_venta) || 0;
+            const monto = (pv * cv) / 100;
+            comisionStr = `${cv}% → ${formatCurrency(monto, currentObra.tipo_moneda)}`;
+          }
+        }
+
+        const textToCopy = `Ficha de Obra: ${currentObra.nombre_obra || 'N/A'}\nWORK ID: ${currentObra.clave || 'N/A'}\nEstatus: ${currentObra.estatus || 'N/A'}\nTipo: ${currentObra.tipo_obra || 'N/A'}\nAutor: ${currentObra.autor || 'N/A'}\nUbicación: ${currentObra.ubicacion || 'N/A'}\nPrecio Lista: ${formatCurrency(currentObra.precio_lista, currentObra.tipo_moneda)}\nPrecio Venta: ${formatCurrency(currentObra.precio_venta, currentObra.tipo_moneda)}\nComisión: ${comisionStr}\nPeso: ${currentObra.superficie || 0}\nCliente: ${currentObra.cliente || 'N/A'}\nResponsable: ${resp}\nProvenance: ${prov}\nVerificada: ${verificadaStr}\nObservaciones: ${currentObra.observaciones || 'Ninguna'}\nEnlace: ${window.location.origin}${window.location.pathname}#${currentObra.id}`.trim();
         const textArea = document.createElement("textarea");
         textArea.value = textToCopy; document.body.appendChild(textArea); textArea.select();
         try { document.execCommand('copy'); showToast("Copiado al portapapeles"); }
@@ -2723,6 +2702,16 @@
       });
 
       const isMainTab = ['discover', 'list', 'settings'].includes(view);
+
+      // Helper para calcular la comisión efectiva de la obra actual
+      const getCurrentCommissionAmount = () => {
+        if (!currentObra) return 0;
+        const valor = parseFloat(currentObra.comision_valor) || 0;
+        const tipo = (currentObra.comision_tipo || 'porcentaje') === 'monto' ? 'monto' : 'porcentaje';
+        const precioVenta = parseFloat(currentObra.precio_venta) || 0;
+        if (tipo === 'monto') return valor;
+        return (precioVenta * valor) / 100;
+      };
 
       return (
         <div className="min-h-screen pt-[52px] pb-10">
@@ -3007,7 +2996,7 @@
             </div>
           </div>
 
-          {/* VISTA: DISCOVER - Grid de imágenes estilo Instagram - MODIFICADO: orden inverso y grid responsive */}
+          {/* VISTA: DISCOVER */}
           {view === "discover" && (
             <div className="animate-fade-in">
               <header className="px-4 pt-6 pb-2">
@@ -3020,7 +3009,6 @@
                 <p className="text-center text-slate-500 mt-10">No hay obras registradas aún.</p>
               ) : (
                 <div className="discover-grid">
-                  {/* Mostrar las obras en orden inverso (más recientes primero) */}
                   {[...obras].reverse().map(obra => {
                     const imgUrl = getFirstImage(obra);
                     return (
@@ -3349,6 +3337,24 @@
                       <div><p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Precio Venta</p><p className="text-lg font-black text-emerald-600 dark:text-emerald-400">{formatCurrency(currentObra.precio_venta, currentObra.tipo_moneda)}</p></div>
                     </div>
 
+                    {/* ✅ NUEVO: Comisión de la pieza en detalle */}
+                    {(parseFloat(currentObra.comision_valor) || 0) > 0 && (
+                      <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900/40">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold uppercase">Comisión de la pieza</p>
+                          <span className="text-[10px] font-bold bg-indigo-600 text-white px-2 py-0.5 rounded">
+                            {currentObra.comision_tipo === 'monto' ? '$ Monto' : '% Porcentaje'}
+                          </span>
+                        </div>
+                        <p className="text-lg font-black text-indigo-700 dark:text-indigo-300">
+                          {currentObra.comision_tipo === 'monto'
+                            ? formatCurrency(currentObra.comision_valor, currentObra.tipo_moneda)
+                            : `${currentObra.comision_valor}% → ${formatCurrency(getCurrentCommissionAmount(), currentObra.tipo_moneda)}`
+                          }
+                        </p>
+                      </div>
+                    )}
+
                     {(() => {
                       const m = getDisplayedMeasures(currentObra, uiSettings.rotateMeasures);
                       return (
@@ -3606,12 +3612,19 @@
                   </div>
                 </section>
 
+                {/* ✅ SECCIÓN ACTUALIZADA: Valor comercial con comisión por pieza */}
                 <section className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm space-y-4">
                   <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Valor comercial</h3>
+
+                  {/* Precios y moneda */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Moneda</label>
-                      <select className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.tipo_moneda || 'MXN'} onChange={e => handleFormChange('tipo_moneda', e.target.value)}>
+                      <select
+                        className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                        value={currentObra.tipo_moneda || 'MXN'}
+                        onChange={e => handleFormChange('tipo_moneda', e.target.value)}
+                      >
                         <option value="MXN">MXN</option>
                         <option value="USD">USD</option>
                         <option value="EUR">EUR</option>
@@ -3633,6 +3646,80 @@
                         currency={currentObra.tipo_moneda || 'MXN'}
                       />
                     </div>
+                  </div>
+
+                  {/* Comisión de la pieza individual */}
+                  <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+                    <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                          Comisión de la pieza
+                        </h4>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          Monto fijo o porcentaje aplicado a esta obra individual.
+                        </p>
+                      </div>
+                      <div className="commission-type-toggle">
+                        <button
+                          type="button"
+                          onClick={() => handleFormChange('comision_tipo', 'porcentaje')}
+                          className={(currentObra.comision_tipo || 'porcentaje') === 'porcentaje' ? 'active' : ''}
+                        >
+                          % Porcentaje
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleFormChange('comision_tipo', 'monto')}
+                          className={currentObra.comision_tipo === 'monto' ? 'active' : ''}
+                        >
+                          $ Monto
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">
+                          {(currentObra.comision_tipo || 'porcentaje') === 'porcentaje'
+                            ? 'Valor de comisión (%)'
+                            : 'Valor de comisión (monto)'}
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-500 dark:text-slate-400">
+                            {(currentObra.comision_tipo || 'porcentaje') === 'porcentaje' ? '%' : '$'}
+                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            className="w-full p-3 pl-10 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
+                            value={currentObra.comision_valor ?? 0}
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              const num = raw === '' ? 0 : parseFloat(raw);
+                              handleFormChange('comision_valor', isNaN(num) || num < 0 ? 0 : num);
+                            }}
+                            placeholder="0.00"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">
+                          Comisión efectiva estimada
+                        </label>
+                        <div className="w-full p-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-emerald-600 dark:text-emerald-400">
+                          {formatCurrency(getCurrentCommissionAmount(), currentObra.tipo_moneda || 'MXN')}
+                        </div>
+                      </div>
+                    </div>
+
+                    {(currentObra.comision_tipo || 'porcentaje') === 'porcentaje' &&
+                      (parseFloat(currentObra.comision_valor) || 0) > 0 &&
+                      !(parseFloat(currentObra.precio_venta) > 0) && (
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold mt-2">
+                          ⚠️ Define un Precio de Venta para calcular el monto efectivo de la comisión.
+                        </p>
+                      )}
                   </div>
                 </section>
 
@@ -3723,7 +3810,6 @@
                         }}
                       />
 
-                      {/* Sugerencias de tags */}
                       {tagsSuggestions.length > 0 && (
                         <div className="tags-suggestions">
                           {tagsSuggestions.map(tag => (
