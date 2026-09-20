@@ -1365,6 +1365,8 @@
       });
 
       const [view, setView] = useState("discover");
+      const [selectionMode, setSelectionMode] = useState(false);
+      const [selectedObraIds, setSelectedObraIds] = useState(() => new Set());
       const [loading, setLoading] = useState(true);
       const [obras, setObras] = useState([]);
       const [responsables, setResponsables] = useState([]);
@@ -1656,6 +1658,26 @@
         setCurrentObra(obra);
         setView("detail");
         if (!isInitialLoad) window.location.hash = obra.id;
+      };
+
+      const toggleObraSelection = (obraId) => {
+        setSelectedObraIds(prev => {
+          const next = new Set(prev);
+          if (next.has(obraId)) next.delete(obraId);
+          else next.add(obraId);
+          return next;
+        });
+      };
+
+      const cancelCatalogSelection = () => {
+        setSelectedObraIds(new Set());
+        setSelectionMode(false);
+      };
+
+      const exportCatalogSelection = () => {
+        if (selectedObraIds.size === 0) return;
+        const ids = Array.from(selectedObraIds).join(',');
+        window.location.href = `https://frontline-zeta-ecru.vercel.app/movil/?ids=${encodeURIComponent(ids)}`;
       };
 
       const handleCreateNewObra = () => {
@@ -2790,7 +2812,7 @@
                 </button>
               </div>
               <div className="ps-topbar-spacer" />
-              <span className="ps-topbar-hint">Versión de escritorio</span>
+              <span className="ps-topbar-hint">Versión de escritorio 1.2V</span>
             </div>
           </div>
 
@@ -3047,6 +3069,22 @@
                   <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">base de datos de obra</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  {!selectionMode ? (
+                    <button onClick={() => setSelectionMode(true)} className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold">
+                      Seleccionar
+                    </button>
+                  ) : (
+                    <>
+                      <button onClick={cancelCatalogSelection} className="px-3 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold">
+                        Cancelar
+                      </button>
+                      <button onClick={exportCatalogSelection} disabled={selectedObraIds.size === 0} className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed">
+                        Exportar ({selectedObraIds.size})
+                      </button>
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
                   <select className="w-40 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs outline-none" value={filterAutor} onChange={e => setFilterAutor(e.target.value)}>
                     <option value="">Autor: Todos</option>
                     {autorOptions.map(v => <option key={v} value={v}>{v}</option>)}
@@ -3075,8 +3113,8 @@
                     return (
                       <div
                         key={obra.id}
-                        className="grid-item"
-                        onClick={() => openDetail(obra)}
+                        className={`grid-item ${selectionMode && selectedObraIds.has(obra.id) ? 'ring-4 ring-inset ring-emerald-400' : ''}`}
+                        onClick={() => selectionMode ? toggleObraSelection(obra.id) : openDetail(obra)}
                       >
                         {imgUrl ? (
                           <img
@@ -3090,6 +3128,11 @@
                           </div>
                         )}
                         <div className="catalog-card-info">
+                          {selectionMode && (
+                            <span className={`absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-black ${selectedObraIds.has(obra.id) ? 'bg-emerald-500 border-emerald-300 text-white' : 'bg-black/30 border-white text-transparent'}`}>
+                              ✓
+                            </span>
+                          )}
                           <p className="catalog-card-title">{obra.nombre_obra || 'Sin título'}</p>
                           <p className="catalog-card-meta">{obra.autor || 'Autor desconocido'} · {obra.tipo_obra || 'Técnica no definida'}</p>
                           <p className="catalog-card-price">{formatCurrency(price, obra.tipo_moneda)}</p>

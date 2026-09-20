@@ -1269,6 +1269,8 @@
       });
 
       const [view, setView] = useState("discover");
+      const [selectionMode, setSelectionMode] = useState(false);
+      const [selectedObraIds, setSelectedObraIds] = useState(() => new Set());
       const [loading, setLoading] = useState(true);
       const [obras, setObras] = useState([]);
       const [responsables, setResponsables] = useState([]);
@@ -1561,6 +1563,26 @@
         setCurrentObra(obra);
         setView("detail");
         if (!isInitialLoad) window.location.hash = obra.id;
+      };
+
+      const toggleObraSelection = (obraId) => {
+        setSelectedObraIds(prev => {
+          const next = new Set(prev);
+          if (next.has(obraId)) next.delete(obraId);
+          else next.add(obraId);
+          return next;
+        });
+      };
+
+      const cancelCatalogSelection = () => {
+        setSelectedObraIds(new Set());
+        setSelectionMode(false);
+      };
+
+      const exportCatalogSelection = () => {
+        if (selectedObraIds.size === 0) return;
+        const ids = Array.from(selectedObraIds).join(',');
+        window.location.href = `https://frontline-zeta-ecru.vercel.app/movil/?ids=${encodeURIComponent(ids)}`;
       };
 
       const handleCreateNewObra = () => {
@@ -2899,6 +2921,20 @@
               <header className="px-4 pt-6 pb-2">
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Catalogo</h1>
                 <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">base de datos de obra</p>
+                {!selectionMode ? (
+                  <button onClick={() => setSelectionMode(true)} className="mt-3 w-full px-3 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all">
+                    Seleccionar obras
+                  </button>
+                ) : (
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={cancelCatalogSelection} className="flex-1 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-700 rounded-xl transition-all">
+                      Cancelar
+                    </button>
+                    <button onClick={exportCatalogSelection} disabled={selectedObraIds.size === 0} className="flex-1 px-3 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                      Exportar ({selectedObraIds.size})
+                    </button>
+                  </div>
+                )}
                 <button
                   onClick={() => setShowCatalogFilters(!showCatalogFilters)}
                   className="mt-3 w-full px-3 py-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl transition-all"
@@ -2936,8 +2972,8 @@
                     return (
                       <div
                         key={obra.id}
-                        className="grid-item"
-                        onClick={() => openDetail(obra)}
+                        className={`grid-item ${selectionMode && selectedObraIds.has(obra.id) ? 'ring-4 ring-inset ring-emerald-400' : ''}`}
+                        onClick={() => selectionMode ? toggleObraSelection(obra.id) : openDetail(obra)}
                       >
                         {imgUrl ? (
                           <img
@@ -2951,6 +2987,11 @@
                           </div>
                         )}
                         <div className="catalog-card-info">
+                          {selectionMode && (
+                            <span className={`absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-black ${selectedObraIds.has(obra.id) ? 'bg-emerald-500 border-emerald-300 text-white' : 'bg-black/30 border-white text-transparent'}`}>
+                              ✓
+                            </span>
+                          )}
                           <p className="catalog-card-title">{obra.nombre_obra || 'Sin título'}</p>
                           <p className="catalog-card-meta">{obra.autor || 'Autor desconocido'} · {obra.tipo_obra || 'Técnica no definida'}</p>
                           <p className="catalog-card-price">{formatCurrency(price, obra.tipo_moneda)}</p>
