@@ -2668,7 +2668,7 @@
           if (currentObra.comision_tipo === 'monto') {
             comisionStr = `${formatCurrency(cv, currentObra.tipo_moneda)} (monto fijo)`;
           } else {
-            const pv = parseFloat(currentObra.precio_venta) || 0;
+            const pv = parseFloat(currentObra.precio_lista) || 0;
             const monto = (pv * cv) / 100;
             comisionStr = `${cv}% → ${formatCurrency(monto, currentObra.tipo_moneda)}`;
           }
@@ -2750,9 +2750,9 @@
         if (!currentObra) return 0;
         const valor = parseFloat(currentObra.comision_valor) || 0;
         const tipo = (currentObra.comision_tipo || 'porcentaje') === 'monto' ? 'monto' : 'porcentaje';
-        const precioVenta = parseFloat(currentObra.precio_venta) || 0;
+        const precioLista = parseFloat(currentObra.precio_lista) || 0;
         if (tipo === 'monto') return valor;
-        return (precioVenta * valor) / 100;
+        return (precioLista * valor) / 100;
       };
 
       return (
@@ -3784,9 +3784,9 @@
 
                     {(currentObra.comision_tipo || 'porcentaje') === 'porcentaje' &&
                       (parseFloat(currentObra.comision_valor) || 0) > 0 &&
-                      !(parseFloat(currentObra.precio_venta) > 0) && (
+                      !(parseFloat(currentObra.precio_lista) > 0) && (
                         <p className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold mt-2">
-                          ⚠️ Define un Precio de Venta para calcular el monto efectivo de la comisión.
+                          ⚠️ Define un Precio de Lista para calcular el monto efectivo de la comisión.
                         </p>
                       )}
                   </div>
