@@ -1272,13 +1272,17 @@ const actorId = (data.id_actor || '').toString().trim();
 if (!idObra) throw new Error('Falta data.id_obra');
 if (!fileId) throw new Error('Falta data.fileId');
 if (!actorId) throw new Error('Falta data.id_actor');
-assertPrivileged_(ss, actorId);
+const obra = getRegistroObraById_(ss, idObra);
+if (!obra) throw new Error('Registro de obra no encontrado');
+const obraResponsableId = (obra.values[COL_REGISTROS_ID_RESPONSABLE - 1] || '').toString();
+if (!isPrivileged_(ss, actorId) && actorId !== obraResponsableId) {
+throw new Error('No autorizado: solo el responsable o supervisor puede eliminar adjuntos');
+}
 try {
 DriveApp.getFileById(fileId).setTrashed(true);
 } catch (e) {
 // continuar
 }
-const obra = getRegistroObraById_(ss, idObra);
 if (obra) {
 const prevRaw = obra.sh.getRange(obra.rowIndex, COL_REGISTROS_ADJUNTOS).getValue();
 const prevAdj = parseAdjuntosObra_(prevRaw);
