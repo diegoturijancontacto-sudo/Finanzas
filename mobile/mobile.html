@@ -1334,6 +1334,7 @@
       const [autorError, setAutorError] = useState('');
 
       const [isDataLoaded, setIsDataLoaded] = useState(false);
+      const [showCoverPicker, setShowCoverPicker] = useState(false);
 
       const imageInputRef = useRef(null);
       const techInputRef = useRef(null);
@@ -1446,6 +1447,30 @@
           pendingAdjuntos[0] ||
           null
         );
+      };
+
+      const isExistingObra = () => !!currentObra && obras.some(obra => obra.id === currentObra.id);
+      const getImageAdjuntos = () => (currentObra?.adjuntos || []).filter(adjunto =>
+        adjunto?.mimeType?.includes('image') || adjunto?.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+      );
+
+      const handleChangeCover = (adjuntoId) => {
+        if (!isExistingObra()) return;
+        const adjuntos = currentObra?.adjuntos || [];
+        const selectedIndex = adjuntos.findIndex(adjunto => adjunto.id === adjuntoId);
+        if (selectedIndex < 0) return;
+
+        const reorderedAdjuntos = adjuntos.map((adjunto, index) => {
+          const { typeCode, ...adjuntoWithoutTypeCode } = adjunto;
+          return index === selectedIndex
+            ? { ...adjuntoWithoutTypeCode, typeCode: 'RW' }
+            : adjuntoWithoutTypeCode;
+        });
+        const selectedAdjunto = reorderedAdjuntos.splice(selectedIndex, 1)[0];
+        reorderedAdjuntos.unshift(selectedAdjunto);
+
+        setCurrentObra({ ...currentObra, adjuntos: reorderedAdjuntos });
+        setShowCoverPicker(false);
       };
 
       const isImageOriginalAdjunto = (adjunto) => getImageOriginalAdjunto() === adjunto;
@@ -1601,6 +1626,7 @@
         setCurrentObra(newObra);
         setPendingFiles([]);
         setSelectedTechAdj('RW');
+        setShowCoverPicker(false);
         setView("form");
         window.history.pushState("", document.title, window.location.pathname + window.location.search);
       };
@@ -1618,6 +1644,7 @@
         });
         setPendingFiles([]);
         setSelectedTechAdj('RW');
+        setShowCoverPicker(false);
         setView("form");
       };
 
@@ -3839,6 +3866,43 @@
                               </div>
                             );
                           })()}
+                        </div>
+                      )}
+
+                      {isExistingObra() && getImageAdjuntos().length > 1 && (
+                        <div className="space-y-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowCoverPicker(!showCoverPicker)}
+                            className="w-full py-2.5 bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold transition-colors hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                          >
+                            {showCoverPicker ? 'Cerrar selección de portada' : 'Cambiar portada'}
+                          </button>
+
+                          {showCoverPicker && (
+                            <div className="space-y-2 max-h-64 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700 p-2 bg-white dark:bg-slate-900">
+                              {getImageAdjuntos().map(adjunto => {
+                                const isCover = getImageOriginalAdjunto()?.id === adjunto.id;
+                                const imageUrl = adjunto.id
+                                  ? `https://drive.google.com/thumbnail?id=${adjunto.id}&sz=w400`
+                                  : adjunto.url;
+                                return (
+                                  <button
+                                    key={adjunto.id}
+                                    type="button"
+                                    onClick={() => handleChangeCover(adjunto.id)}
+                                    className={`w-full flex items-center gap-3 p-2 rounded-xl text-left border transition-colors ${isCover ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20' : 'border-transparent hover:border-indigo-200 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                                  >
+                                    {imageUrl ? <img src={imageUrl} alt={adjunto.name || 'Adjunto'} className="w-14 h-14 rounded-lg object-cover shrink-0" /> : <div className="w-14 h-14 rounded-lg bg-slate-200 dark:bg-slate-700 shrink-0" />}
+                                    <span className="min-w-0 flex-1">
+                                      <span className="block truncate text-xs font-semibold text-slate-700 dark:text-slate-200">{adjunto.name || adjunto.id}</span>
+                                      <span className={`block text-[10px] font-bold uppercase ${isCover ? 'text-emerald-600' : 'text-slate-400'}`}>{isCover ? 'Portada actual' : 'Usar como portada'}</span>
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       )}
 
