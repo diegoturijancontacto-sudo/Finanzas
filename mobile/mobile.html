@@ -3389,18 +3389,17 @@
                   </div>
                 </div>
 
-                {currentObra.adjuntos && currentObra.adjuntos.length > 0 && (
-                  <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-800">
+                {currentObra.adjuntos?.some(a =>
+                  a.mimeType?.includes('image') || a.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+                ) && (
+                  <div className="space-y-3">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Adjuntos en Google Drive</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {currentObra.adjuntos.map(a => (
-                        <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer" className="block rounded-2xl overflow-hidden shadow-sm active:scale-95 transition-transform border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 p-2">
-                          {a.mimeType?.includes('image') || a.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                            <img src={`https://drive.google.com/thumbnail?id=${a.id}&sz=w400`} className="w-full h-28 object-cover rounded-xl mb-1" alt={a.name} />
-                          ) : (
-                            <div className="w-full h-28 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-700 rounded-xl mb-1 text-slate-400"><IconFileText className="w-8 h-8 mb-1"/></div>
-                          )}
-                          <p className="text-[10px] font-bold truncate text-slate-700 dark:text-slate-300 font-mono">{a.name || 'Archivo'}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {currentObra.adjuntos.filter(a =>
+                        a.mimeType?.includes('image') || a.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+                      ).map(a => (
+                        <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer" className="block aspect-[3/4] overflow-hidden active:scale-95 transition-transform">
+                          <img src={`https://drive.google.com/thumbnail?id=${a.id}&sz=w400`} className="w-full h-full object-cover" alt={a.name || 'Imagen de la obra'} />
                         </a>
                       ))}
                     </div>

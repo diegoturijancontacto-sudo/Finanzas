@@ -3580,18 +3580,17 @@
 
                 <div className="space-y-4 mt-4 lg:mt-0">
                 {/* ADJUNTOS EN DRIVE */}
-                {currentObra.adjuntos && currentObra.adjuntos.length > 0 && (
-                  <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-800">
+                {currentObra.adjuntos?.some(a =>
+                  a.mimeType?.includes('image') || a.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+                ) && (
+                  <div className="space-y-3">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Adjuntos en Google Drive</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {currentObra.adjuntos.map(a => (
-                        <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer" className="block rounded-2xl overflow-hidden shadow-sm active:scale-95 transition-transform border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 p-2">
-                          {a.mimeType?.includes('image') || a.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                            <img src={`https://drive.google.com/thumbnail?id=${a.id}&sz=w400`} className="w-full h-28 object-cover rounded-xl mb-1" alt={a.name} />
-                          ) : (
-                            <div className="w-full h-28 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-700 rounded-xl mb-1 text-slate-400"><IconFileText className="w-8 h-8 mb-1"/></div>
-                          )}
-                          <p className="text-[10px] font-bold truncate text-slate-700 dark:text-slate-300 font-mono">{a.name || 'Archivo'}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {currentObra.adjuntos.filter(a =>
+                        a.mimeType?.includes('image') || a.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+                      ).map(a => (
+                        <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer" className="block aspect-[3/4] overflow-hidden active:scale-95 transition-transform">
+                          <img src={`https://drive.google.com/thumbnail?id=${a.id}&sz=w400`} className="w-full h-full object-cover" alt={a.name || 'Imagen de la obra'} />
                         </a>
                       ))}
                     </div>
@@ -3650,10 +3649,25 @@
               <nav className="sticky top-[52px] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50 p-4 flex justify-between items-center z-10">
                 <button type="button" onClick={() => obras.find(o => o.id === currentObra.id) ? setView("detail") : setView("list")} className="font-semibold text-slate-500 dark:text-slate-400 px-2 py-1">Cancelar</button>
                 <h2 className="font-bold">{obras.find(o => o.id === currentObra.id) ? 'Editar Obra' : 'Nueva Obra'}</h2>
-                <button disabled={saving} type="submit" form="obra-form" className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 disabled:opacity-50">
-                  {saving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <IconSave className="w-4 h-4" />}
-                  Guardar
-                </button>
+                <div className="flex items-center gap-2">
+                  <label title="Marcar obra como verificada" className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border cursor-pointer select-none transition-colors ${currentObra.verificada ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800/50 dark:text-emerald-400' : 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800/50 dark:text-amber-400'}`}>
+                    {currentObra.verificada ? <IconVerified className="w-4 h-4 shrink-0" /> : <IconUnverified className="w-4 h-4 shrink-0" />}
+                    <span className="hidden sm:inline text-xs font-bold">{currentObra.verificada ? 'Verificada' : 'Pendiente'}</span>
+                    <span className="relative inline-flex items-center">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={currentObra.verificada === true}
+                        onChange={(e) => handleFormChange('verificada', e.target.checked)}
+                      />
+                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-500"></div>
+                    </span>
+                  </label>
+                  <button disabled={saving} type="submit" form="obra-form" className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 disabled:opacity-50">
+                    {saving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <IconSave className="w-4 h-4" />}
+                    Guardar
+                  </button>
+                </div>
               </nav>
 
               <form id="obra-form" onSubmit={handleSave} className="p-4 lg:p-6 max-w-[1400px] mx-auto lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start space-y-6 lg:space-y-0">
@@ -4005,34 +4019,6 @@
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Observaciones</label>
                       <textarea rows="3" className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none" value={currentObra.observaciones || ''} onChange={e => handleFormChange('observaciones', e.target.value)} />
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/50">
-                      <div className="flex items-center gap-3">
-                        {currentObra.verificada ? (
-                          <IconVerified className="w-5 h-5 text-emerald-500" />
-                        ) : (
-                          <IconUnverified className="w-5 h-5 text-amber-500" />
-                        )}
-                        <div>
-                          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                            {currentObra.verificada ? '✅ Verificada' : '⏳ Pendiente de verificación'}
-                          </p>
-                          <p className="text-[10px] text-slate-400">
-                            {currentObra.verificada
-                              ? 'Esta obra ha sido verificada'
-                              : 'Marcar como verificada al guardar'}
-                          </p>
-                        </div>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="sr-only peer"
-                          checked={currentObra.verificada === true}
-                          onChange={(e) => handleFormChange('verificada', e.target.checked)}
-                        />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-500"></div>
-                      </label>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2" />
                   </div>
