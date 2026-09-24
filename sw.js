@@ -1,4 +1,4 @@
-const CACHE_NAME = 'v1.3.2_cache_pwa';
+const CACHE_NAME = 'v1.4.2_cache_pwa';
 
 // Corregido: Quitamos las barras iniciales para que busque dentro de /Finanzas/
 const urlsToCache = [
