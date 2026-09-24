@@ -706,6 +706,7 @@
 
     // URL de tu Apps Script
     const API_URL = "https://script.google.com/macros/s/AKfycbxyBzZ7duM3pKtobXHj8A2NgFpIarP5WPS71TKTH2uFMOXXL8rzo68-blixF8kgCwvl8w/exec";
+    const CERTIFICATE_API_URL = "https://script.google.com/macros/s/AKfycbxhfk9X86NZY6nhPzjiQtmUUoglYv1q5sZcEudiOc1QjT8P-25N0umBRyr2QwhcThR4JA/exec";
 
     // --- LISTA COMPLETA DE AUTORES Y ABREVIATURAS (fallback) ---
     const AUTOR_ABREVIATURAS = {
@@ -1301,6 +1302,7 @@
 
       const [toast, setToast] = useState({ message: '', type: '' });
       const [saving, setSaving] = useState(false);
+      const [generatingCertificate, setGeneratingCertificate] = useState(false);
       const [recentIds, setRecentIds] = useState(() => getRecentIds());
       const [viewedIds, setViewedIds] = useState(() => getViewedHistory());
       const [uiSettings, setUiSettings] = useState(() => getUiSettings());
@@ -2637,6 +2639,116 @@
         }
       };
 
+      const handleGenerateCertificate = async () => {
+        if (!currentObra || generatingCertificate) return;
+
+        const certificateDocuments = (currentObra.documentos || []).filter(doc =>
+          doc && (doc.tipo === 'Certificado' || doc.tipo === 'Certificado Web' || doc.tipo === 'Certificado PDF')
+        );
+        const existingPdf = certificateDocuments.find(doc => doc.tipo === 'Certificado PDF') ||
+          certificateDocuments.find(doc => doc.tipo === 'Certificado');
+        const existingWeb = certificateDocuments.find(doc => doc.tipo === 'Certificado Web');
+        if (existingPdf?.url && existingWeb?.url) {
+          const link = document.createElement('a');
+          link.href = existingPdf.url;
+          link.target = '_blank';
+          link.download = existingPdf.nombre || 'certificado.pdf';
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          showToast(existingWeb ? 'Certificado existente descargado' : 'PDF del certificado existente descargado');
+          return;
+        }
+
+        setGeneratingCertificate(true);
+        showToast('Generando certificado...');
+
+        const originalImage = (currentObra.adjuntos || []).find(adjunto => adjunto?.typeCode === 'RW') ||
+          (currentObra.adjuntos || []).find(adjunto =>
+            adjunto?.mimeType?.includes('image') || /\.(jpg|jpeg|png|gif|webp)$/i.test(adjunto?.name || '')
+          );
+        const certificatePayload = {
+          id: currentObra.id,
+          nombre_obra: currentObra.nombre_obra,
+          tipo_obra: currentObra.tipo_obra,
+          provenance: comisiones.find(c => c.id === currentObra.provenance)?.provenance || currentObra.provenance,
+          autor: currentObra.autor,
+          clave: currentObra.clave,
+          alto: currentObra.alto,
+          ancho: currentObra.ancho,
+          largo: currentObra.largo,
+          adjuntos: originalImage ? [originalImage] : []
+        };
+
+        try {
+          const response = await fetch(CERTIFICATE_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'certificado_generar', data: certificatePayload })
+          });
+          const result = await response.json();
+          if (!result.ok || !result.pdfUrl) throw new Error(result.message || 'El servidor no devolvió el PDF');
+
+          const actorId = getActorId();
+          const today = new Date().toISOString().split('T')[0];
+          const webDocument = {
+            id: 'cert_web_' + result.id,
+            tipo: 'Certificado Web',
+            nombre: `Certificado web - ${currentObra.nombre_obra || currentObra.clave || result.id}`,
+            url: result.certificateUrl,
+            fecha: today
+          };
+          const pdfDocument = {
+            id: 'cert_pdf_' + result.id,
+            tipo: 'Certificado PDF',
+            nombre: `Certificado - ${currentObra.nombre_obra || currentObra.clave || result.id}.pdf`,
+            url: result.pdfUrl,
+            fecha: today
+          };
+          const documentsToRegister = [webDocument, pdfDocument].filter(documento =>
+            documento.tipo === 'Certificado Web'
+              ? !existingWeb?.url
+              : !existingPdf?.url
+          );
+          const registeredDocuments = [];
+          try {
+            if (actorId) {
+              for (const documento of documentsToRegister) {
+                const documentResponse = await fetch(API_URL, {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    action: 'registro_obra_documento_add',
+                    data: { id_obra: currentObra.id, id_actor: actorId, documento }
+                  })
+                });
+                const documentResult = await documentResponse.json();
+                if (documentResult.result === 'success') registeredDocuments.push(documento);
+              }
+            }
+          } catch (error) {
+          }
+
+          if (registeredDocuments.length > 0) {
+            const updatedDocuments = [...(currentObra.documentos || []), ...registeredDocuments];
+            const updatedObra = { ...currentObra, documentos: updatedDocuments };
+            setCurrentObra(updatedObra);
+            setObras(prev => prev.map(obra => obra.id === currentObra.id ? updatedObra : obra));
+          }
+
+          const downloadLink = document.createElement('a');
+          downloadLink.href = result.pdfUrl;
+          downloadLink.download = pdfDocument.nombre;
+          downloadLink.target = '_blank';
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          downloadLink.remove();
+          showToast(registeredDocuments.length === documentsToRegister.length ? 'Certificado generado y registrado' : 'Certificado generado; no se registraron todos los enlaces');
+        } catch (error) {
+          showToast(error.message || 'Error al generar el certificado', 'error');
+        } finally {
+          setGeneratingCertificate(false);
+        }
+      };
+
       const handleReportError = async () => {
         if (!currentObra) return;
         const obraUrl = `${window.location.origin}${window.location.pathname}#${currentObra.id}`;
@@ -3287,6 +3399,7 @@
                 <div className="flex gap-1 sm:gap-2">
                   <button onClick={handleShare} className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors"><IconShare /></button>
                   <button onClick={handleCopyInfo} className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors"><IconCopy /></button>
+                  <button onClick={handleGenerateCertificate} disabled={generatingCertificate} title="Generar certificado" aria-label="Generar certificado" className={`p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors ${generatingCertificate ? 'opacity-50 cursor-not-allowed' : ''}`}><IconFileText /></button>
                   <button onClick={() => handleEditObra(currentObra)} className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors"><IconEdit /></button>
                 </div>
               </nav>
@@ -3406,10 +3519,32 @@
                   </div>
                 )}
 
-                {currentObra.documentos && currentObra.documentos.length > 0 && (
+                {(() => {
+                  const certificados = (currentObra.documentos || []).filter(doc =>
+                    doc && (doc.tipo === 'Certificado' || doc.tipo === 'Certificado Web' || doc.tipo === 'Certificado PDF')
+                  );
+                  const web = certificados.find(doc => doc.tipo === 'Certificado Web');
+                  const pdf = certificados.find(doc => doc.tipo === 'Certificado PDF') || certificados.find(doc => doc.tipo === 'Certificado');
+                  if (!certificados.length) return null;
+                  return (
+                    <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-indigo-200/60 dark:border-indigo-900/50 space-y-3">
+                      <h3 className="text-xs font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest">Certificado</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {web?.url && <a href={web.url} target="_blank" rel="noopener noreferrer" className="text-center text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-2.5 rounded-xl">Ver certificado web</a>}
+                        {pdf?.url && <a href={pdf.url} target="_blank" rel="noopener noreferrer" className="text-center text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-2.5 rounded-xl">Descargar PDF</a>}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {currentObra.documentos && currentObra.documentos.filter(doc =>
+                  !doc || !['Certificado', 'Certificado Web', 'Certificado PDF'].includes(doc.tipo)
+                ).length > 0 && (
                   <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-800 space-y-3">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Documentos Legales y Técnicos</h3>
-                    {currentObra.documentos.map(doc => (
+                    {currentObra.documentos.filter(doc =>
+                      !doc || !['Certificado', 'Certificado Web', 'Certificado PDF'].includes(doc.tipo)
+                    ).map(doc => (
                       <div key={doc.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
                         <div className="min-w-0">
                           <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{doc.nombre}</p>
