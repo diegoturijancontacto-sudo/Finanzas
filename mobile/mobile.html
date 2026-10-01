@@ -1255,6 +1255,20 @@
       'Esmalte sobre metal': '#Objeto'
     };
     const CATEGORIA_TAGS_SET = new Set(Object.values(TECNICA_CATEGORIA_MAP));
+    const CERTIFICATE_CATEGORY_BY_TAG = {
+      '#pintura': 'Pintura',
+      '#escultura': 'Escultura',
+      '#grafica': 'Obra gráfica',
+      '#gráfica': 'Obra gráfica'
+    };
+
+    const getCertificateCategory = (tags) => {
+      const tagList = Array.isArray(tags) ? tags : String(tags || '').split(/[\s,]+/);
+      const categoryTag = tagList
+        .map(tag => String(tag).trim().toLowerCase())
+        .find(tag => CERTIFICATE_CATEGORY_BY_TAG[tag]);
+      return categoryTag ? CERTIFICATE_CATEGORY_BY_TAG[categoryTag] : '';
+    };
 
     function App() {
       const normalizeMeasureValue = (value) => {
@@ -2667,10 +2681,12 @@
           (currentObra.adjuntos || []).find(adjunto =>
             adjunto?.mimeType?.includes('image') || /\.(jpg|jpeg|png|gif|webp)$/i.test(adjunto?.name || '')
           );
+        const certificateCategory = getCertificateCategory(currentObra.tags);
         const certificatePayload = {
           id: currentObra.id,
           nombre_obra: currentObra.nombre_obra,
-          tipo_obra: currentObra.tipo_obra,
+          tipo_obra: certificateCategory || currentObra.tipo_obra,
+          categoria: certificateCategory,
           provenance: comisiones.find(c => c.id === currentObra.provenance)?.provenance || currentObra.provenance,
           autor: currentObra.autor,
           clave: currentObra.clave,

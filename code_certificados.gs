@@ -66,8 +66,8 @@ function normalizeCertificateData_(data) {
 
   return {
     obraId: String(obra.id || obra.obraId || '').trim(),
-    categoria: String(obra.tipo_obra || obra.categoria || '').trim(),
-    soporte: String(obra.provenance || obra.soporte || '').trim(),
+    categoria: String(obra.categoria || obra.tipo_obra || '').trim(),
+    soporte: 'desconocido',
     alto: obra.alto ?? '',
     ancho: obra.ancho ?? '',
     profundo: obra.largo ?? obra.profundo ?? '',
