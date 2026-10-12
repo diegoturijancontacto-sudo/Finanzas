@@ -99,13 +99,18 @@
     .rtbrok-sidebar-brand {
       display: flex;
       align-items: center;
-      height: 58px;
-      padding: 0 12px;
-      font-family: Georgia, serif;
-      font-size: 30px;
-      color: #f4f4f5;
-      letter-spacing: -1px;
-      margin-bottom: 10px;
+      justify-content: center;
+      height: 70px;
+      padding: 0 4px;
+      margin-bottom: 12px;
+    }
+    .rtbrok-sidebar-brand img {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      max-height: 70px;
+      object-fit: contain;
     }
     .rtbrok-sidebar-nav {
       display: flex;
@@ -606,10 +611,15 @@
         align-items: center;
       }
       .rtbrok-sidebar-brand {
-        font-size: 19px;
         padding: 0;
         justify-content: center;
         width: 48px;
+        height: 48px;
+        margin-bottom: 8px;
+      }
+      .rtbrok-sidebar-brand img {
+        max-height: 40px;
+        max-width: 40px;
       }
       .rtbrok-sidebar-link {
         flex-direction: column;
@@ -2772,7 +2782,7 @@
           <aside className="rtbrok-sidebar">
             <div>
               <div className="rtbrok-sidebar-brand">
-                @rtbrok
+                <img src="logo-large-s.png" alt="RTBROK" />
               </div>
               <nav className="rtbrok-sidebar-nav">
                 {/* Inicio */}
@@ -2816,8 +2826,6 @@
                 {/* Catálogos PDF - reemplaza la función del botón Libro */}
                 <a
                   href="https://frontline-zeta-ecru.vercel.app/movil/"
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="rtbrok-sidebar-link"
                   title="Catálogos PDF"
                 >
@@ -2896,7 +2904,7 @@
                   </button>
                 </div>
                 <div className="ps-topbar-spacer" />
-                <span className="ps-topbar-hint">Versión de escritorio 1.4.4V</span>
+                <span className="ps-topbar-hint">Versión de escritorio 1.4.5V</span>
               </div>
             </div>
 
