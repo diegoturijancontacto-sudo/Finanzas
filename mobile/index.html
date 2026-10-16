@@ -650,11 +650,13 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useMemo, useRef } = React;
+    const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
     // URL de tu Apps Script
     const API_URL = "https://script.google.com/macros/s/AKfycbxyBzZ7duM3pKtobXHj8A2NgFpIarP5WPS71TKTH2uFMOXXL8rzo68-blixF8kgCwvl8w/exec";
     const CERTIFICATE_API_URL = "https://script.google.com/macros/s/AKfycbxhfk9X86NZY6nhPzjiQtmUUoglYv1q5sZcEudiOc1QjT8P-25N0umBRyr2QwhcThR4JA/exec";
+
+    const PAGE_SIZE = 50;
 
     const AUTOR_ABREVIATURAS = {
         'Abelardo López': 'ALP',
@@ -1120,7 +1122,7 @@
       superficie: '', precio_lista: '', precio_venta: '', fecha_registro: '', fecha_adquisicion: '',
       cliente: '', observaciones: '', id_responsable: '', autor: '',
       asignacion: '', provenance: '', clave: '', ancho: '', alto: '', largo: '', peso: '', tags: [], tipo_moneda: 'MXN',
-      documentos: [], adjuntos: [], verificada: false,
+      documentos: [], adjuntos: [], comentarios: [], verificada: false,
       comision_valor: 0, comision_tipo: 'porcentaje'
     };
 
@@ -1239,6 +1241,16 @@
       const [tecnicas, setTecnicas] = useState([]);
       const [autores, setAutores] = useState([]);
       const [search, setSearch] = useState("");
+
+      // ===== Estado de paginación =====
+      const [obrasTotal, setObrasTotal] = useState(0);
+      const [obrasOffset, setObrasOffset] = useState(0);
+      const [hasMoreObras, setHasMoreObras] = useState(true);
+      const [loadingMore, setLoadingMore] = useState(false);
+      const [catalogosLoaded, setCatalogosLoaded] = useState(false);
+      const [obraDetailLoading, setObraDetailLoading] = useState(false);
+      const obrasCacheRef = useRef(new Map());
+      const sentinelRef = useRef(null);
 
       const [filterStatus, setFilterStatus] = useState("");
       const [filterTipo, setFilterTipo] = useState("");
@@ -1372,28 +1384,168 @@
         'Provenance'
       ];
 
-      useEffect(() => { fetchAllData(); }, []);
+      // ===== Carga catálogos =====
+      const fetchCatalogos = useCallback(async () => {
+        try {
+          const res = await fetch(`${API_URL}?endpoint=catalogos`);
+          if (!res.ok) throw new Error("Fallo en la red");
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+
+          setResponsables(data.responsables || []);
+          setComisiones(data.comisiones || []);
+          setAbreviaturas(data.abreviaturas || []);
+
+          const autoresData = (data.abreviaturas || []).filter(a => a.tipo && a.tipo.startsWith('autor_'));
+          setAutores(autoresData);
+          const tecnicasData = (data.abreviaturas || []).filter(a => a.tipo && a.tipo.startsWith('tec_'));
+          setTecnicas(tecnicasData);
+
+          setCatalogosLoaded(true);
+        } catch (e) {
+          console.error('Error fetchCatalogos:', e);
+          showToast("Error cargando catálogos", "error");
+        }
+      }, []);
+
+      // ===== Carga página de obras =====
+      const fetchObrasPage = useCallback(async (offset = 0, append = false) => {
+        if (append) setLoadingMore(true);
+        else setLoading(true);
+
+        try {
+          const res = await fetch(`${API_URL}?endpoint=obras&limit=${PAGE_SIZE}&offset=${offset}`);
+          if (!res.ok) throw new Error("Fallo en la red");
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+
+          const fetched = (data.registrosObra || []).map(o => ({
+            ...o,
+            ancho: normalizeMeasureValue(o.ancho),
+            alto: normalizeMeasureValue(o.alto),
+            largo: normalizeMeasureValue(o.largo),
+            tipo_moneda: o.tipo_moneda || 'MXN',
+            documentos: Array.isArray(o.documentos) ? o.documentos : [],
+            adjuntos: Array.isArray(o.adjuntos) ? o.adjuntos : [],
+            comentarios: [],
+            verificada: o.verificada === true || o.verificada === 'Sí' || o.verificada === 'true',
+            comision_valor: parseFloat(o.comision_valor) || 0,
+            comision_tipo: (o.comision_tipo === 'monto') ? 'monto' : 'porcentaje'
+          }));
+
+          setObras(prev => append ? [...prev, ...fetched] : fetched);
+          setObrasTotal(data.meta?.total || 0);
+          setObrasOffset(offset + fetched.length);
+          setHasMoreObras(!!data.meta?.hasMore);
+        } catch (e) {
+          console.error('Error fetchObrasPage:', e);
+          showToast("Error cargando obras", "error");
+        } finally {
+          setLoading(false);
+          setLoadingMore(false);
+        }
+      }, []);
+
+      // ===== Carga detalle completo de una obra =====
+      const fetchObraDetail = useCallback(async (id) => {
+        if (!id) return null;
+        if (obrasCacheRef.current.has(id)) return obrasCacheRef.current.get(id);
+
+        setObraDetailLoading(true);
+        try {
+          const res = await fetch(`${API_URL}?endpoint=obra&id=${encodeURIComponent(id)}`);
+          if (!res.ok) throw new Error("Fallo en la red");
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+
+          const full = data.obra;
+          const normalized = {
+            ...full,
+            ancho: normalizeMeasureValue(full.ancho),
+            alto: normalizeMeasureValue(full.alto),
+            largo: normalizeMeasureValue(full.largo),
+            tipo_moneda: full.tipo_moneda || 'MXN',
+            documentos: Array.isArray(full.documentos) ? full.documentos : [],
+            adjuntos: Array.isArray(full.adjuntos) ? full.adjuntos : [],
+            comentarios: Array.isArray(full.comentarios) ? full.comentarios : [],
+            verificada: full.verificada === true || full.verificada === 'Sí' || full.verificada === 'true',
+            comision_valor: parseFloat(full.comision_valor) || 0,
+            comision_tipo: (full.comision_tipo === 'monto') ? 'monto' : 'porcentaje'
+          };
+
+          obrasCacheRef.current.set(id, normalized);
+          setObras(prev => prev.map(o => o.id === id ? { ...o, ...normalized } : o));
+          return normalized;
+        } catch (e) {
+          console.error('Error fetchObraDetail:', e);
+          showToast("Error cargando detalle de obra", "error");
+          return null;
+        } finally {
+          setObraDetailLoading(false);
+        }
+      }, []);
+
+      // ===== Recarga tras mutaciones =====
+      const reloadAfterMutation = useCallback(async (includeCatalogos = false) => {
+        obrasCacheRef.current.clear();
+        setObrasOffset(0);
+        setHasMoreObras(true);
+        if (includeCatalogos) await fetchCatalogos();
+        await fetchObrasPage(0, false);
+      }, [fetchCatalogos, fetchObrasPage]);
+
+      // ===== Carga inicial =====
+      useEffect(() => {
+        (async () => {
+          setLoading(true);
+          setIsDataLoaded(false);
+          await fetchCatalogos();
+          await fetchObrasPage(0, false);
+          setIsDataLoaded(true);
+          setLoading(false);
+
+          const hash = window.location.hash.substring(1);
+          if (hash) {
+            const detail = await fetchObraDetail(hash);
+            if (detail) openDetail(detail, true);
+          }
+        })();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, []);
 
       useEffect(() => {
         localStorage.setItem(UI_SETTINGS_KEY, JSON.stringify(uiSettings));
         document.documentElement.classList.add('dark');
       }, [uiSettings]);
 
+      // ===== Scroll infinito =====
       useEffect(() => {
-        const handleHashChange = () => {
+        if (!sentinelRef.current) return;
+        const el = sentinelRef.current;
+        const observer = new IntersectionObserver((entries) => {
+          if (entries[0].isIntersecting && hasMoreObras && !loadingMore && !loading && catalogosLoaded) {
+            fetchObrasPage(obrasOffset, true);
+          }
+        }, { rootMargin: '300px' });
+        observer.observe(el);
+        return () => observer.disconnect();
+      }, [hasMoreObras, loadingMore, loading, obrasOffset, catalogosLoaded, fetchObrasPage]);
+
+      // ===== Hash change (deep link) =====
+      useEffect(() => {
+        const handleHashChange = async () => {
           const hash = window.location.hash.substring(1);
-          if (!hash && (view === 'detail' || view === 'author')) setView("list");
-          else if (hash && obras.length > 0) {
-            const linkedObra = obras.find(o => o.id === hash || o.clave === hash);
-            if (linkedObra) {
-              setCurrentObra(linkedObra);
-              setView("detail");
-              setViewedIds(addViewedHistory(linkedObra.id));
-            }
+          if (!hash && (view === 'detail' || view === 'author')) {
+            setView("list");
+          } else if (hash) {
+            const local = obras.find(o => o.id === hash || o.clave === hash);
+            const target = local || await fetchObraDetail(hash);
+            if (target) openDetail(target, true);
           }
         };
         window.addEventListener("hashchange", handleHashChange);
         return () => window.removeEventListener("hashchange", handleHashChange);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
       }, [obras, view]);
 
       const getImageOriginalAdjunto = () => {
@@ -1486,66 +1638,47 @@
         setPortadaPreviewUrl('');
       }, [currentObra?.adjuntos, pendingFiles]);
 
-      const fetchAllData = async () => {
-        setLoading(true);
-        setIsDataLoaded(false);
-        try {
-          const res = await fetch(API_URL);
-          if (!res.ok) throw new Error("Fallo en la red");
-          const data = await res.json();
-          if (data && data.registrosObra) {
-            const fetchedObras = data.registrosObra.map(o => ({
-              ...o,
-              ancho: normalizeMeasureValue(o.ancho),
-              alto: normalizeMeasureValue(o.alto),
-              largo: normalizeMeasureValue(o.largo),
-              tipo_moneda: o.tipo_moneda || 'MXN',
-              documentos: Array.isArray(o.documentos) ? o.documentos : [],
-              adjuntos: Array.isArray(o.adjuntos) ? o.adjuntos : [],
-              verificada: o.verificada === true || o.verificada === 'Sí' || o.verificada === 'true',
-              comision_valor: parseFloat(o.comision_valor) || 0,
-              comision_tipo: (o.comision_tipo === 'monto') ? 'monto' : 'porcentaje'
-            }));
-            setObras(fetchedObras);
-            setResponsables(data.responsables || []);
-            setComisiones(data.comisiones || []);
-
-            const autoresData = (data.abreviaturas || []).filter(a => a.tipo && a.tipo.startsWith('autor_'));
-            setAutores(autoresData);
-
-            const tecnicasData = (data.abreviaturas || []).filter(a => a.tipo && a.tipo.startsWith('tec_'));
-            setTecnicas(tecnicasData);
-
-            setAbreviaturas(data.abreviaturas || []);
-
-            setIsDataLoaded(true);
-
-            const hash = window.location.hash.substring(1);
-            if (hash) {
-              const linkedObra = fetchedObras.find(o => o.id === hash || o.clave === hash);
-              if (linkedObra) openDetail(linkedObra, true);
-            }
-          } else {
-            showToast("Error de formato API", "error");
-            setIsDataLoaded(true);
-          }
-        } catch (e) {
-          showToast("Error de conexión con el backend.", "error");
-          setIsDataLoaded(true);
-        }
-        finally { setLoading(false); }
-      };
-
       const showToast = (message, type = 'success') => setToast({ message, type });
 
-      const openDetail = (obra, isInitialLoad = false) => {
+      const openDetail = async (obra, isInitialLoad = false) => {
         if (!obra) return;
+
         saveRecentId(obra.id);
         setRecentIds(getRecentIds());
         setViewedIds(addViewedHistory(obra.id));
         setCurrentObra(obra);
         setView("detail");
         if (!isInitialLoad) window.location.hash = obra.id;
+
+        // Carga el detalle completo si aún no lo tenemos
+        const needsDetail = !obra.documentos || obra.documentos.length === 0 || !obra.adjuntos || obra.adjuntos.length === 0;
+        if (needsDetail && !obrasCacheRef.current.has(obra.id)) {
+          const full = await fetchObraDetail(obra.id);
+          if (full) setCurrentObra(full);
+        }
+      };
+
+      const openAuthorGrid = async (autor) => {
+        if (!autor) return;
+        setCurrentAuthor(autor);
+        setView("author");
+        // Carga todas las páginas si faltan para que el filtro por autor sea completo
+        let offset = obrasOffset;
+        let more = hasMoreObras;
+        while (more) {
+          await fetchObrasPage(offset, true);
+          // Recuperamos de nuevo los valores actualizados
+          // (no podemos fiarnos del state dentro del loop, así que actualizamos con la cuenta)
+          const nextOffset = offset + PAGE_SIZE;
+          offset = nextOffset;
+          if (obrasTotal && offset >= obrasTotal) {
+            more = false;
+          } else {
+            // Verificamos si quedan más consultando el último estado
+            more = false; // se actualizará en el próximo render; aquí paramos para evitar loop
+          }
+          break;
+        }
       };
 
       const toggleObraSelection = (obraId) => {
@@ -1589,15 +1722,24 @@
         window.history.pushState("", document.title, window.location.pathname + window.location.search);
       };
 
-      const handleEditObra = (obra) => {
+      const handleEditObra = async (obra) => {
+        let full = obra;
+        const needsDetail = !obra.adjuntos || obra.adjuntos.length === 0 || !obra.documentos;
+        if (needsDetail && !obrasCacheRef.current.has(obra.id)) {
+          const detail = await fetchObraDetail(obra.id);
+          if (detail) full = detail;
+        } else if (obrasCacheRef.current.has(obra.id)) {
+          full = obrasCacheRef.current.get(obra.id);
+        }
+
         const today = new Date().toISOString().split('T')[0];
         setCurrentObra({
-          ...obra,
-          tags: Array.isArray(obra.tags) ? obra.tags.join(', ') : (obra.tags || ''),
-          fecha_adquisicion: today,
-          verificada: obra.verificada === true || obra.verificada === 'Sí' || obra.verificada === 'true',
-          comision_valor: parseFloat(obra.comision_valor) || 0,
-          comision_tipo: (obra.comision_tipo === 'monto') ? 'monto' : 'porcentaje'
+          ...full,
+          tags: Array.isArray(full.tags) ? full.tags.join(', ') : (full.tags || ''),
+          fecha_adquisicion: full.fecha_adquisicion || today,
+          verificada: full.verificada === true || full.verificada === 'Sí' || full.verificada === 'true',
+          comision_valor: parseFloat(full.comision_valor) || 0,
+          comision_tipo: (full.comision_tipo === 'monto') ? 'monto' : 'porcentaje'
         });
         setPendingFiles([]);
         setSelectedTechAdj('RW');
@@ -2333,6 +2475,11 @@
             setObras(obras.map(o =>
               o.id === currentObra.id ? { ...o, verificada: newVerificationState } : o
             ));
+            // Actualiza caché local
+            if (obrasCacheRef.current.has(currentObra.id)) {
+              const cached = obrasCacheRef.current.get(currentObra.id);
+              obrasCacheRef.current.set(currentObra.id, { ...cached, verificada: newVerificationState });
+            }
             showToast(newVerificationState ? '✅ Obra verificada' : '🔓 Verificación removida');
           } else {
             showToast('Error: ' + (result.message || 'No se pudo actualizar'), 'error');
@@ -2413,7 +2560,11 @@
               mimeType: file.type || 'application/octet-stream'
             };
             const updatedAdj = [...(currentObra.adjuntos || []), newAdj];
-            setCurrentObra({ ...currentObra, adjuntos: updatedAdj });
+            const updatedObra = { ...currentObra, adjuntos: updatedAdj };
+            setCurrentObra(updatedObra);
+            // Actualiza caché
+            obrasCacheRef.current.set(currentObra.id, updatedObra);
+            setObras(prev => prev.map(o => o.id === currentObra.id ? { ...o, adjuntos: updatedAdj } : o));
             showToast("Subido a Drive con éxito");
           } else {
             showToast("Error subiendo archivo", "error");
@@ -2473,7 +2624,10 @@
           const result = await res.json();
           if (result.result === 'success') {
             const updatedAdj = currentObra.adjuntos.filter(a => a.id !== fileId);
-            setCurrentObra({ ...currentObra, adjuntos: updatedAdj });
+            const updatedObra = { ...currentObra, adjuntos: updatedAdj };
+            setCurrentObra(updatedObra);
+            obrasCacheRef.current.set(currentObra.id, updatedObra);
+            setObras(prev => prev.map(o => o.id === currentObra.id ? { ...o, adjuntos: updatedAdj } : o));
             showToast("Adjunto eliminado");
           } else { showToast('Error al eliminar adjunto', 'error'); }
         } catch (e) { showToast("Error en la llamada", "error"); }
@@ -2543,7 +2697,7 @@
             }
 
             showToast("Obra guardada correctamente");
-            await fetchAllData();
+            await reloadAfterMutation(false);
             setView("list");
           } else { showToast("Error: " + (result?.message || 'Desconocido'), "error"); }
         } catch (e) { showToast("Error al guardar la obra", "error"); }
@@ -2554,12 +2708,13 @@
         if (!confirm('¿Estás seguro de eliminar este registro de obra?')) return;
         setSaving(true);
         try {
-          const res = await fetch(API_URL, {
+          await fetch(API_URL, {
             method: 'POST',
             body: JSON.stringify({ action: 'registro_obra_delete', data: { id: currentObra.id } })
           });
+          obrasCacheRef.current.delete(currentObra.id);
           showToast("Registro eliminado");
-          await fetchAllData();
+          await reloadAfterMutation(false);
           setView("list");
         } catch (e) { showToast("Error al eliminar", "error"); }
         finally { setSaving(false); }
@@ -2700,7 +2855,8 @@
             const updatedDocuments = [...(currentObra.documentos || []), ...registeredDocuments];
             const updatedObra = { ...currentObra, documentos: updatedDocuments };
             setCurrentObra(updatedObra);
-            setObras(prev => prev.map(obra => obra.id === currentObra.id ? updatedObra : obra));
+            obrasCacheRef.current.set(currentObra.id, updatedObra);
+            setObras(prev => prev.map(obra => obra.id === currentObra.id ? { ...obra, documentos: updatedDocuments } : obra));
           }
 
           const downloadLink = document.createElement('a');
@@ -2785,7 +2941,6 @@
                 <img src="logo-large-s.png" alt="RTBROK" />
               </div>
               <nav className="rtbrok-sidebar-nav">
-                {/* Inicio */}
                 <a
                   href="https://diegoturijancontacto-sudo.github.io/homeScreenRtbrok/"
                   className="rtbrok-sidebar-link"
@@ -2797,7 +2952,6 @@
                   <span>Inicio</span>
                 </a>
 
-                {/* Obras - resaltado como seleccionado, sin link */}
                 <div
                   className="rtbrok-sidebar-link active"
                   title="Obras"
@@ -2809,7 +2963,6 @@
                   <span>Obras</span>
                 </div>
 
-                {/* Instagram */}
                 <a
                   href="https://diegoturijancontacto-sudo.github.io/homeScreenRtbrok/?tab=instagram"
                   className="rtbrok-sidebar-link"
@@ -2821,7 +2974,6 @@
                   <span>Instagram</span>
                 </a>
 
-                {/* Catálogos PDF - reemplaza la función del botón Libro */}
                 <a
                   href="https://frontline-zeta-ecru.vercel.app/movil/"
                   className="rtbrok-sidebar-link"
@@ -2833,7 +2985,6 @@
                   <span>Catálogos PDF</span>
                 </a>
 
-                {/* Certificados - reemplaza la función del botón Certificados */}
                 <a
                   href="https://diegoturijancontacto-sudo.github.io/Certificados/"
                   className="rtbrok-sidebar-link"
@@ -2847,7 +2998,6 @@
               </nav>
             </div>
 
-            {/* Footer sidebar con ajustes y atrás */}
             <div className="rtbrok-sidebar-footer">
               <button
                 onClick={() => setView('settings')}
@@ -2868,7 +3018,6 @@
 
           {/* ===== CONTENIDO PRINCIPAL ===== */}
           <div className="app-main">
-            {/* Barra de menú superior original del Gestor (conserva funcionalidad) */}
             <div className="ps-topbar shrink-0">
               <div className="ps-topbar-inner">
                 <div className="ps-topbar-brand">
@@ -2900,11 +3049,12 @@
                   </button>
                 </div>
                 <div className="ps-topbar-spacer" />
-                <span className="ps-topbar-hint">Versión de escritorio 1.4.7V</span>
+                <span className="ps-topbar-hint">
+                  {obrasTotal > 0 ? `${obras.length}/${obrasTotal} obras · ` : ''}Versión de escritorio 1.5.0V
+                </span>
               </div>
             </div>
 
-            {/* Contenido de la app */}
             <div className="app-content">
               {/* MODAL PARA AÑADIR/EDITAR PROVENANCE */}
               <div className={`prov-modal-overlay ${showProvModal ? '' : 'hidden'}`}>
@@ -3191,46 +3341,55 @@
                       <input type="number" placeholder="Precio máximo" className="w-32 p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs outline-none text-zinc-200" value={filterPriceMax} onChange={e => setFilterPriceMax(e.target.value)} />
                     </div>
                   </header>
-                  {loading ? (
+                  {loading && obras.length === 0 ? (
                     <BoxLoader message="Cargando obras..." />
                   ) : obras.length === 0 ? (
                     <p className="text-center text-slate-500 mt-10">No hay obras registradas aún.</p>
                   ) : (
-                    <div className="discover-grid">
-                      {catalogFiltered.map(obra => {
-                        const imgUrl = getFirstImage(obra);
-                        const price = obra.precio_venta || obra.precio_lista;
-                        return (
-                          <div
-                            key={obra.id}
-                            className={`grid-item ${selectionMode && selectedObraIds.has(obra.id) ? 'ring-4 ring-inset ring-emerald-400' : ''}`}
-                            onClick={() => selectionMode ? toggleObraSelection(obra.id) : openDetail(obra)}
-                          >
-                            {imgUrl ? (
-                              <img
-                                src={imgUrl}
-                                alt={obra.nombre_obra || 'Obra sin título'}
-                                loading="lazy"
-                              />
-                            ) : (
-                              <div className="fallback-text">
-                                {obra.nombre_obra || 'Sin título'}
-                              </div>
-                            )}
-                            <div className="catalog-card-info">
-                              {selectionMode && (
-                                <span className={`absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-black ${selectedObraIds.has(obra.id) ? 'bg-emerald-500 border-emerald-300 text-white' : 'bg-black/30 border-white text-transparent'}`}>
-                                  ✓
-                                </span>
+                    <>
+                      <div className="discover-grid">
+                        {catalogFiltered.map(obra => {
+                          const imgUrl = getFirstImage(obra);
+                          const price = obra.precio_venta || obra.precio_lista;
+                          return (
+                            <div
+                              key={obra.id}
+                              className={`grid-item ${selectionMode && selectedObraIds.has(obra.id) ? 'ring-4 ring-inset ring-emerald-400' : ''}`}
+                              onClick={() => selectionMode ? toggleObraSelection(obra.id) : openDetail(obra)}
+                            >
+                              {imgUrl ? (
+                                <img
+                                  src={imgUrl}
+                                  alt={obra.nombre_obra || 'Obra sin título'}
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div className="fallback-text">
+                                  {obra.nombre_obra || 'Sin título'}
+                                </div>
                               )}
-                              <p className="catalog-card-title">{obra.nombre_obra || 'Sin título'}</p>
-                              <p className="catalog-card-meta">{obra.autor || 'Autor desconocido'} · {obra.tipo_obra || 'Técnica no definida'}</p>
-                              <p className="catalog-card-price">{formatCurrency(price, obra.tipo_moneda)}</p>
+                              <div className="catalog-card-info">
+                                {selectionMode && (
+                                  <span className={`absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-black ${selectedObraIds.has(obra.id) ? 'bg-emerald-500 border-emerald-300 text-white' : 'bg-black/30 border-white text-transparent'}`}>
+                                    ✓
+                                  </span>
+                                )}
+                                <p className="catalog-card-title">{obra.nombre_obra || 'Sin título'}</p>
+                                <p className="catalog-card-meta">{obra.autor || 'Autor desconocido'} · {obra.tipo_obra || 'Técnica no definida'}</p>
+                                <p className="catalog-card-price">{formatCurrency(price, obra.tipo_moneda)}</p>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                          );
+                        })}
+                      </div>
+                      <div ref={sentinelRef} className="h-10 w-full" />
+                      {loadingMore && <BoxLoader message="Cargando más obras..." />}
+                      {!hasMoreObras && obras.length > 0 && (
+                        <p className="text-center text-xs text-zinc-500 py-4">
+                          — Fin del catálogo ({obrasTotal} obras) —
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -3261,27 +3420,36 @@
                     </div>
                   </aside>
                   <main className="flex-1 p-4 lg:p-0">
-                    {loading ? <BoxLoader message="Cargando inventario..." /> : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {filtered.map(o => {
-                          const isNew = !viewedIds.includes(o.id);
-                          return (
-                            <div key={o.id} onClick={() => openDetail(o)} className="bg-zinc-950 p-4 rounded-2xl shadow-sm border border-zinc-800 active:scale-95 cursor-pointer transition-transform">
-                              <div className="flex justify-between items-start gap-3 mb-2">
-                                <div className="flex flex-col gap-1 min-w-0">
-                                  <h3 className="font-bold text-slate-100 truncate">{o.nombre_obra}</h3>
-                                  {isNew && <span className="inline-flex w-fit items-center gap-1 bg-amber-900/30 text-amber-400 px-1.5 py-0.5 rounded text-[9px] font-black uppercase"><IconUnseen /> Nueva</span>}
+                    {loading && obras.length === 0 ? <BoxLoader message="Cargando inventario..." /> : (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                          {filtered.map(o => {
+                            const isNew = !viewedIds.includes(o.id);
+                            return (
+                              <div key={o.id} onClick={() => openDetail(o)} className="bg-zinc-950 p-4 rounded-2xl shadow-sm border border-zinc-800 active:scale-95 cursor-pointer transition-transform">
+                                <div className="flex justify-between items-start gap-3 mb-2">
+                                  <div className="flex flex-col gap-1 min-w-0">
+                                    <h3 className="font-bold text-slate-100 truncate">{o.nombre_obra}</h3>
+                                    {isNew && <span className="inline-flex w-fit items-center gap-1 bg-amber-900/30 text-amber-400 px-1.5 py-0.5 rounded text-[9px] font-black uppercase"><IconUnseen /> Nueva</span>}
+                                  </div>
+                                  <span className="text-[10px] font-bold bg-indigo-900/30 text-indigo-400 px-2 py-1 rounded uppercase shrink-0">{o.estatus}</span>
                                 </div>
-                                <span className="text-[10px] font-bold bg-indigo-900/30 text-indigo-400 px-2 py-1 rounded uppercase shrink-0">{o.estatus}</span>
+                                <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-zinc-800/60">
+                                  <p className="text-zinc-500 font-mono font-medium">#{o.clave || '-'}</p>
+                                  <p className="font-semibold text-zinc-300">{formatCurrency(o.precio_venta || o.precio_lista, o.tipo_moneda)}</p>
+                                </div>
                               </div>
-                              <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-zinc-800/60">
-                                <p className="text-zinc-500 font-mono font-medium">#{o.clave || '-'}</p>
-                                <p className="font-semibold text-zinc-300">{formatCurrency(o.precio_venta || o.precio_lista, o.tipo_moneda)}</p>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
+                            )
+                          })}
+                        </div>
+                        <div ref={sentinelRef} className="h-10 w-full" />
+                        {loadingMore && <BoxLoader message="Cargando más obras..." />}
+                        {!hasMoreObras && obras.length > 0 && (
+                          <p className="text-center text-xs text-zinc-500 py-4">
+                            — Fin del inventario ({obrasTotal} obras) —
+                          </p>
+                        )}
+                      </>
                     )}
                   </main>
                 </div>
@@ -3507,6 +3675,14 @@
                     </div>
                   </nav>
 
+                  {obraDetailLoading && (
+                    <div className="px-4 pt-4">
+                      <div className="text-center text-xs text-indigo-400 animate-pulse font-semibold">
+                        Cargando detalle completo de la obra...
+                      </div>
+                    </div>
+                  )}
+
                   <div className="p-4 lg:p-6 max-w-[1400px] mx-auto lg:grid lg:grid-cols-[1.3fr_1fr] lg:gap-6 lg:items-start">
                     <div className="space-y-4">
                     <div className="bg-zinc-950 p-6 rounded-3xl shadow-sm border border-zinc-800">
@@ -3520,7 +3696,7 @@
 
                       <div className="space-y-5 pt-4 border-t border-zinc-800">
                         <div className="grid grid-cols-2 gap-4">
-                          <div onClick={() => { setCurrentAuthor(currentObra.autor); setView("author"); }} className="cursor-pointer group p-2 -m-2 rounded-xl hover:bg-zinc-800/50 transition-colors">
+                          <div onClick={() => openAuthorGrid(currentObra.autor)} className="cursor-pointer group p-2 -m-2 rounded-xl hover:bg-zinc-800/50 transition-colors">
                             <p className="text-[10px] text-zinc-500 font-bold uppercase">Autor</p>
                             <p className="text-sm font-semibold text-indigo-400 group-hover:underline flex items-center gap-1">
                               {currentObra.autor || "-"}
@@ -3850,11 +4026,9 @@
                       </div>
                     </section>
 
-                    {/* SECCIÓN ACTUALIZADA: Valor comercial con comisión por pieza */}
                     <section className="bg-zinc-950 p-6 rounded-3xl border border-zinc-800 shadow-sm space-y-4">
                       <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Valor comercial</h3>
 
-                      {/* Precios y moneda */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <label className="text-[9px] font-bold text-zinc-500 uppercase ml-1">Moneda</label>
@@ -3886,7 +4060,6 @@
                         </div>
                       </div>
 
-                      {/* Comisión de la pieza individual */}
                       <div className="border-t border-zinc-800 pt-4">
                         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                           <div>
