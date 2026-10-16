@@ -1,0 +1,13 @@
+# Dependencias de Node
+node_modules/
+
+# Archivos de build que no necesitas versionar (opcional)
+tailwind-build/node_modules/
+tailwind-build/package-lock.json
+
+# Basura del sistema
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
