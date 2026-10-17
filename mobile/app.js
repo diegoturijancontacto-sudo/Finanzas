@@ -943,7 +943,8 @@ const DEFAULT_OBRA = {
   adjuntos: [],
   verificada: false,
   comision_valor: 0,
-  comision_tipo: 'porcentaje'
+  comision_tipo: 'porcentaje',
+  comentarios: []
 };
 function getRecentIds() {
   try {
@@ -1106,6 +1107,20 @@ function App() {
   const [viewedIds, setViewedIds] = useState(() => getViewedHistory());
   const [uiSettings, setUiSettings] = useState(() => getUiSettings());
   const [togglingVerification, setTogglingVerification] = useState(false);
+
+  // Comentarios (chat de la obra)
+  const [comentarioTexto, setComentarioTexto] = useState('');
+  const [enviandoComentario, setEnviandoComentario] = useState(false);
+  const [eliminandoComentarioId, setEliminandoComentarioId] = useState(null);
+  const comentariosListRef = useRef(null);
+  // Modal que pide un usuario con rol director para comentar / eliminar comentarios
+  const [directorModal, setDirectorModal] = useState({
+    open: false,
+    action: 'add',
+    mensajeId: null
+  });
+  const [directorSeleccionadoId, setDirectorSeleccionadoId] = useState('');
+  const [directorModalError, setDirectorModalError] = useState('');
   const [tagsSuggestions, setTagsSuggestions] = useState([]);
   const [showProvModal, setShowProvModal] = useState(false);
   const [provModalMode, setProvModalMode] = useState('add');
@@ -1290,7 +1305,8 @@ function App() {
           adjuntos: Array.isArray(o.adjuntos) ? o.adjuntos : [],
           verificada: o.verificada === true || o.verificada === 'Sí' || o.verificada === 'true',
           comision_valor: parseFloat(o.comision_valor) || 0,
-          comision_tipo: o.comision_tipo === 'monto' ? 'monto' : 'porcentaje'
+          comision_tipo: o.comision_tipo === 'monto' ? 'monto' : 'porcentaje',
+          comentarios: Array.isArray(o.comentarios) ? o.comentarios : []
         }));
         setObras(fetchedObras);
         setResponsables(data.responsables || []);
@@ -2072,6 +2088,151 @@ function App() {
       setTogglingVerification(false);
     }
   };
+
+  // ===== COMENTARIOS (chat) =====
+  const syncComentarios = (obraId, comentarios) => {
+    setCurrentObra(prev => prev && prev.id === obraId ? {
+      ...prev,
+      comentarios
+    } : prev);
+    setObras(prev => prev.map(o => o.id === obraId ? {
+      ...o,
+      comentarios
+    } : o));
+  };
+  const formatComentarioFecha = iso => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+  const directores = useMemo(() => responsables.filter(r => (r.rol || '').toString().toLowerCase() === 'director'), [responsables]);
+
+  // Paso previo: el usuario pulsa "Enviar" y se abre la ventana que pide un director
+  const requestAddComentario = () => {
+    if (!currentObra || enviandoComentario) return;
+    const texto = comentarioTexto.trim();
+    if (!texto) return;
+    if (texto.length > 2000) {
+      showToast('El mensaje excede 2000 caracteres', 'error');
+      return;
+    }
+    setDirectorModalError('');
+    setDirectorModal({
+      open: true,
+      action: 'add',
+      mensajeId: null
+    });
+  };
+  const requestDeleteComentario = mensajeId => {
+    if (!currentObra || eliminandoComentarioId) return;
+    setDirectorModalError('');
+    setDirectorModal({
+      open: true,
+      action: 'delete',
+      mensajeId
+    });
+  };
+  const closeDirectorModal = () => {
+    setDirectorModal({
+      open: false,
+      action: 'add',
+      mensajeId: null
+    });
+    setDirectorModalError('');
+  };
+  const confirmDirectorModal = async () => {
+    const director = directores.find(d => String(d.id) === String(directorSeleccionadoId));
+    if (!director) {
+      setDirectorModalError('Selecciona un usuario con rol de director.');
+      return;
+    }
+    const {
+      action,
+      mensajeId
+    } = directorModal;
+    closeDirectorModal();
+    if (action === 'delete') await handleDeleteComentario(mensajeId, director.id);else await handleAddComentario(director.id);
+  };
+  const handleAddComentario = async actorId => {
+    if (!currentObra || enviandoComentario) return;
+    const texto = comentarioTexto.trim();
+    if (!texto) return;
+    if (!actorId) {
+      showToast('Se requiere un usuario con rol de director', 'error');
+      return;
+    }
+    const obraId = currentObra.id;
+    setEnviandoComentario(true);
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'registro_obra_comentario_add',
+          data: {
+            id_obra: obraId,
+            id_actor: actorId,
+            texto
+          }
+        })
+      });
+      const result = await res.json();
+      if (result.result === 'success') {
+        syncComentarios(obraId, Array.isArray(result.comentarios) ? result.comentarios : []);
+        setComentarioTexto('');
+      } else {
+        showToast(result.message || 'No se pudo enviar el comentario', 'error');
+      }
+    } catch (e) {
+      showToast('Error al enviar el comentario', 'error');
+    } finally {
+      setEnviandoComentario(false);
+    }
+  };
+  const handleDeleteComentario = async (mensajeId, actorId) => {
+    if (!currentObra || eliminandoComentarioId) return;
+    if (!actorId) {
+      showToast('Se requiere un usuario con rol de director', 'error');
+      return;
+    }
+    const obraId = currentObra.id;
+    setEliminandoComentarioId(mensajeId);
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'registro_obra_comentario_delete',
+          data: {
+            id_obra: obraId,
+            id_actor: actorId,
+            mensaje_id: mensajeId
+          }
+        })
+      });
+      const result = await res.json();
+      if (result.result === 'success') {
+        syncComentarios(obraId, Array.isArray(result.comentarios) ? result.comentarios : []);
+        showToast('Comentario eliminado');
+      } else {
+        showToast(result.message || 'No se pudo eliminar el comentario', 'error');
+      }
+    } catch (e) {
+      showToast('Error al eliminar el comentario', 'error');
+    } finally {
+      setEliminandoComentarioId(null);
+    }
+  };
+  const comentariosCount = currentObra?.comentarios?.length || 0;
+  useEffect(() => {
+    const el = comentariosListRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [comentariosCount, view, currentObra?.id]);
   const generateAdjuntoName = (tipoCode, originalName) => {
     const claveBase = currentObra?.clave || 'OBRA';
     const extMatch = originalName.match(/\.[^/.]+$/);
@@ -2612,7 +2773,7 @@ function App() {
     className: "ps-topbar-spacer"
   }), /*#__PURE__*/React.createElement("span", {
     className: "ps-topbar-hint"
-  }, "Versi\xF3n de escritorio 1.4.9V"))), /*#__PURE__*/React.createElement("div", {
+  }, "Versi\xF3n de escritorio 1.4.10V"))), /*#__PURE__*/React.createElement("div", {
     className: "app-content"
   }, /*#__PURE__*/React.createElement("div", {
     className: `prov-modal-overlay ${showProvModal ? '' : 'hidden'}`
@@ -2782,7 +2943,42 @@ function App() {
     className: "btn-save",
     onClick: handleSaveAutor,
     disabled: savingAutor
-  }, savingAutor ? 'Guardando...' : autorModalMode === 'add' ? 'Guardar' : 'Actualizar')))), view === "discover" && /*#__PURE__*/React.createElement("div", {
+  }, savingAutor ? 'Guardando...' : autorModalMode === 'add' ? 'Guardar' : 'Actualizar')))), /*#__PURE__*/React.createElement("div", {
+    className: `prov-modal-overlay ${directorModal.open ? '' : 'hidden'}`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "prov-modal",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("h3", null, "Se requiere un director"), /*#__PURE__*/React.createElement("p", {
+    className: "subtitle"
+  }, directorModal.action === 'delete' ? 'Para eliminar un comentario usa el usuario con rol de director que lo escribió.' : 'Los comentarios solo pueden dejarse con un usuario con rol de director. Selecciona el usuario para continuar.'), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", null, "Usuario director"), /*#__PURE__*/React.createElement("select", {
+    value: directorSeleccionadoId,
+    onChange: e => {
+      setDirectorSeleccionadoId(e.target.value);
+      setDirectorModalError('');
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Seleccionar director"), directores.map(d => /*#__PURE__*/React.createElement("option", {
+    key: d.id,
+    value: d.id
+  }, d.nombre))), directores.length === 0 && /*#__PURE__*/React.createElement("p", {
+    className: "hint-text"
+  }, "No hay usuarios con rol de director registrados en la hoja Responsables.")), /*#__PURE__*/React.createElement("div", {
+    className: `error-msg ${directorModalError ? 'visible' : ''}`
+  }, directorModalError)), /*#__PURE__*/React.createElement("div", {
+    className: "btn-row"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn-cancel",
+    onClick: closeDirectorModal
+  }, "Cancelar"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn-save",
+    onClick: confirmDirectorModal,
+    disabled: directores.length === 0
+  }, directorModal.action === 'delete' ? 'Eliminar comentario' : 'Enviar comentario')))), view === "discover" && /*#__PURE__*/React.createElement("div", {
     className: "animate-fade-in"
   }, /*#__PURE__*/React.createElement("header", {
     className: "px-4 pt-6 pb-2 flex items-center gap-5 overflow-x-auto"
@@ -3387,7 +3583,69 @@ function App() {
     className: "text-[10px] text-zinc-500 font-bold uppercase"
   }, "Observaciones"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm whitespace-pre-wrap mt-1 text-zinc-300"
-  }, currentObra.observaciones || "Sin observaciones.")))), /*#__PURE__*/React.createElement("div", {
+  }, currentObra.observaciones || "Sin observaciones."))), (() => {
+    const comentarios = currentObra.comentarios || [];
+    return /*#__PURE__*/React.createElement("div", {
+      className: "bg-zinc-950 p-6 rounded-3xl shadow-sm border border-zinc-800 space-y-4"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center justify-between"
+    }, /*#__PURE__*/React.createElement("h3", {
+      className: "text-xs font-bold text-zinc-500 uppercase tracking-widest"
+    }, "Comentarios"), /*#__PURE__*/React.createElement("span", {
+      className: "text-[10px] font-bold bg-indigo-900/30 text-indigo-400 px-2 py-0.5 rounded"
+    }, comentarios.length)), /*#__PURE__*/React.createElement("div", {
+      ref: comentariosListRef,
+      className: "space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-1"
+    }, comentarios.length === 0 ? /*#__PURE__*/React.createElement("p", {
+      className: "text-sm text-zinc-500 text-center py-4"
+    }, "A\xFAn no hay comentarios en esta obra.") : comentarios.map(m => {
+      const esMio = directorSeleccionadoId && String(m.id_autor) === String(directorSeleccionadoId);
+      return /*#__PURE__*/React.createElement("div", {
+        key: m.id,
+        className: `flex ${esMio ? 'justify-end' : 'justify-start'}`
+      }, /*#__PURE__*/React.createElement("div", {
+        className: `max-w-[85%] p-3 rounded-2xl border ${esMio ? 'bg-indigo-900/30 border-indigo-800/50 rounded-br-md' : 'bg-zinc-900/60 border-zinc-800 rounded-bl-md'}`
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "flex items-center justify-between gap-3 mb-1"
+      }, /*#__PURE__*/React.createElement("span", {
+        className: `text-[10px] font-bold uppercase truncate ${esMio ? 'text-indigo-300' : 'text-zinc-400'}`
+      }, m.autor || 'Usuario'), /*#__PURE__*/React.createElement("button", {
+        type: "button",
+        onClick: () => requestDeleteComentario(m.id),
+        disabled: eliminandoComentarioId === m.id,
+        title: "Eliminar comentario",
+        className: "text-zinc-500 hover:text-red-400 transition-colors shrink-0 disabled:opacity-50"
+      }, /*#__PURE__*/React.createElement(IconTrash, {
+        className: "w-3.5 h-3.5"
+      }))), /*#__PURE__*/React.createElement("p", {
+        className: "text-sm text-zinc-200 whitespace-pre-wrap break-words"
+      }, m.texto), /*#__PURE__*/React.createElement("p", {
+        className: "text-[9px] text-zinc-500 mt-1.5 text-right"
+      }, formatComentarioFecha(m.fecha))));
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-end gap-2 pt-3 border-t border-zinc-800"
+    }, /*#__PURE__*/React.createElement("textarea", {
+      rows: "2",
+      maxLength: 2000,
+      placeholder: "Escribe un comentario...",
+      className: "flex-1 p-3 bg-zinc-900/80 border border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-zinc-100 resize-none",
+      value: comentarioTexto,
+      onChange: e => setComentarioTexto(e.target.value),
+      onKeyDown: e => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          requestAddComentario();
+        }
+      }
+    }), /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      onClick: requestAddComentario,
+      disabled: enviandoComentario || !comentarioTexto.trim(),
+      className: "px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+    }, enviandoComentario ? 'Enviando...' : 'Enviar')), /*#__PURE__*/React.createElement("p", {
+      className: "text-[10px] text-zinc-600"
+    }, "Ctrl/\u2318 + Enter para enviar. Para comentar se requiere un usuario con rol de director."));
+  })()), /*#__PURE__*/React.createElement("div", {
     className: "pt-4 pb-8 flex justify-center lg:col-span-2"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: handleReportError,
