@@ -2267,91 +2267,105 @@ const { useState, useEffect, useMemo, useRef } = React;
         <div className="app-container">
           {/* ===== SIDEBAR RTBROK ===== */}
           <aside className="rtbrok-sidebar">
-            <div>
-              <div className="rtbrok-sidebar-brand">
+          <div>
+            <div className="rtbrok-sidebar-brand">
+              <a href="https://diegoturijancontacto-sudo.github.io/homeScreenRtbrok/" title="Ir al inicio">
                 <img src="logo-large-s.png" alt="RTBROK" />
+              </a>
+            </div>
+            <nav className="rtbrok-sidebar-nav">
+              {/* Inicio */}
+              <a
+                href="https://diegoturijancontacto-sudo.github.io/homeScreenRtbrok/"
+                className="rtbrok-sidebar-link"
+                title="Inicio"
+              >
+                <span className="icon-wrap">
+                  <i data-lucide="house" className="w-5 h-5"></i>
+                </span>
+                <span>Inicio</span>
+              </a>
+
+              {/* Obras - resaltado como seleccionado, sin link */}
+              <div
+                className="rtbrok-sidebar-link active"
+                title="Obras"
+                style={{ cursor: 'default' }}
+              >
+                <span className="icon-wrap">
+                  <i data-lucide="images" className="w-5 h-5"></i>
+                </span>
+                <span>Obras</span>
               </div>
-              <nav className="rtbrok-sidebar-nav">
-                {/* Inicio */}
-                <a
-                  href="https://diegoturijancontacto-sudo.github.io/homeScreenRtbrok/"
-                  className="rtbrok-sidebar-link"
-                  title="Inicio"
-                >
-                  <span className="icon-wrap">
-                    <i data-lucide="house" className="w-5 h-5"></i>
-                  </span>
-                  <span>Inicio</span>
-                </a>
 
-                {/* Obras - resaltado como seleccionado, sin link */}
-                <div
-                  className="rtbrok-sidebar-link active"
-                  title="Obras"
-                  style={{ cursor: 'default' }}
-                >
-                  <span className="icon-wrap">
-                    <i data-lucide="images" className="w-5 h-5"></i>
-                  </span>
-                  <span>Obras</span>
-                </div>
-
-                {/* Instagram */}
-                <a
-                  href="https://diegoturijancontacto-sudo.github.io/homeScreenRtbrok/?tab=instagram"
-                  className="rtbrok-sidebar-link"
-                  title="Instagram"
-                >
-                  <span className="icon-wrap">
-                    <i className="fab fa-instagram" style={{ fontSize: '18px' }}></i>
-                  </span>
-                  <span>Instagram</span>
-                </a>
-
-                {/* Catálogos PDF - reemplaza la función del botón Libro */}
-                <a
-                  href="https://frontline-zeta-ecru.vercel.app/movil/"
-                  className="rtbrok-sidebar-link"
-                  title="Catálogos PDF"
-                >
-                  <span className="icon-wrap">
-                    <i data-lucide="book-open" className="w-5 h-5"></i>
-                  </span>
-                  <span>Catálogos PDF</span>
-                </a>
-
-                {/* Certificados - reemplaza la función del botón Certificados */}
-                <a
-                  href="https://diegoturijancontacto-sudo.github.io/Certificados/"
-                  className="rtbrok-sidebar-link"
-                  title="Certificados"
-                >
-                  <span className="icon-wrap">
-                    <i data-lucide="file-text" className="w-5 h-5"></i>
-                  </span>
-                  <span>Certificados</span>
-                </a>
-              </nav>
-            </div>
-
-            {/* Footer sidebar con ajustes y atrás */}
-            <div className="rtbrok-sidebar-footer">
-              <button
-                onClick={() => setView('settings')}
-                title="Ajustes"
-                aria-label="Ajustes"
+              {/* Instagram */}
+              <a
+                href="https://diegoturijancontacto-sudo.github.io/homeScreenRtbrok/?tab=instagram"
+                className="rtbrok-sidebar-link"
+                title="Instagram"
               >
-                <i data-lucide="settings" className="w-4 h-4"></i>
-              </button>
-              <button
-                onClick={() => setView('list')}
-                title="Volver"
-                aria-label="Volver"
+                <span className="icon-wrap">
+                  <i className="fab fa-instagram" style={{ fontSize: '18px' }}></i>
+                </span>
+                <span>Instagram</span>
+              </a>
+
+              {/* Catálogos PDF */}
+              <a
+                href="https://frontline-zeta-ecru.vercel.app/movil/"
+                className="rtbrok-sidebar-link"
+                title="Catálogos PDF"
               >
-                <i data-lucide="arrow-left" className="w-4 h-4"></i>
-              </button>
-            </div>
-          </aside>
+                <span className="icon-wrap">
+                  <i data-lucide="book-open" className="w-5 h-5"></i>
+                </span>
+                <span>Catálogos PDF</span>
+              </a>
+
+              {/* Certificados */}
+              <a
+                href="https://diegoturijancontacto-sudo.github.io/Certificados/"
+                className="rtbrok-sidebar-link"
+                title="Certificados"
+              >
+                <span className="icon-wrap">
+                  <i data-lucide="file-text" className="w-5 h-5"></i>
+                </span>
+                <span>Certificados</span>
+              </a>
+
+              {/* CRM */}
+              <a
+                href="https://client-jet-zeta-53.vercel.app/"
+                className="rtbrok-sidebar-link"
+                title="CRM"
+              >
+                <span className="icon-wrap">
+                  <i data-lucide="id-card" className="w-5 h-5"></i>
+                </span>
+                <span>CRM</span>
+              </a>
+            </nav>
+          </div>
+
+          {/* Footer sidebar con ajustes y atrás */}
+          <div className="rtbrok-sidebar-footer">
+            <button
+              onClick={() => setView('settings')}
+              title="Ajustes"
+              aria-label="Ajustes"
+            >
+              <i data-lucide="settings" className="w-4 h-4"></i>
+            </button>
+            <button
+              onClick={() => setView('list')}
+              title="Volver"
+              aria-label="Volver"
+            >
+              <i data-lucide="arrow-left" className="w-4 h-4"></i>
+            </button>
+          </div>
+        </aside>
 
           {/* ===== CONTENIDO PRINCIPAL ===== */}
           <div className="app-main">

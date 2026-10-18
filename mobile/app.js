@@ -2663,10 +2663,13 @@ function App() {
     className: "rtbrok-sidebar"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "rtbrok-sidebar-brand"
+  }, /*#__PURE__*/React.createElement("a", {
+    href: "https://diegoturijancontacto-sudo.github.io/homeScreenRtbrok/",
+    title: "Ir al inicio"
   }, /*#__PURE__*/React.createElement("img", {
     src: "logo-large-s.png",
     alt: "RTBROK"
-  })), /*#__PURE__*/React.createElement("nav", {
+  }))), /*#__PURE__*/React.createElement("nav", {
     className: "rtbrok-sidebar-nav"
   }, /*#__PURE__*/React.createElement("a", {
     href: "https://diegoturijancontacto-sudo.github.io/homeScreenRtbrok/",
@@ -2717,7 +2720,16 @@ function App() {
   }, /*#__PURE__*/React.createElement("i", {
     "data-lucide": "file-text",
     className: "w-5 h-5"
-  })), /*#__PURE__*/React.createElement("span", null, "Certificados")))), /*#__PURE__*/React.createElement("div", {
+  })), /*#__PURE__*/React.createElement("span", null, "Certificados")), /*#__PURE__*/React.createElement("a", {
+    href: "https://client-jet-zeta-53.vercel.app/",
+    className: "rtbrok-sidebar-link",
+    title: "CRM"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "icon-wrap"
+  }, /*#__PURE__*/React.createElement("i", {
+    "data-lucide": "id-card",
+    className: "w-5 h-5"
+  })), /*#__PURE__*/React.createElement("span", null, "CRM")))), /*#__PURE__*/React.createElement("div", {
     className: "rtbrok-sidebar-footer"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setView('settings'),
@@ -2773,7 +2785,7 @@ function App() {
     className: "ps-topbar-spacer"
   }), /*#__PURE__*/React.createElement("span", {
     className: "ps-topbar-hint"
-  }, "Versi\xF3n de escritorio 1.4.10V"))), /*#__PURE__*/React.createElement("div", {
+  }, "Versi\xF3n de escritorio 1.4.11V"))), /*#__PURE__*/React.createElement("div", {
     className: "app-content"
   }, /*#__PURE__*/React.createElement("div", {
     className: `prov-modal-overlay ${showProvModal ? '' : 'hidden'}`
