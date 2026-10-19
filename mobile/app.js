@@ -2901,7 +2901,7 @@ function App() {
     className: "ps-topbar-spacer"
   }), /*#__PURE__*/React.createElement("span", {
     className: "ps-topbar-hint"
-  }, "Versi\xF3n de escritorio 1.4.7V"))), /*#__PURE__*/React.createElement("div", {
+  }, "Versi\xF3n de escritorio 1.4.13V"))), /*#__PURE__*/React.createElement("div", {
     className: "app-content"
   }, /*#__PURE__*/React.createElement("div", {
     className: `prov-modal-overlay ${showProvModal ? '' : 'hidden'}`

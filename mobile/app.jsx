@@ -2503,7 +2503,7 @@ const { useState, useEffect, useMemo, useRef } = React;
                   </button>
                 </div>
                 <div className="ps-topbar-spacer" />
-                <span className="ps-topbar-hint">Versión de escritorio 1.4.12V</span>
+                <span className="ps-topbar-hint">Versión de escritorio 1.4.13V</span>
               </div>
             </div>
 
