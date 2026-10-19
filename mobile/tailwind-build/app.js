@@ -1,0 +1,4368 @@
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const {
+  useState,
+  useEffect,
+  useMemo,
+  useRef
+} = React;
+
+// URL de tu Apps Script
+const API_URL = "https://script.google.com/macros/s/AKfycbxyBzZ7duM3pKtobXHj8A2NgFpIarP5WPS71TKTH2uFMOXXL8rzo68-blixF8kgCwvl8w/exec";
+const CERTIFICATE_API_URL = "https://script.google.com/macros/s/AKfycbxhfk9X86NZY6nhPzjiQtmUUoglYv1q5sZcEudiOc1QjT8P-25N0umBRyr2QwhcThR4JA/exec";
+const AUTOR_ABREVIATURAS = {
+  'Abelardo López': 'ALP',
+  'Alberto Aragón': 'ARG',
+  'Amador Montes': 'AMT',
+  'Armando Fallas': 'AFV',
+  'Carlos Abascal': 'ABZ',
+  'Carlos Mérida': 'CMR',
+  'Carlos Oviedo': 'COV',
+  'Diego Isabel Santos': 'DIS',
+  'Eddie Martínez': 'EDM',
+  'Emiliano López Javier': 'MLJ',
+  'Enrique Flores': 'FLR',
+  'Fernando Andriacci': 'FAC',
+  'Gerardo de la Barrera': 'GDL',
+  'Ivonne Kennedy': 'IVK',
+  'José Luis Cuevas': 'JLC',
+  'Josefa García': 'JSG',
+  'Leonardo Nierman': 'NRM',
+  'Leonardo Salinas': 'LSL',
+  'Leonora Carrington': 'LCG',
+  'Luis Nishizawa': 'NSZ',
+  'Maximino Javier': 'MXJ',
+  'Miguel y Erick Jaramillo': 'MEJ',
+  'Pedro Friedeberg': 'FRG',
+  'Rafael Coronel': 'RFC',
+  'Rodrigo de la Sierra': 'RDS',
+  'Rufino Tamayo': 'TMY',
+  'Salvador Jaramillo': 'SVJ',
+  'Santiago Carbonell': 'SCN',
+  'Sebastián Guirnalda': 'SGU',
+  'Virgilio Santaella': 'VST',
+  'Vladimir Cora': 'VCR'
+};
+const TIPOS_ADJUNTO = [{
+  code: 'RW',
+  label: 'Imagen Original (RW)'
+}, {
+  code: 'RD',
+  label: 'Imagen Editada (RD)'
+}, {
+  code: 'FO',
+  label: 'Foto de la Obra (FO)'
+}, {
+  code: 'VD',
+  label: 'Video (VD)'
+}, {
+  code: 'CER',
+  label: 'Certificado (CER)'
+}, {
+  code: 'COT',
+  label: 'Cotización (COT)'
+}];
+const TECH_ADJUNTO_CODE = 'TD';
+function generateClave(provenanceName, artista, tecnica, claveActual, allRegistrosObra = [], abreviaturasList = [], tecnicasList = [], autoresList = []) {
+  let numStr = '0001';
+  if (claveActual && claveActual.length >= 4) {
+    numStr = claveActual.substring(0, 4);
+  } else {
+    if (allRegistrosObra && allRegistrosObra.length > 0) {
+      let maxBloque1 = 0;
+      allRegistrosObra.forEach(obra => {
+        if (obra.clave) {
+          const numeroActual = parseInt(obra.clave.substring(0, 4), 10);
+          if (!isNaN(numeroActual) && numeroActual > maxBloque1) {
+            maxBloque1 = numeroActual;
+          }
+        }
+      });
+      numStr = String(maxBloque1 + 1).padStart(4, '0');
+    }
+  }
+  let provStr = 'RTB';
+  if (provenanceName && provenanceName.trim() !== '') {
+    const cleanProv = provenanceName.trim();
+    let abreviaturaEncontrada = null;
+    for (const abrev of abreviaturasList) {
+      if (abrev.nombre && abrev.nombre.toLowerCase() === cleanProv.toLowerCase()) {
+        abreviaturaEncontrada = abrev.abreviatura;
+        break;
+      }
+    }
+    if (!abreviaturaEncontrada) {
+      const provLower = cleanProv.toLowerCase();
+      for (const abrev of abreviaturasList) {
+        if (abrev.nombre) {
+          const nombreLower = abrev.nombre.toLowerCase();
+          if (nombreLower.includes(provLower) || provLower.includes(nombreLower)) {
+            abreviaturaEncontrada = abrev.abreviatura;
+            break;
+          }
+        }
+      }
+    }
+    if (abreviaturaEncontrada) {
+      provStr = abreviaturaEncontrada;
+    } else {
+      const cleanProvFallback = cleanProv.replace(/\s+/g, '').toUpperCase();
+      if (cleanProvFallback.length > 0) {
+        provStr = cleanProvFallback.substring(0, 3).padEnd(3, 'X');
+      }
+    }
+  }
+  const bloque1 = `${numStr}${provStr}`;
+  let artistStr = '';
+  if (artista && artista.trim() !== '') {
+    const cleanArtista = artista.trim();
+    let abreviaturaEncontrada = null;
+    for (const autor of autoresList) {
+      if (autor.nombre && autor.nombre.toLowerCase() === cleanArtista.toLowerCase()) {
+        abreviaturaEncontrada = autor.abreviatura;
+        break;
+      }
+    }
+    if (!abreviaturaEncontrada) {
+      const artistaLower = cleanArtista.toLowerCase();
+      for (const autor of autoresList) {
+        if (autor.nombre) {
+          const nombreLower = autor.nombre.toLowerCase();
+          if (nombreLower.includes(artistaLower) || artistaLower.includes(nombreLower)) {
+            abreviaturaEncontrada = autor.abreviatura;
+            break;
+          }
+        }
+      }
+    }
+    if (!abreviaturaEncontrada) {
+      for (const [nombreAutor, abreviatura] of Object.entries(AUTOR_ABREVIATURAS)) {
+        if (nombreAutor.toLowerCase() === cleanArtista.toLowerCase()) {
+          abreviaturaEncontrada = abreviatura;
+          break;
+        }
+      }
+    }
+    if (abreviaturaEncontrada) {
+      artistStr = abreviaturaEncontrada;
+    } else {
+      const wordsArtista = cleanArtista.split(/\s+/);
+      const pNombre = wordsArtista[0] || '';
+      const sNombre = wordsArtista[1] || '';
+      const iniP1 = pNombre.charAt(0).toUpperCase();
+      const iniS2 = sNombre.substring(0, 2).toUpperCase();
+      artistStr = `${iniP1}${iniS2}`;
+    }
+  }
+  let tecStr = '';
+  if (tecnica && tecnica.trim() !== '') {
+    const cleanTecnica = tecnica.trim();
+    let abreviaturaEncontrada = null;
+    for (const tec of tecnicasList) {
+      if (tec.nombre && tec.nombre.toLowerCase() === cleanTecnica.toLowerCase()) {
+        abreviaturaEncontrada = tec.abreviatura;
+        break;
+      }
+    }
+    if (!abreviaturaEncontrada) {
+      const tecLower = cleanTecnica.toLowerCase();
+      for (const tec of tecnicasList) {
+        if (tec.nombre) {
+          const nombreLower = tec.nombre.toLowerCase();
+          if (nombreLower.includes(tecLower) || tecLower.includes(nombreLower)) {
+            abreviaturaEncontrada = tec.abreviatura;
+            break;
+          }
+        }
+      }
+    }
+    if (abreviaturaEncontrada) {
+      tecStr = abreviaturaEncontrada;
+    } else {
+      const wordsTec = cleanTecnica.split(/\s+/);
+      const pPalabraTec = wordsTec[0] || '';
+      if (pPalabraTec.length >= 3) {
+        const p2 = pPalabraTec.substring(0, 2).toUpperCase();
+        const ult = pPalabraTec.charAt(pPalabraTec.length - 1).toUpperCase();
+        tecStr = `${p2}${ult}`;
+      } else {
+        tecStr = pPalabraTec.toUpperCase().padEnd(3, 'X');
+      }
+    }
+  }
+  const bloque2 = `${artistStr}${tecStr}`;
+  if (bloque2 !== '') {
+    return `${bloque1}-${bloque2}`;
+  }
+  return bloque1;
+}
+function AutocompleteInput({
+  value,
+  onChange,
+  suggestions,
+  placeholder,
+  label,
+  onSuggestionSelect
+}) {
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const wrapperRef = useRef(null);
+  const inputRef = useRef(null);
+  useEffect(() => {
+    const handleClickOutside = event => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+  useEffect(() => {
+    if (value && value.trim().length > 0) {
+      const lowerValue = value.toLowerCase().trim();
+      const filtered = suggestions.filter(s => s.toLowerCase().includes(lowerValue));
+      setFilteredSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      setFilteredSuggestions([]);
+      setShowSuggestions(false);
+    }
+    setSelectedIndex(-1);
+  }, [value, suggestions]);
+  const handleKeyDown = e => {
+    if (!showSuggestions) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex(prev => prev < filteredSuggestions.length - 1 ? prev + 1 : prev);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex(prev => prev > 0 ? prev - 1 : -1);
+    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+      e.preventDefault();
+      handleSelectSuggestion(filteredSuggestions[selectedIndex]);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+    }
+  };
+  const handleSelectSuggestion = suggestion => {
+    onChange(suggestion);
+    setShowSuggestions(false);
+    if (onSuggestionSelect) onSuggestionSelect(suggestion);
+    inputRef.current?.focus();
+  };
+  const highlightMatch = (text, query) => {
+    if (!query || !query.trim()) return text;
+    const lowerText = text.toLowerCase();
+    const lowerQuery = query.toLowerCase().trim();
+    const index = lowerText.indexOf(lowerQuery);
+    if (index === -1) return text;
+    return /*#__PURE__*/React.createElement(React.Fragment, null, text.substring(0, index), /*#__PURE__*/React.createElement("span", {
+      className: "suggestion-highlight"
+    }, text.substring(index, index + query.length)), text.substring(index + query.length));
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "suggestion-wrapper",
+    ref: wrapperRef
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "text-[10px] font-bold text-slate-400 uppercase ml-1 block mb-1"
+  }, label), /*#__PURE__*/React.createElement("input", {
+    ref: inputRef,
+    type: "text",
+    placeholder: placeholder,
+    className: "w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500",
+    value: value || '',
+    onChange: e => {
+      onChange(e.target.value);
+      if (onSuggestionSelect) onSuggestionSelect(e.target.value);
+    },
+    onKeyDown: handleKeyDown,
+    onFocus: () => {
+      if (value && value.trim().length > 0 && filteredSuggestions.length > 0) {
+        setShowSuggestions(true);
+      }
+    }
+  }), showSuggestions && filteredSuggestions.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "suggestions-dropdown"
+  }, filteredSuggestions.map((suggestion, index) => /*#__PURE__*/React.createElement("div", {
+    key: suggestion,
+    className: `suggestion-item ${index === selectedIndex ? 'bg-slate-100 dark:bg-slate-700' : ''}`,
+    onClick: () => handleSelectSuggestion(suggestion),
+    onMouseEnter: () => setSelectedIndex(index)
+  }, highlightMatch(suggestion, value)))));
+}
+function PriceInput({
+  value,
+  onChange,
+  currency,
+  label
+}) {
+  const [displayValue, setDisplayValue] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const formatPrice = inputValue => {
+    const num = parseFloat(String(inputValue).replace(/,/g, ''));
+    if (Number.isNaN(num)) return '';
+    return new Intl.NumberFormat('es-MX', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(num);
+  };
+  useEffect(() => {
+    if (isEditing) {
+      return;
+    }
+    if (value !== undefined && value !== null && value !== '') {
+      setDisplayValue(formatPrice(value));
+    } else {
+      setDisplayValue('');
+    }
+  }, [value, isEditing]);
+  const handleBlur = () => {
+    setIsEditing(false);
+    if (!displayValue) {
+      onChange('');
+      return;
+    }
+    const clean = displayValue.replace(/,/g, '');
+    const num = parseFloat(clean);
+    if (!Number.isNaN(num)) {
+      const formatted = formatPrice(num);
+      setDisplayValue(formatted);
+      onChange(num.toString());
+    }
+  };
+  const handleChange = e => {
+    const raw = e.target.value;
+    setDisplayValue(raw);
+    onChange(raw);
+  };
+  const getCurrencySymbol = curr => {
+    switch (curr) {
+      case 'USD':
+        return 'USD $';
+      case 'EUR':
+        return '€';
+      case 'MXN':
+      default:
+        return '$';
+    }
+  };
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[9px] font-bold text-slate-400 uppercase ml-1"
+  }, label), /*#__PURE__*/React.createElement("div", {
+    className: "relative"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-500 dark:text-slate-400"
+  }, getCurrencySymbol(currency)), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    inputMode: "decimal",
+    className: "w-full p-3 pl-16 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-semibold",
+    value: displayValue,
+    onFocus: () => {
+      setIsEditing(true);
+      setDisplayValue(current => current.replace(/,/g, ''));
+    },
+    onChange: handleChange,
+    onBlur: handleBlur,
+    placeholder: "0.00"
+  })));
+}
+
+// --- ICONOS ---
+const IconCompass = ({
+  className = ""
+}) => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "24",
+  height: "24",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, /*#__PURE__*/React.createElement("circle", {
+  cx: "12",
+  cy: "12",
+  r: "10"
+}), /*#__PURE__*/React.createElement("polygon", {
+  points: "16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"
+}));
+const IconList = ({
+  className = ""
+}) => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "24",
+  height: "24",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, /*#__PURE__*/React.createElement("rect", {
+  width: "7",
+  height: "7",
+  x: "3",
+  y: "3",
+  rx: "1"
+}), /*#__PURE__*/React.createElement("rect", {
+  width: "7",
+  height: "7",
+  x: "14",
+  y: "3",
+  rx: "1"
+}), /*#__PURE__*/React.createElement("rect", {
+  width: "7",
+  height: "7",
+  x: "14",
+  y: "14",
+  rx: "1"
+}), /*#__PURE__*/React.createElement("rect", {
+  width: "7",
+  height: "7",
+  x: "3",
+  y: "14",
+  rx: "1"
+}));
+const IconPlusCircle = ({
+  className = ""
+}) => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "24",
+  height: "24",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, /*#__PURE__*/React.createElement("circle", {
+  cx: "12",
+  cy: "12",
+  r: "10"
+}), /*#__PURE__*/React.createElement("line", {
+  x1: "12",
+  y1: "8",
+  x2: "12",
+  y2: "16"
+}), /*#__PURE__*/React.createElement("line", {
+  x1: "8",
+  y1: "12",
+  x2: "16",
+  y2: "12"
+}));
+const IconSettings = ({
+  className = ""
+}) => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "24",
+  height: "24",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+}), /*#__PURE__*/React.createElement("circle", {
+  cx: "12",
+  cy: "12",
+  r: "3"
+}));
+const IconPanels = ({
+  className = ""
+}) => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "24",
+  height: "24",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, /*#__PURE__*/React.createElement("rect", {
+  x: "3",
+  y: "3",
+  width: "7",
+  height: "7",
+  rx: "1"
+}), /*#__PURE__*/React.createElement("rect", {
+  x: "14",
+  y: "3",
+  width: "7",
+  height: "7",
+  rx: "1"
+}), /*#__PURE__*/React.createElement("rect", {
+  x: "3",
+  y: "14",
+  width: "7",
+  height: "7",
+  rx: "1"
+}), /*#__PURE__*/React.createElement("rect", {
+  x: "14",
+  y: "14",
+  width: "7",
+  height: "7",
+  rx: "1"
+}));
+const IconBook = ({
+  className = ""
+}) => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "24",
+  height: "24",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M8 7h8"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M8 11h6"
+}));
+const IconBack = ({
+  className = ""
+}) => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "24",
+  height: "24",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, /*#__PURE__*/React.createElement("path", {
+  d: "m15 18-6-6 6-6"
+}));
+const IconEdit = () => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "20",
+  height: "20",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round"
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "m15 5 4 4"
+}));
+const IconCopy = () => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "20",
+  height: "20",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round"
+}, /*#__PURE__*/React.createElement("rect", {
+  width: "14",
+  height: "14",
+  x: "8",
+  y: "8",
+  rx: "2",
+  ry: "2"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
+}));
+const IconShare = () => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "20",
+  height: "20",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round"
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"
+}), /*#__PURE__*/React.createElement("polyline", {
+  points: "16 6 12 2 8 6"
+}), /*#__PURE__*/React.createElement("line", {
+  x1: "12",
+  y1: "2",
+  x2: "12",
+  y2: "15"
+}));
+const IconFlag = ({
+  className = ""
+}) => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "20",
+  height: "20",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"
+}), /*#__PURE__*/React.createElement("line", {
+  x1: "4",
+  y1: "22",
+  x2: "4",
+  y2: "15"
+}));
+const IconSave = () => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "20",
+  height: "20",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round"
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"
+}), /*#__PURE__*/React.createElement("polyline", {
+  points: "17 21 17 13 7 13 7 21"
+}), /*#__PURE__*/React.createElement("polyline", {
+  points: "7 3 7 8 15 8"
+}));
+const IconSearch = () => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "18",
+  height: "18",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round"
+}, /*#__PURE__*/React.createElement("circle", {
+  cx: "11",
+  cy: "11",
+  r: "8"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "m21 21-4.3-4.3"
+}));
+const IconUnseen = () => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "12",
+  height: "12",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2.5",
+  strokeLinecap: "round",
+  strokeLinejoin: "round"
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"
+}), /*#__PURE__*/React.createElement("line", {
+  x1: "4",
+  y1: "4",
+  x2: "20",
+  y2: "20"
+}));
+const IconChevronRight = ({
+  className = "text-slate-400"
+}) => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "18",
+  height: "18",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, /*#__PURE__*/React.createElement("path", {
+  d: "m9 18 6-6-6-6"
+}));
+const IconTrash = ({
+  className = ""
+}) => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "18",
+  height: "18",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, /*#__PURE__*/React.createElement("polyline", {
+  points: "3 6 5 6 21 6"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+}));
+const IconPaperclip = ({
+  className = ""
+}) => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "18",
+  height: "18",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, /*#__PURE__*/React.createElement("path", {
+  d: "m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"
+}));
+const IconFileText = ({
+  className = ""
+}) => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "18",
+  height: "18",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
+}), /*#__PURE__*/React.createElement("polyline", {
+  points: "14 2 14 8 20 8"
+}), /*#__PURE__*/React.createElement("line", {
+  x1: "16",
+  y1: "13",
+  x2: "8",
+  y2: "13"
+}), /*#__PURE__*/React.createElement("line", {
+  x1: "16",
+  y1: "17",
+  x2: "8",
+  y2: "17"
+}), /*#__PURE__*/React.createElement("line", {
+  x1: "10",
+  y1: "9",
+  x2: "8",
+  y2: "9"
+}));
+const IconPlus = ({
+  className = ""
+}) => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "16",
+  height: "16",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2.5",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, /*#__PURE__*/React.createElement("line", {
+  x1: "12",
+  y1: "5",
+  x2: "12",
+  y2: "19"
+}), /*#__PURE__*/React.createElement("line", {
+  x1: "5",
+  y1: "12",
+  x2: "19",
+  y2: "12"
+}));
+const IconCog = ({
+  className = ""
+}) => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "18",
+  height: "18",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+}), /*#__PURE__*/React.createElement("circle", {
+  cx: "12",
+  cy: "12",
+  r: "3"
+}));
+const IconClose = ({
+  className = ""
+}) => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "24",
+  height: "24",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, /*#__PURE__*/React.createElement("line", {
+  x1: "18",
+  y1: "6",
+  x2: "6",
+  y2: "18"
+}), /*#__PURE__*/React.createElement("line", {
+  x1: "6",
+  y1: "6",
+  x2: "18",
+  y2: "18"
+}));
+const IconVerified = ({
+  className = ""
+}) => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "24",
+  height: "24",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M22 11.08V12a10 10 0 1 1-5.93-9.14"
+}), /*#__PURE__*/React.createElement("polyline", {
+  points: "22 4 12 14.01 9 11.01"
+}));
+const IconUnverified = ({
+  className = ""
+}) => /*#__PURE__*/React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "24",
+  height: "24",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, /*#__PURE__*/React.createElement("rect", {
+  x: "3",
+  y: "11",
+  width: "18",
+  height: "11",
+  rx: "2",
+  ry: "2"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M7 11V7a5 5 0 0 1 10 0v4"
+}));
+const BoxLoader = ({
+  message = "Cargando datos..."
+}) => /*#__PURE__*/React.createElement("div", {
+  className: "flex flex-col items-center justify-center p-12 space-y-6"
+}, /*#__PURE__*/React.createElement("div", {
+  className: "flex items-end justify-center space-x-2 h-10"
+}, [0, 0.15, 0.3, 0.45].map((delay, i) => /*#__PURE__*/React.createElement("div", {
+  key: i,
+  className: "w-3 bg-indigo-600 rounded-sm animate-box-bounce h-full",
+  style: {
+    animationDelay: `${delay}s`,
+    transformOrigin: 'bottom'
+  }
+}))), /*#__PURE__*/React.createElement("p", {
+  className: "text-slate-500 dark:text-slate-400 font-medium animate-pulse text-sm"
+}, message));
+const Toast = ({
+  message,
+  type,
+  onClose
+}) => {
+  if (!message) return null;
+  useEffect(() => {
+    const t = setTimeout(onClose, 3000);
+    return () => clearTimeout(t);
+  }, [message]);
+  const color = type === 'error' ? 'bg-red-600' : 'bg-slate-800 dark:bg-slate-900';
+  return /*#__PURE__*/React.createElement("div", {
+    className: `fixed top-12 left-4 right-4 ${color} text-white p-4 rounded-xl shadow-lg z-50 flex justify-between items-center transition-all animate-fade-in`
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-medium"
+  }, message), /*#__PURE__*/React.createElement("button", {
+    onClick: onClose,
+    className: "text-xs font-bold opacity-70 hover:opacity-100"
+  }, "CERRAR"));
+};
+const RECENT_OBRAS_KEY = "recentObras";
+const VIEWED_OBRAS_KEY = "obraViewedHistory";
+const UI_SETTINGS_KEY = "obraUiSettings";
+const MAX_RECENT = 3;
+const MEASURE_ROUND_FACTOR = 10000;
+const DEFAULT_UI_SETTINGS = {
+  darkMode: true,
+  rotateMeasures: true
+};
+const DEFAULT_OBRA = {
+  id: '',
+  nombre_obra: '',
+  ubicacion: '',
+  estatus: 'Disponible',
+  tipo_obra: '',
+  superficie: '',
+  precio_lista: '',
+  precio_venta: '',
+  fecha_registro: '',
+  fecha_adquisicion: '',
+  cliente: '',
+  observaciones: '',
+  id_responsable: '',
+  autor: '',
+  asignacion: '',
+  provenance: '',
+  clave: '',
+  ancho: '',
+  alto: '',
+  largo: '',
+  peso: '',
+  tags: [],
+  tipo_moneda: 'MXN',
+  documentos: [],
+  adjuntos: [],
+  verificada: false,
+  comision_valor: 0,
+  comision_tipo: 'porcentaje',
+  comentarios: []
+};
+function getRecentIds() {
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_OBRAS_KEY) || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+function saveRecentId(id) {
+  if (!id) return;
+  const ids = getRecentIds().filter(x => x !== id);
+  ids.unshift(id);
+  localStorage.setItem(RECENT_OBRAS_KEY, JSON.stringify(ids.slice(0, MAX_RECENT)));
+}
+function getViewedHistory() {
+  try {
+    return JSON.parse(localStorage.getItem(VIEWED_OBRAS_KEY) || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+function addViewedHistory(id) {
+  if (!id) return;
+  let ids = getViewedHistory().filter(x => x !== id);
+  ids.unshift(id);
+  ids = ids.slice(0, 100);
+  localStorage.setItem(VIEWED_OBRAS_KEY, JSON.stringify(ids));
+  return ids;
+}
+function clearViewedHistory() {
+  localStorage.removeItem(VIEWED_OBRAS_KEY);
+  return [];
+}
+function getUiSettings() {
+  try {
+    const storedSettings = JSON.parse(localStorage.getItem(UI_SETTINGS_KEY) || "{}");
+    const rotateMeasures = typeof storedSettings.rotateMeasures === 'boolean' ? storedSettings.rotateMeasures : !!storedSettings.invertMeasures;
+    return {
+      ...DEFAULT_UI_SETTINGS,
+      ...storedSettings,
+      rotateMeasures,
+      darkMode: true
+    };
+  } catch (e) {
+    return {
+      ...DEFAULT_UI_SETTINGS
+    };
+  }
+}
+const getFirstImage = obra => {
+  if (obra && obra.adjuntos && obra.adjuntos.length > 0) {
+    const img = obra.adjuntos.find(a => a.mimeType?.includes('image') || a.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+    if (img && img.id) return `https://drive.google.com/thumbnail?id=${img.id}&sz=w600`;
+    if (img && img.url) return img.url;
+  }
+  return null;
+};
+const TECNICA_CATEGORIA_MAP = {
+  'Óleo sobre tela': '#Pintura',
+  'Óleo sobre lino': '#Pintura',
+  'Óleo sobre papel': '#Pintura',
+  'Acrílico sobre tela': '#Pintura',
+  'Acrílico sobre lino': '#Pintura',
+  'Acrílico sobre papel': '#Pintura',
+  'Acrílico sobre masonite': '#Pintura',
+  'Acuarela sobre papel algodón': '#Pintura',
+  'Temple': '#Pintura',
+  'Gouache': '#Pintura',
+  'Fresco': '#Pintura',
+  'Bronce (fundición a la cera perdida)': '#Escultura',
+  'Cerámica (Terracota)': '#Escultura',
+  'Madera tallada': '#Escultura',
+  'Piedra tallada (Mármol)': '#Escultura',
+  'Piedra tallada (Granito)': '#Escultura',
+  'Resina polimérica': '#Escultura',
+  'Hierro forjado': '#Escultura',
+  'Yeso': '#Escultura',
+  'Papel maché': '#Escultura',
+  'Vidrio soplado': '#Escultura',
+  'Serigrafía': '#Gráfica',
+  'Litografía': '#Gráfica',
+  'Aguafuerte': '#Gráfica',
+  'Aguatinta': '#Gráfica',
+  'Xilografía (Grabado en madera)': '#Gráfica',
+  'Grabado en metal': '#Gráfica',
+  'Impresión Giclée': '#Gráfica',
+  'Fotograbado': '#Gráfica',
+  'Monotipo': '#Gráfica',
+  'Fotografía digital': '#Fotografía',
+  'Fotografía analógica': '#Fotografía',
+  'Técnica mixta': '#Pintura',
+  'Arte digital': '#Arte Digital',
+  'Instalación': '#Instalación',
+  'Textil / Tapiz': '#Objeto',
+  'Collage': '#Pintura',
+  'Ensamblaje': '#Objeto',
+  'Esmalte sobre metal': '#Objeto'
+};
+const CATEGORIA_TAGS_SET = new Set(Object.values(TECNICA_CATEGORIA_MAP));
+const CERTIFICATE_CATEGORY_BY_TAG = {
+  '#pintura': 'Pintura',
+  '#escultura': 'Escultura',
+  '#grafica': 'Obra gráfica',
+  '#gráfica': 'Obra gráfica'
+};
+const getCertificateCategory = tags => {
+  const tagList = Array.isArray(tags) ? tags : String(tags || '').split(/[\s,]+/);
+  const categoryTag = tagList.map(tag => String(tag).trim().toLowerCase()).find(tag => CERTIFICATE_CATEGORY_BY_TAG[tag]);
+  return categoryTag ? CERTIFICATE_CATEGORY_BY_TAG[categoryTag] : '';
+};
+function App() {
+  const normalizeMeasureValue = value => {
+    if (value === '' || value === null || value === undefined) return '';
+    const n = parseFloat(value);
+    return Number.isFinite(n) ? Math.round(n * MEASURE_ROUND_FACTOR) / MEASURE_ROUND_FACTOR : '';
+  };
+  const getDisplayedMeasures = (obra, rotate) => ({
+    ancho: rotate ? obra?.alto : obra?.ancho,
+    alto: rotate ? obra?.largo : obra?.alto,
+    largo: rotate ? obra?.ancho : obra?.largo
+  });
+  const [view, setView] = useState("discover");
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedObraIds, setSelectedObraIds] = useState(() => new Set());
+  const [loading, setLoading] = useState(true);
+  const [obras, setObras] = useState([]);
+  const [responsables, setResponsables] = useState([]);
+  const [comisiones, setComisiones] = useState([]);
+  const [abreviaturas, setAbreviaturas] = useState([]);
+  const [tecnicas, setTecnicas] = useState([]);
+  const [autores, setAutores] = useState([]);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterTipo, setFilterTipo] = useState("");
+  const [filterProvenance, setFilterProvenance] = useState("");
+  const [filterAutor, setFilterAutor] = useState("");
+  const [filterUbicacion, setFilterUbicacion] = useState("");
+  const [filterPriceMin, setFilterPriceMin] = useState("");
+  const [filterPriceMax, setFilterPriceMax] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [currentObra, setCurrentObra] = useState(null);
+  const [currentAuthor, setCurrentAuthor] = useState(null);
+  const [pendingFiles, setPendingFiles] = useState([]);
+  const [selectedTechAdj, setSelectedTechAdj] = useState('RW');
+  const [newDoc, setNewDoc] = useState({
+    tipo: '',
+    nombre: '',
+    url: '',
+    fecha: ''
+  });
+  const [uploadingAdj, setUploadingAdj] = useState(false);
+  const [portadaPreviewUrl, setPortadaPreviewUrl] = useState('');
+  const [toast, setToast] = useState({
+    message: '',
+    type: ''
+  });
+  const [saving, setSaving] = useState(false);
+  const [generatingCertificate, setGeneratingCertificate] = useState(false);
+  const [recentIds, setRecentIds] = useState(() => getRecentIds());
+  const [viewedIds, setViewedIds] = useState(() => getViewedHistory());
+  const [uiSettings, setUiSettings] = useState(() => getUiSettings());
+  const [togglingVerification, setTogglingVerification] = useState(false);
+
+  // Comentarios (chat de la obra)
+  const [comentarioTexto, setComentarioTexto] = useState('');
+  const [enviandoComentario, setEnviandoComentario] = useState(false);
+  const [eliminandoComentarioId, setEliminandoComentarioId] = useState(null);
+  const comentariosListRef = useRef(null);
+  // Modal que pide un usuario con rol director para comentar / eliminar comentarios
+  const [directorModal, setDirectorModal] = useState({
+    open: false,
+    action: 'add',
+    mensajeId: null
+  });
+  const [directorSeleccionadoId, setDirectorSeleccionadoId] = useState('');
+  const [directorModalError, setDirectorModalError] = useState('');
+  const [tagsSuggestions, setTagsSuggestions] = useState([]);
+  const [showProvModal, setShowProvModal] = useState(false);
+  const [provModalMode, setProvModalMode] = useState('add');
+  const [editingProvId, setEditingProvId] = useState(null);
+  const [newProvName, setNewProvName] = useState('');
+  const [newProvPercentage, setNewProvPercentage] = useState('');
+  const [newProvAbrev, setNewProvAbrev] = useState('');
+  const [savingProv, setSavingProv] = useState(false);
+  const [provError, setProvError] = useState('');
+  const [showTecModal, setShowTecModal] = useState(false);
+  const [tecModalMode, setTecModalMode] = useState('add');
+  const [editingTecId, setEditingTecId] = useState(null);
+  const [newTecName, setNewTecName] = useState('');
+  const [newTecAbrev, setNewTecAbrev] = useState('');
+  const [savingTec, setSavingTec] = useState(false);
+  const [tecError, setTecError] = useState('');
+  const [showAutorModal, setShowAutorModal] = useState(false);
+  const [autorModalMode, setAutorModalMode] = useState('add');
+  const [editingAutorId, setEditingAutorId] = useState(null);
+  const [newAutorName, setNewAutorName] = useState('');
+  const [newAutorAbrev, setNewAutorAbrev] = useState('');
+  const [savingAutor, setSavingAutor] = useState(false);
+  const [autorError, setAutorError] = useState('');
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [showCoverPicker, setShowCoverPicker] = useState(false);
+
+  // Modal de imagen (copiar / descargar)
+  const [imageModal, setImageModal] = useState({
+    open: false,
+    adjunto: null
+  });
+  const [imageActionBusy, setImageActionBusy] = useState(false);
+  const imageInputRef = useRef(null);
+  const techInputRef = useRef(null);
+  const tagsInputRef = useRef(null);
+  const autorSuggestions = useMemo(() => autores.map(a => a.nombre).sort(), [autores]);
+  const allTags = useMemo(() => {
+    const tagsSet = new Set();
+    obras.forEach(obra => {
+      if (obra.tags && Array.isArray(obra.tags)) {
+        obra.tags.forEach(tag => {
+          if (tag && tag.trim()) tagsSet.add(tag.trim());
+        });
+      }
+    });
+    return Array.from(tagsSet).sort();
+  }, [obras]);
+  const getTagsSuggestions = input => {
+    if (!input || !input.trim()) return [];
+    const inputLower = input.toLowerCase().trim();
+    const inputWords = inputLower.split(/[,\s]+/).filter(w => w.length > 0);
+    const lastWord = inputWords[inputWords.length - 1] || '';
+    if (!lastWord) return [];
+    return allTags.filter(tag => tag.toLowerCase().includes(lastWord) && !input.split(/[,\s]+/).map(w => w.trim().toLowerCase()).includes(tag.toLowerCase())).slice(0, 10);
+  };
+  const addSuggestedTag = suggestedTag => {
+    if (!currentObra) return;
+    const currentValue = (currentObra.tags || '').toString();
+    const words = currentValue.split(/[,\s]+/).filter(w => w.trim().length > 0);
+    if (words.length === 0) {
+      handleFormChange('tags', suggestedTag);
+      setTagsSuggestions([]);
+      tagsInputRef.current?.focus();
+      return;
+    }
+    const lastWord = words[words.length - 1];
+    const lastWordIndex = currentValue.lastIndexOf(lastWord);
+    const beforeLastWord = currentValue.substring(0, lastWordIndex);
+    const afterLastWord = currentValue.substring(lastWordIndex + lastWord.length);
+    const trimmedBefore = beforeLastWord.trimEnd();
+    const hasSeparator = trimmedBefore.length > 0 && (trimmedBefore.endsWith(',') || trimmedBefore.endsWith(' '));
+    let newValue = '';
+    if (hasSeparator) {
+      newValue = trimmedBefore + ' ' + suggestedTag + afterLastWord;
+    } else if (trimmedBefore.length > 0) {
+      newValue = trimmedBefore + ', ' + suggestedTag + afterLastWord;
+    } else {
+      newValue = suggestedTag + afterLastWord;
+    }
+    newValue = newValue.replace(/\s*,\s*/g, ', ').replace(/\s+/g, ' ').trim();
+    handleFormChange('tags', newValue);
+    setTagsSuggestions([]);
+    tagsInputRef.current?.focus();
+  };
+  const formUbicacionOptions = ['Bodega SP', 'Bodega LF', 'Provenance'];
+  useEffect(() => {
+    fetchAllData();
+  }, []);
+  useEffect(() => {
+    localStorage.setItem(UI_SETTINGS_KEY, JSON.stringify(uiSettings));
+    document.documentElement.classList.add('dark');
+  }, [uiSettings]);
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.substring(1);
+      if (!hash && (view === 'detail' || view === 'author')) setView("list");else if (hash && obras.length > 0) {
+        const linkedObra = obras.find(o => o.id === hash || o.clave === hash);
+        if (linkedObra) {
+          setCurrentObra(linkedObra);
+          setView("detail");
+          setViewedIds(addViewedHistory(linkedObra.id));
+        }
+      }
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, [obras, view]);
+  const getImageOriginalAdjunto = () => {
+    const existingAdjuntos = currentObra?.adjuntos || [];
+    const pendingAdjuntos = pendingFiles || [];
+    return existingAdjuntos.find(adjunto => adjunto?.typeCode === 'RW') || existingAdjuntos[0] || pendingAdjuntos.find(file => file.typeCode === 'RW') || pendingAdjuntos[0] || null;
+  };
+  const isExistingObra = () => !!currentObra && obras.some(obra => obra.id === currentObra.id);
+  const getImageAdjuntos = () => (currentObra?.adjuntos || []).filter(adjunto => adjunto?.mimeType?.includes('image') || adjunto?.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+  const handleChangeCover = adjuntoId => {
+    if (!isExistingObra()) return;
+    const adjuntos = currentObra?.adjuntos || [];
+    const selectedIndex = adjuntos.findIndex(adjunto => adjunto.id === adjuntoId);
+    if (selectedIndex < 0) return;
+    const reorderedAdjuntos = adjuntos.map((adjunto, index) => {
+      const {
+        typeCode,
+        ...adjuntoWithoutTypeCode
+      } = adjunto;
+      return index === selectedIndex ? {
+        ...adjuntoWithoutTypeCode,
+        typeCode: 'RW'
+      } : adjuntoWithoutTypeCode;
+    });
+    const selectedAdjunto = reorderedAdjuntos.splice(selectedIndex, 1)[0];
+    reorderedAdjuntos.unshift(selectedAdjunto);
+    setCurrentObra({
+      ...currentObra,
+      adjuntos: reorderedAdjuntos
+    });
+    setShowCoverPicker(false);
+  };
+  const isImageOriginalAdjunto = adjunto => getImageOriginalAdjunto() === adjunto;
+  const getPrimaryPendingImageOriginal = () => {
+    const primary = getImageOriginalAdjunto();
+    if (!primary || !pendingFiles.includes(primary)) return null;
+    return primary;
+  };
+  const getTechnicalPendingFiles = () => {
+    const primary = getImageOriginalAdjunto();
+    return pendingFiles.filter(file => file !== primary);
+  };
+  const getTechnicalStoredAdjuntos = () => {
+    const primary = getImageOriginalAdjunto();
+    return (currentObra?.adjuntos || []).filter(adjunto => adjunto !== primary);
+  };
+  const hasImageOriginalAdjunto = () => !!getImageOriginalAdjunto();
+  useEffect(() => {
+    let objectUrl = '';
+    const imageOriginal = getImageOriginalAdjunto();
+    const canPreview = Boolean(imageOriginal && (imageOriginal.typeCode === 'RW' || imageOriginal.kind === 'imagen_original' || imageOriginal.kind === 'image_original' || imageOriginal.type?.includes('image') || imageOriginal.mimeType?.includes('image') || imageOriginal.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)));
+    if (imageOriginal && canPreview) {
+      if (imageOriginal.id) {
+        setPortadaPreviewUrl(`https://drive.google.com/thumbnail?id=${imageOriginal.id}&sz=w1200`);
+        return;
+      }
+      if (imageOriginal.url) {
+        setPortadaPreviewUrl(imageOriginal.url);
+        return;
+      }
+      if (imageOriginal.type?.includes('image') || imageOriginal.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+        objectUrl = URL.createObjectURL(imageOriginal);
+        setPortadaPreviewUrl(objectUrl);
+        return () => URL.revokeObjectURL(objectUrl);
+      }
+    }
+    setPortadaPreviewUrl('');
+  }, [currentObra?.adjuntos, pendingFiles]);
+  const fetchAllData = async () => {
+    setLoading(true);
+    setIsDataLoaded(false);
+    try {
+      const res = await fetch(API_URL);
+      if (!res.ok) throw new Error("Fallo en la red");
+      const data = await res.json();
+      if (data && data.registrosObra) {
+        const fetchedObras = data.registrosObra.map(o => ({
+          ...o,
+          ancho: normalizeMeasureValue(o.ancho),
+          alto: normalizeMeasureValue(o.alto),
+          largo: normalizeMeasureValue(o.largo),
+          tipo_moneda: o.tipo_moneda || 'MXN',
+          documentos: Array.isArray(o.documentos) ? o.documentos : [],
+          adjuntos: Array.isArray(o.adjuntos) ? o.adjuntos : [],
+          verificada: o.verificada === true || o.verificada === 'Sí' || o.verificada === 'true',
+          comision_valor: parseFloat(o.comision_valor) || 0,
+          comision_tipo: o.comision_tipo === 'monto' ? 'monto' : 'porcentaje',
+          comentarios: Array.isArray(o.comentarios) ? o.comentarios : []
+        }));
+        setObras(fetchedObras);
+        setResponsables(data.responsables || []);
+        setComisiones(data.comisiones || []);
+        const autoresData = (data.abreviaturas || []).filter(a => a.tipo && a.tipo.startsWith('autor_'));
+        setAutores(autoresData);
+        const tecnicasData = (data.abreviaturas || []).filter(a => a.tipo && a.tipo.startsWith('tec_'));
+        setTecnicas(tecnicasData);
+        setAbreviaturas(data.abreviaturas || []);
+        setIsDataLoaded(true);
+        const hash = window.location.hash.substring(1);
+        if (hash) {
+          const linkedObra = fetchedObras.find(o => o.id === hash || o.clave === hash);
+          if (linkedObra) openDetail(linkedObra, true);
+        }
+      } else {
+        showToast("Error de formato API", "error");
+        setIsDataLoaded(true);
+      }
+    } catch (e) {
+      showToast("Error de conexión con el backend.", "error");
+      setIsDataLoaded(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const showToast = (message, type = 'success') => setToast({
+    message,
+    type
+  });
+  const openDetail = (obra, isInitialLoad = false) => {
+    if (!obra) return;
+    saveRecentId(obra.id);
+    setRecentIds(getRecentIds());
+    setViewedIds(addViewedHistory(obra.id));
+    setCurrentObra(obra);
+    setView("detail");
+    if (!isInitialLoad) window.location.hash = obra.id;
+  };
+  const toggleObraSelection = obraId => {
+    setSelectedObraIds(prev => {
+      const next = new Set(prev);
+      if (next.has(obraId)) next.delete(obraId);else next.add(obraId);
+      return next;
+    });
+  };
+  const cancelCatalogSelection = () => {
+    setSelectedObraIds(new Set());
+    setSelectionMode(false);
+  };
+  const exportCatalogSelection = () => {
+    if (selectedObraIds.size === 0) return;
+    const ids = Array.from(selectedObraIds).join(',');
+    window.location.href = `https://frontline-zeta-ecru.vercel.app/movil/?ids=${encodeURIComponent(ids)}`;
+  };
+  const handleCreateNewObra = () => {
+    if (!isDataLoaded) {
+      showToast('Espera a que los datos terminen de cargar', 'error');
+      return;
+    }
+    const today = new Date().toISOString().split('T')[0];
+    const newObra = {
+      ...DEFAULT_OBRA,
+      id: 'obra_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2)),
+      fecha_registro: today,
+      verificada: false
+    };
+    newObra.clave = generateClave('', '', '', '', obras, abreviaturas, tecnicas, autores);
+    setCurrentObra(newObra);
+    setPendingFiles([]);
+    setSelectedTechAdj('RW');
+    setShowCoverPicker(false);
+    setView("form");
+    window.history.pushState("", document.title, window.location.pathname + window.location.search);
+  };
+  const handleEditObra = obra => {
+    const today = new Date().toISOString().split('T')[0];
+    setCurrentObra({
+      ...obra,
+      tags: Array.isArray(obra.tags) ? obra.tags.join(', ') : obra.tags || '',
+      fecha_adquisicion: today,
+      verificada: obra.verificada === true || obra.verificada === 'Sí' || obra.verificada === 'true',
+      comision_valor: parseFloat(obra.comision_valor) || 0,
+      comision_tipo: obra.comision_tipo === 'monto' ? 'monto' : 'porcentaje'
+    });
+    setPendingFiles([]);
+    setSelectedTechAdj('RW');
+    setShowCoverPicker(false);
+    setView("form");
+  };
+  const handleFormChange = (field, value) => {
+    if (!currentObra) return;
+    const updated = {
+      ...currentObra,
+      [field]: value
+    };
+    if (field === 'tipo_obra') {
+      const categoriaTag = TECNICA_CATEGORIA_MAP[value];
+      if (categoriaTag) {
+        const currentTagsStr = (updated.tags || '').toString();
+        const tagList = currentTagsStr.split(/[,\s]+/).map(t => t.trim()).filter(Boolean).filter(t => !CATEGORIA_TAGS_SET.has(t));
+        tagList.push(categoriaTag);
+        updated.tags = tagList.join(', ');
+      }
+    }
+    if (field === 'provenance' || field === 'autor' || field === 'tipo_obra') {
+      let provName = '';
+      const provVal = updated.provenance;
+      if (provVal) {
+        const com = comisiones.find(c => c.id === provVal);
+        provName = com ? com.provenance : provVal;
+      }
+      let tecName = updated.tipo_obra || '';
+      let autorName = updated.autor || '';
+      updated.clave = generateClave(provName, autorName, tecName, updated.clave, obras, abreviaturas, tecnicas, autores);
+    }
+    setCurrentObra(updated);
+  };
+  const handleOpenAddProv = () => {
+    setProvModalMode('add');
+    setEditingProvId(null);
+    setNewProvName('');
+    setNewProvPercentage('');
+    setNewProvAbrev('');
+    setProvError('');
+    setShowProvModal(true);
+  };
+  const handleOpenEditProv = comision => {
+    setProvModalMode('edit');
+    setEditingProvId(comision.id);
+    setNewProvName(comision.provenance || '');
+    setNewProvPercentage(String(comision.porcentaje || ''));
+    const abrev = abreviaturas.find(a => a.tipo === comision.id);
+    setNewProvAbrev(abrev ? abrev.abreviatura : '');
+    setProvError('');
+    setShowProvModal(true);
+  };
+  const handleSaveProv = async () => {
+    setProvError('');
+    const name = newProvName.trim();
+    if (!name) {
+      setProvError('El nombre de Provenance es obligatorio');
+      return;
+    }
+    const percentage = parseFloat(newProvPercentage);
+    if (isNaN(percentage) || percentage < 0 || percentage > 100) {
+      setProvError('El porcentaje debe ser un número entre 0 y 100');
+      return;
+    }
+    const abrev = newProvAbrev.trim().toUpperCase();
+    if (!abrev) {
+      setProvError('La abreviatura es obligatoria');
+      return;
+    }
+    if (abrev.length < 2 || abrev.length > 5) {
+      setProvError('La abreviatura debe tener entre 2 y 5 caracteres');
+      return;
+    }
+    setSavingProv(true);
+    try {
+      if (provModalMode === 'add') {
+        const comId = 'com_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+        const payload = {
+          id: comId,
+          provenance: name,
+          porcentaje: percentage
+        };
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'comision_add',
+            data: payload
+          })
+        });
+        const result = await res.json();
+        if (result.result === 'success') {
+          const abrevId = 'abrev_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+          const abrevPayload = {
+            id: abrevId,
+            nombre: name,
+            abreviatura: abrev,
+            tipo: comId,
+            fecha_registro: new Date().toISOString()
+          };
+          const abrevRes = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'abreviatura_add',
+              data: abrevPayload
+            })
+          });
+          const abrevResult = await abrevRes.json();
+          if (abrevResult.result === 'success') {
+            const newComision = {
+              id: comId,
+              provenance: name,
+              porcentaje: percentage
+            };
+            setComisiones(prev => [...prev, newComision]);
+            const newAbrev = {
+              id: abrevId,
+              nombre: name,
+              abreviatura: abrev,
+              tipo: comId,
+              fecha_registro: new Date().toISOString()
+            };
+            setAbreviaturas(prev => [...prev, newAbrev]);
+            handleFormChange('provenance', comId);
+            setShowProvModal(false);
+            showToast(`✅ Provenance "${name}" creado con ${percentage}% y abreviatura "${abrev}"`);
+          } else {
+            setProvError(abrevResult.message || 'Error al crear abreviatura');
+          }
+        } else {
+          setProvError(result.message || 'Error al crear Provenance');
+        }
+      } else {
+        const payload = {
+          id: editingProvId,
+          provenance: name,
+          porcentaje: percentage
+        };
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'comision_update',
+            data: payload
+          })
+        });
+        const result = await res.json();
+        if (result.result === 'success') {
+          const abrev = abreviaturas.find(a => a.tipo === editingProvId);
+          if (abrev) {
+            const abrevPayload = {
+              id: abrev.id,
+              nombre: name,
+              abreviatura: newProvAbrev.trim().toUpperCase(),
+              tipo: editingProvId
+            };
+            const abrevRes = await fetch(API_URL, {
+              method: 'POST',
+              body: JSON.stringify({
+                action: 'abreviatura_update',
+                data: abrevPayload
+              })
+            });
+            const abrevResult = await abrevRes.json();
+            if (abrevResult.result === 'success') {
+              setComisiones(prev => prev.map(c => c.id === editingProvId ? {
+                ...c,
+                provenance: name,
+                porcentaje: percentage
+              } : c));
+              setAbreviaturas(prev => prev.map(a => a.id === abrev.id ? {
+                ...a,
+                nombre: name,
+                abreviatura: newProvAbrev.trim().toUpperCase()
+              } : a));
+              if (currentObra && currentObra.provenance === editingProvId) {
+                const newClave = generateClave(name, currentObra.autor, currentObra.tipo_obra, currentObra.clave, obras, abreviaturas.map(a => a.id === abrev.id ? {
+                  ...a,
+                  abreviatura: newProvAbrev.trim().toUpperCase()
+                } : a), tecnicas, autores);
+                setCurrentObra(prev => ({
+                  ...prev,
+                  clave: newClave
+                }));
+              }
+              setShowProvModal(false);
+              showToast(`✅ Provenance "${name}" actualizado correctamente`);
+            } else {
+              setProvError(abrevResult.message || 'Error al actualizar abreviatura');
+            }
+          } else {
+            const abrevId = 'abrev_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+            const abrevPayload = {
+              id: abrevId,
+              nombre: name,
+              abreviatura: newProvAbrev.trim().toUpperCase(),
+              tipo: editingProvId,
+              fecha_registro: new Date().toISOString()
+            };
+            const abrevRes = await fetch(API_URL, {
+              method: 'POST',
+              body: JSON.stringify({
+                action: 'abreviatura_add',
+                data: abrevPayload
+              })
+            });
+            const abrevResult = await abrevRes.json();
+            if (abrevResult.result === 'success') {
+              setComisiones(prev => prev.map(c => c.id === editingProvId ? {
+                ...c,
+                provenance: name,
+                porcentaje: percentage
+              } : c));
+              setAbreviaturas(prev => [...prev, {
+                id: abrevId,
+                nombre: name,
+                abreviatura: newProvAbrev.trim().toUpperCase(),
+                tipo: editingProvId,
+                fecha_registro: new Date().toISOString()
+              }]);
+              setShowProvModal(false);
+              showToast(`✅ Provenance "${name}" actualizado correctamente`);
+            } else {
+              setProvError(abrevResult.message || 'Error al crear abreviatura');
+            }
+          }
+        } else {
+          setProvError(result.message || 'Error al actualizar Provenance');
+        }
+      }
+    } catch (error) {
+      console.error('Error al guardar Provenance:', error);
+      setProvError('Error de conexión con el servidor');
+    } finally {
+      setSavingProv(false);
+    }
+  };
+  const handleDeleteProv = async () => {
+    if (!editingProvId) return;
+    if (!confirm(`¿Estás seguro de eliminar el Provenance "${newProvName}"?`)) return;
+    setSavingProv(true);
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'comision_delete',
+          data: {
+            id: editingProvId
+          }
+        })
+      });
+      const result = await res.json();
+      if (result.result === 'success') {
+        const abrev = abreviaturas.find(a => a.tipo === editingProvId);
+        if (abrev) {
+          await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'abreviatura_delete',
+              data: {
+                id: abrev.id
+              }
+            })
+          });
+        }
+        setComisiones(prev => prev.filter(c => c.id !== editingProvId));
+        setAbreviaturas(prev => prev.filter(a => a.tipo !== editingProvId));
+        if (currentObra && currentObra.provenance === editingProvId) {
+          setCurrentObra(prev => ({
+            ...prev,
+            provenance: ''
+          }));
+        }
+        setShowProvModal(false);
+        showToast(`✅ Provenance eliminado correctamente`);
+      } else {
+        setProvError(result.message || 'Error al eliminar Provenance');
+      }
+    } catch (error) {
+      console.error('Error al eliminar Provenance:', error);
+      setProvError('Error de conexión con el servidor');
+    } finally {
+      setSavingProv(false);
+    }
+  };
+  const handleOpenAddTec = () => {
+    setTecModalMode('add');
+    setEditingTecId(null);
+    setNewTecName('');
+    setNewTecAbrev('');
+    setTecError('');
+    setShowTecModal(true);
+  };
+  const handleOpenEditTec = tec => {
+    setTecModalMode('edit');
+    setEditingTecId(tec.id);
+    setNewTecName(tec.nombre || '');
+    setNewTecAbrev(tec.abreviatura || '');
+    setTecError('');
+    setShowTecModal(true);
+  };
+  const handleSaveTec = async () => {
+    setTecError('');
+    const name = newTecName.trim();
+    if (!name) {
+      setTecError('El nombre de la técnica es obligatorio');
+      return;
+    }
+    const abrev = newTecAbrev.trim().toUpperCase();
+    if (!abrev) {
+      setTecError('La abreviatura es obligatoria');
+      return;
+    }
+    if (abrev.length < 2 || abrev.length > 5) {
+      setTecError('La abreviatura debe tener entre 2 y 5 caracteres');
+      return;
+    }
+    setSavingTec(true);
+    try {
+      if (tecModalMode === 'add') {
+        const tecId = 'tec_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+        const payload = {
+          id: tecId,
+          nombre: name,
+          abreviatura: abrev,
+          tipo: 'tec_' + tecId,
+          fecha_registro: new Date().toISOString()
+        };
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'abreviatura_add',
+            data: payload
+          })
+        });
+        const result = await res.json();
+        if (result.result === 'success') {
+          const newTec = {
+            id: tecId,
+            nombre: name,
+            abreviatura: abrev,
+            tipo: 'tec_' + tecId,
+            fecha_registro: new Date().toISOString()
+          };
+          const updatedTecnicas = [...tecnicas, newTec];
+          const updatedAbreviaturas = [...abreviaturas, newTec];
+          setTecnicas(updatedTecnicas);
+          setAbreviaturas(updatedAbreviaturas);
+          if (currentObra) {
+            const provVal = currentObra.provenance;
+            let provName = '';
+            if (provVal) {
+              const com = comisiones.find(c => c.id === provVal);
+              provName = com ? com.provenance : provVal;
+            }
+            const newClave = generateClave(provName, currentObra.autor, name, currentObra.clave, obras, updatedAbreviaturas, updatedTecnicas, autores);
+            setCurrentObra(prev => ({
+              ...prev,
+              tipo_obra: name,
+              clave: newClave
+            }));
+          }
+          setShowTecModal(false);
+          showToast(`✅ Técnica "${name}" creada con abreviatura "${abrev}"`);
+        } else {
+          setTecError(result.message || 'Error al crear técnica');
+        }
+      } else {
+        const payload = {
+          id: editingTecId,
+          nombre: name,
+          abreviatura: abrev,
+          tipo: 'tec_' + editingTecId
+        };
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'abreviatura_update',
+            data: payload
+          })
+        });
+        const result = await res.json();
+        if (result.result === 'success') {
+          const updatedTecnicas = tecnicas.map(t => t.id === editingTecId ? {
+            ...t,
+            nombre: name,
+            abreviatura: abrev
+          } : t);
+          const updatedAbreviaturas = abreviaturas.map(a => a.id === editingTecId ? {
+            ...a,
+            nombre: name,
+            abreviatura: abrev
+          } : a);
+          setTecnicas(updatedTecnicas);
+          setAbreviaturas(updatedAbreviaturas);
+          if (currentObra && currentObra.tipo_obra === name) {
+            const provVal = currentObra.provenance;
+            let provName = '';
+            if (provVal) {
+              const com = comisiones.find(c => c.id === provVal);
+              provName = com ? com.provenance : provVal;
+            }
+            const newClave = generateClave(provName, currentObra.autor, currentObra.tipo_obra, currentObra.clave, obras, updatedAbreviaturas, updatedTecnicas, autores);
+            setCurrentObra(prev => ({
+              ...prev,
+              clave: newClave
+            }));
+          }
+          setShowTecModal(false);
+          showToast(`✅ Técnica "${name}" actualizada correctamente`);
+        } else {
+          setTecError(result.message || 'Error al actualizar técnica');
+        }
+      }
+    } catch (error) {
+      console.error('Error al guardar técnica:', error);
+      setTecError('Error de conexión con el servidor');
+    } finally {
+      setSavingTec(false);
+    }
+  };
+  const handleDeleteTec = async () => {
+    if (!editingTecId) return;
+    if (!confirm(`¿Estás seguro de eliminar la técnica "${newTecName}"?`)) return;
+    setSavingTec(true);
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'abreviatura_delete',
+          data: {
+            id: editingTecId
+          }
+        })
+      });
+      const result = await res.json();
+      if (result.result === 'success') {
+        setTecnicas(prev => prev.filter(t => t.id !== editingTecId));
+        setAbreviaturas(prev => prev.filter(a => a.id !== editingTecId));
+        if (currentObra && currentObra.tipo_obra === newTecName) {
+          setCurrentObra(prev => ({
+            ...prev,
+            tipo_obra: ''
+          }));
+        }
+        setShowTecModal(false);
+        showToast(`✅ Técnica eliminada correctamente`);
+      } else {
+        setTecError(result.message || 'Error al eliminar técnica');
+      }
+    } catch (error) {
+      console.error('Error al eliminar técnica:', error);
+      setTecError('Error de conexión con el servidor');
+    } finally {
+      setSavingTec(false);
+    }
+  };
+  const handleOpenAddAutor = () => {
+    setAutorModalMode('add');
+    setEditingAutorId(null);
+    setNewAutorName('');
+    setNewAutorAbrev('');
+    setAutorError('');
+    setShowAutorModal(true);
+  };
+  const handleOpenEditAutor = autor => {
+    setAutorModalMode('edit');
+    setEditingAutorId(autor.id);
+    setNewAutorName(autor.nombre || '');
+    setNewAutorAbrev(autor.abreviatura || '');
+    setAutorError('');
+    setShowAutorModal(true);
+  };
+  const handleSaveAutor = async () => {
+    setAutorError('');
+    const name = newAutorName.trim();
+    if (!name) {
+      setAutorError('El nombre del autor es obligatorio');
+      return;
+    }
+    const abrev = newAutorAbrev.trim().toUpperCase();
+    if (!abrev) {
+      setAutorError('La abreviatura es obligatoria');
+      return;
+    }
+    if (abrev.length < 2 || abrev.length > 5) {
+      setAutorError('La abreviatura debe tener entre 2 y 5 caracteres');
+      return;
+    }
+    setSavingAutor(true);
+    try {
+      if (autorModalMode === 'add') {
+        const autorId = 'autor_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+        const payload = {
+          id: autorId,
+          nombre: name,
+          abreviatura: abrev,
+          tipo: 'autor_' + autorId,
+          fecha_registro: new Date().toISOString()
+        };
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'abreviatura_add',
+            data: payload
+          })
+        });
+        const result = await res.json();
+        if (result.result === 'success') {
+          const newAutor = {
+            id: autorId,
+            nombre: name,
+            abreviatura: abrev,
+            tipo: 'autor_' + autorId,
+            fecha_registro: new Date().toISOString()
+          };
+          const updatedAutores = [...autores, newAutor];
+          const updatedAbreviaturas = [...abreviaturas, newAutor];
+          setAutores(updatedAutores);
+          setAbreviaturas(updatedAbreviaturas);
+          if (currentObra) {
+            const provVal = currentObra.provenance;
+            let provName = '';
+            if (provVal) {
+              const com = comisiones.find(c => c.id === provVal);
+              provName = com ? com.provenance : provVal;
+            }
+            const newClave = generateClave(provName, name, currentObra.tipo_obra, currentObra.clave, obras, updatedAbreviaturas, tecnicas, updatedAutores);
+            setCurrentObra(prev => ({
+              ...prev,
+              autor: name,
+              clave: newClave
+            }));
+          }
+          setShowAutorModal(false);
+          showToast(`✅ Autor "${name}" creado con abreviatura "${abrev}"`);
+        } else {
+          setAutorError(result.message || 'Error al crear autor');
+        }
+      } else {
+        const payload = {
+          id: editingAutorId,
+          nombre: name,
+          abreviatura: abrev,
+          tipo: 'autor_' + editingAutorId
+        };
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'abreviatura_update',
+            data: payload
+          })
+        });
+        const result = await res.json();
+        if (result.result === 'success') {
+          const updatedAutores = autores.map(a => a.id === editingAutorId ? {
+            ...a,
+            nombre: name,
+            abreviatura: abrev
+          } : a);
+          const updatedAbreviaturas = abreviaturas.map(a => a.id === editingAutorId ? {
+            ...a,
+            nombre: name,
+            abreviatura: abrev
+          } : a);
+          setAutores(updatedAutores);
+          setAbreviaturas(updatedAbreviaturas);
+          if (currentObra && currentObra.autor === name) {
+            const provVal = currentObra.provenance;
+            let provName = '';
+            if (provVal) {
+              const com = comisiones.find(c => c.id === provVal);
+              provName = com ? com.provenance : provVal;
+            }
+            const newClave = generateClave(provName, currentObra.autor, currentObra.tipo_obra, currentObra.clave, obras, updatedAbreviaturas, tecnicas, updatedAutores);
+            setCurrentObra(prev => ({
+              ...prev,
+              clave: newClave
+            }));
+          }
+          setShowAutorModal(false);
+          showToast(`✅ Autor "${name}" actualizado correctamente`);
+        } else {
+          setAutorError(result.message || 'Error al actualizar autor');
+        }
+      }
+    } catch (error) {
+      console.error('Error al guardar autor:', error);
+      setAutorError('Error de conexión con el servidor');
+    } finally {
+      setSavingAutor(false);
+    }
+  };
+  const handleDeleteAutor = async () => {
+    if (!editingAutorId) return;
+    if (!confirm(`¿Estás seguro de eliminar el autor "${newAutorName}"?`)) return;
+    setSavingAutor(true);
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'abreviatura_delete',
+          data: {
+            id: editingAutorId
+          }
+        })
+      });
+      const result = await res.json();
+      if (result.result === 'success') {
+        setAutores(prev => prev.filter(a => a.id !== editingAutorId));
+        setAbreviaturas(prev => prev.filter(a => a.id !== editingAutorId));
+        if (currentObra && currentObra.autor === newAutorName) {
+          setCurrentObra(prev => ({
+            ...prev,
+            autor: ''
+          }));
+        }
+        setShowAutorModal(false);
+        showToast(`✅ Autor eliminado correctamente`);
+      } else {
+        setAutorError(result.message || 'Error al eliminar autor');
+      }
+    } catch (error) {
+      console.error('Error al eliminar autor:', error);
+      setAutorError('Error de conexión con el servidor');
+    } finally {
+      setSavingAutor(false);
+    }
+  };
+  const formatCurrency = (v, currencyCode = 'MXN') => {
+    const val = parseFloat(v);
+    if (!Number.isFinite(val)) return '-';
+    try {
+      const formatted = new Intl.NumberFormat('es-MX', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(val);
+      switch (currencyCode) {
+        case 'USD':
+          return `USD $${formatted}`;
+        case 'EUR':
+          return `€${formatted}`;
+        case 'MXN':
+        default:
+          return `$${formatted}`;
+      }
+    } catch (e) {
+      return `$${val.toLocaleString('es-MX')} ${currencyCode}`;
+    }
+  };
+  const getActorId = () => {
+    try {
+      const u = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+      if (u && u.id) return u.id;
+    } catch (_) {}
+    return currentObra?.id_responsable || responsables[0]?.id || '';
+  };
+  const handleToggleVerification = async () => {
+    if (!currentObra) return;
+    const actorId = getActorId();
+    if (!actorId) {
+      showToast('Selecciona un responsable primero', 'error');
+      return;
+    }
+    const newVerificationState = !currentObra.verificada;
+    setTogglingVerification(true);
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'registro_obra_verificar',
+          data: {
+            id_obra: currentObra.id,
+            id_actor: actorId,
+            verificada: newVerificationState
+          }
+        })
+      });
+      const result = await res.json();
+      if (result.result === 'success') {
+        setCurrentObra({
+          ...currentObra,
+          verificada: newVerificationState
+        });
+        setObras(obras.map(o => o.id === currentObra.id ? {
+          ...o,
+          verificada: newVerificationState
+        } : o));
+        showToast(newVerificationState ? '✅ Obra verificada' : '🔓 Verificación removida');
+      } else {
+        showToast('Error: ' + (result.message || 'No se pudo actualizar'), 'error');
+      }
+    } catch (e) {
+      showToast("Error al cambiar verificación", "error");
+    } finally {
+      setTogglingVerification(false);
+    }
+  };
+
+  // ===== COMENTARIOS (chat) =====
+  const syncComentarios = (obraId, comentarios) => {
+    setCurrentObra(prev => prev && prev.id === obraId ? {
+      ...prev,
+      comentarios
+    } : prev);
+    setObras(prev => prev.map(o => o.id === obraId ? {
+      ...o,
+      comentarios
+    } : o));
+  };
+  const formatComentarioFecha = iso => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+  const directores = useMemo(() => responsables.filter(r => (r.rol || '').toString().toLowerCase() === 'director'), [responsables]);
+
+  // Paso previo: el usuario pulsa "Enviar" y se abre la ventana que pide un director
+  const requestAddComentario = () => {
+    if (!currentObra || enviandoComentario) return;
+    const texto = comentarioTexto.trim();
+    if (!texto) return;
+    if (texto.length > 2000) {
+      showToast('El mensaje excede 2000 caracteres', 'error');
+      return;
+    }
+    setDirectorModalError('');
+    setDirectorModal({
+      open: true,
+      action: 'add',
+      mensajeId: null
+    });
+  };
+  const requestDeleteComentario = mensajeId => {
+    if (!currentObra || eliminandoComentarioId) return;
+    setDirectorModalError('');
+    setDirectorModal({
+      open: true,
+      action: 'delete',
+      mensajeId
+    });
+  };
+  const closeDirectorModal = () => {
+    setDirectorModal({
+      open: false,
+      action: 'add',
+      mensajeId: null
+    });
+    setDirectorModalError('');
+  };
+  const confirmDirectorModal = async () => {
+    const director = directores.find(d => String(d.id) === String(directorSeleccionadoId));
+    if (!director) {
+      setDirectorModalError('Selecciona un usuario con rol de director.');
+      return;
+    }
+    const {
+      action,
+      mensajeId
+    } = directorModal;
+    closeDirectorModal();
+    if (action === 'delete') await handleDeleteComentario(mensajeId, director.id);else await handleAddComentario(director.id);
+  };
+  const handleAddComentario = async actorId => {
+    if (!currentObra || enviandoComentario) return;
+    const texto = comentarioTexto.trim();
+    if (!texto) return;
+    if (!actorId) {
+      showToast('Se requiere un usuario con rol de director', 'error');
+      return;
+    }
+    const obraId = currentObra.id;
+    setEnviandoComentario(true);
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'registro_obra_comentario_add',
+          data: {
+            id_obra: obraId,
+            id_actor: actorId,
+            texto
+          }
+        })
+      });
+      const result = await res.json();
+      if (result.result === 'success') {
+        syncComentarios(obraId, Array.isArray(result.comentarios) ? result.comentarios : []);
+        setComentarioTexto('');
+      } else {
+        showToast(result.message || 'No se pudo enviar el comentario', 'error');
+      }
+    } catch (e) {
+      showToast('Error al enviar el comentario', 'error');
+    } finally {
+      setEnviandoComentario(false);
+    }
+  };
+  const handleDeleteComentario = async (mensajeId, actorId) => {
+    if (!currentObra || eliminandoComentarioId) return;
+    if (!actorId) {
+      showToast('Se requiere un usuario con rol de director', 'error');
+      return;
+    }
+    const obraId = currentObra.id;
+    setEliminandoComentarioId(mensajeId);
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'registro_obra_comentario_delete',
+          data: {
+            id_obra: obraId,
+            id_actor: actorId,
+            mensaje_id: mensajeId
+          }
+        })
+      });
+      const result = await res.json();
+      if (result.result === 'success') {
+        syncComentarios(obraId, Array.isArray(result.comentarios) ? result.comentarios : []);
+        showToast('Comentario eliminado');
+      } else {
+        showToast(result.message || 'No se pudo eliminar el comentario', 'error');
+      }
+    } catch (e) {
+      showToast('Error al eliminar el comentario', 'error');
+    } finally {
+      setEliminandoComentarioId(null);
+    }
+  };
+  const comentariosCount = currentObra?.comentarios?.length || 0;
+  useEffect(() => {
+    const el = comentariosListRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [comentariosCount, view, currentObra?.id]);
+  const generateAdjuntoName = (tipoCode, originalName) => {
+    const claveBase = currentObra?.clave || 'OBRA';
+    const extMatch = originalName.match(/\.[^/.]+$/);
+    const ext = extMatch ? extMatch[0].toLowerCase() : '';
+    const existingAdjCount = (currentObra?.adjuntos || []).filter(a => {
+      const nameWithoutExt = (a.name || '').replace(/\.[^/.]+$/, '');
+      return nameWithoutExt.includes(`-${tipoCode}`);
+    }).length;
+    const pendingCount = pendingFiles.filter(p => p.typeCode === tipoCode).length;
+    const nextNum = existingAdjCount + pendingCount + 1;
+    const seqStr = String(nextNum).padStart(2, '0');
+    return `${claveBase}-${tipoCode}${seqStr}${ext}`;
+  };
+  const uploadAdjuntoFile = async (file, tipoCode) => {
+    if (!file) return;
+    const customName = generateAdjuntoName(tipoCode, file.name);
+    const isExisting = obras.some(o => o.id === currentObra.id);
+    if (!isExisting) {
+      file.customName = customName;
+      file.typeCode = tipoCode;
+      setPendingFiles(prev => [...prev, file]);
+      showToast(`Guardado en cola como: ${customName}`);
+      return;
+    }
+    const actorId = getActorId();
+    setUploadingAdj(true);
+    showToast("Subiendo archivo a Drive...");
+    try {
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = ev => resolve(ev.target.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'registro_obra_upload_adjunto',
+          data: {
+            id_obra: currentObra.id,
+            id_actor: actorId,
+            filename: customName,
+            mimeType: file.type || 'application/octet-stream',
+            base64
+          }
+        })
+      });
+      const result = await res.json();
+      if (result.result === 'success') {
+        const newAdj = {
+          id: result.fileId,
+          name: customName,
+          url: result.url,
+          kind: 'adjunto_obra',
+          typeCode: tipoCode,
+          uploadedBy: actorId,
+          createdAt: new Date().toISOString(),
+          mimeType: file.type || 'application/octet-stream'
+        };
+        const updatedAdj = [...(currentObra.adjuntos || []), newAdj];
+        setCurrentObra({
+          ...currentObra,
+          adjuntos: updatedAdj
+        });
+        showToast("Subido a Drive con éxito");
+      } else {
+        showToast("Error subiendo archivo", "error");
+      }
+    } catch (e) {
+      showToast("Error al subir archivo", "error");
+    } finally {
+      setUploadingAdj(false);
+    }
+  };
+  const handleUploadImagenOriginal = async e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (hasImageOriginalAdjunto()) {
+      showToast('La Imagen Original ya está cargada', 'error');
+      e.target.value = '';
+      return;
+    }
+    await uploadAdjuntoFile(file, 'RW');
+    e.target.value = '';
+  };
+  const handleUploadTecnicos = async e => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    if (!hasImageOriginalAdjunto()) {
+      showToast('La caja se desbloqueará después de subir la Imagen Original', 'error');
+      e.target.value = '';
+      return;
+    }
+    for (const file of files) {
+      await uploadAdjuntoFile(file, selectedTechAdj || TECH_ADJUNTO_CODE);
+    }
+    e.target.value = '';
+  };
+  const handleDeleteAdjunto = async fileId => {
+    if (!confirm('¿Eliminar este adjunto? Se borrará también de Drive.')) return;
+    const actorId = getActorId();
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'registro_obra_adjunto_eliminar',
+          data: {
+            id_obra: currentObra.id,
+            id_actor: actorId,
+            fileId
+          }
+        })
+      });
+      const result = await res.json();
+      if (result.result === 'success') {
+        const updatedAdj = currentObra.adjuntos.filter(a => a.id !== fileId);
+        setCurrentObra({
+          ...currentObra,
+          adjuntos: updatedAdj
+        });
+        showToast("Adjunto eliminado");
+      } else {
+        showToast('Error al eliminar adjunto', 'error');
+      }
+    } catch (e) {
+      showToast("Error en la llamada", "error");
+    }
+  };
+  const handleSave = async e => {
+    e.preventDefault();
+    if (!currentObra) return;
+    const hasAttachments = currentObra.adjuntos && currentObra.adjuntos.length > 0 || pendingFiles.length > 0;
+    if (!hasAttachments) {
+      showToast('Debes subir al menos un adjunto antes de guardar la obra', 'error');
+      return;
+    }
+    setSaving(true);
+    const isExisting = obras.some(o => o.id === currentObra.id);
+    const action = isExisting ? 'registro_obra_update' : 'registro_obra_add';
+    const tagsNormalized = Array.isArray(currentObra.tags) ? currentObra.tags : (currentObra.tags || '').toString().split(/[,\s]+/).map(t => t.trim()).filter(Boolean);
+    const comisionValor = parseFloat(currentObra.comision_valor);
+    const comisionTipo = currentObra.comision_tipo === 'monto' ? 'monto' : 'porcentaje';
+    const payload = {
+      ...currentObra,
+      ancho: normalizeMeasureValue(currentObra.ancho),
+      alto: normalizeMeasureValue(currentObra.alto),
+      largo: normalizeMeasureValue(currentObra.largo),
+      superficie: parseFloat(currentObra.superficie) || 0,
+      precio_lista: parseFloat(currentObra.precio_lista) || 0,
+      precio_venta: parseFloat(currentObra.precio_venta) || 0,
+      tags: tagsNormalized,
+      verificada: currentObra.verificada === true || currentObra.verificada === 'Sí' || currentObra.verificada === 'true',
+      comision_valor: Number.isFinite(comisionValor) && comisionValor >= 0 ? comisionValor : 0,
+      comision_tipo: comisionTipo
+    };
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action,
+          data: payload
+        })
+      });
+      const result = await res.json();
+      if (result && result.result === 'success') {
+        if (!isExisting && pendingFiles.length > 0) {
+          const actorId = getActorId() || payload.id_responsable;
+          showToast("Subiendo adjuntos pendientes...");
+          for (const file of pendingFiles) {
+            try {
+              const base64 = await new Promise((res, rej) => {
+                const r = new FileReader();
+                r.onload = ev => res(ev.target.result.split(',')[1]);
+                r.onerror = rej;
+                r.readAsDataURL(file);
+              });
+              await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                  action: 'registro_obra_upload_adjunto',
+                  data: {
+                    id_obra: payload.id,
+                    id_actor: actorId,
+                    filename: file.customName || file.name,
+                    mimeType: file.type || 'application/octet-stream',
+                    base64
+                  }
+                })
+              });
+            } catch (_) {}
+          }
+        }
+        showToast("Obra guardada correctamente");
+        await fetchAllData();
+        setView("list");
+      } else {
+        showToast("Error: " + (result?.message || 'Desconocido'), "error");
+      }
+    } catch (e) {
+      showToast("Error al guardar la obra", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const handleDeleteObra = async () => {
+    if (!confirm('¿Estás seguro de eliminar este registro de obra?')) return;
+    setSaving(true);
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'registro_obra_delete',
+          data: {
+            id: currentObra.id
+          }
+        })
+      });
+      showToast("Registro eliminado");
+      await fetchAllData();
+      setView("list");
+    } catch (e) {
+      showToast("Error al eliminar", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const handleCopyInfo = () => {
+    if (!currentObra) return;
+    const prov = comisiones.find(c => c.id === currentObra.provenance)?.provenance || currentObra.provenance || "No definida";
+    const resp = responsables.find(r => r.id === currentObra.id_responsable)?.nombre || currentObra.id_responsable || "Sin asignar";
+    const verificadaStr = currentObra.verificada ? '✅ Verificada' : '❌ No verificada';
+    let comisionStr = 'N/A';
+    const cv = parseFloat(currentObra.comision_valor) || 0;
+    if (cv > 0) {
+      if (currentObra.comision_tipo === 'monto') {
+        comisionStr = `${formatCurrency(cv, currentObra.tipo_moneda)} (monto fijo)`;
+      } else {
+        const pv = parseFloat(currentObra.precio_lista) || 0;
+        const monto = pv * cv / 100;
+        comisionStr = `${cv}% → ${formatCurrency(monto, currentObra.tipo_moneda)}`;
+      }
+    }
+    const textToCopy = `Ficha de Obra: ${currentObra.nombre_obra || 'N/A'}\nWORK ID: ${currentObra.clave || 'N/A'}\nEstatus: ${currentObra.estatus || 'N/A'}\nTipo: ${currentObra.tipo_obra || 'N/A'}\nAutor: ${currentObra.autor || 'N/A'}\nUbicación: ${currentObra.ubicacion || 'N/A'}\nPrecio Lista: ${formatCurrency(currentObra.precio_lista, currentObra.tipo_moneda)}\nPrecio Venta: ${formatCurrency(currentObra.precio_venta, currentObra.tipo_moneda)}\nComisión: ${comisionStr}\nPeso: ${currentObra.superficie || 0}\nCliente: ${currentObra.cliente || 'N/A'}\nResponsable: ${resp}\nProvenance: ${prov}\nVerificada: ${verificadaStr}\nObservaciones: ${currentObra.observaciones || 'Ninguna'}\nEnlace: ${window.location.origin}${window.location.pathname}#${currentObra.id}`.trim();
+    const textArea = document.createElement("textarea");
+    textArea.value = textToCopy;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      showToast("Copiado al portapapeles");
+    } catch (err) {
+      showToast("Error al copiar", "error");
+    }
+    document.body.removeChild(textArea);
+  };
+  const handleShare = async () => {
+    const obraUrl = `${window.location.origin}${window.location.pathname}#${currentObra.id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: currentObra.nombre_obra,
+          text: `Mira esta obra de ${currentObra.autor || 'autor desconocido'}: ${currentObra.nombre_obra}`,
+          url: obraUrl
+        });
+      } catch (err) {}
+    } else {
+      handleCopyInfo();
+    }
+  };
+  const handleGenerateCertificate = async () => {
+    if (!currentObra || generatingCertificate) return;
+    const certificateDocuments = (currentObra.documentos || []).filter(doc => doc && (doc.tipo === 'Certificado' || doc.tipo === 'Certificado Web' || doc.tipo === 'Certificado PDF'));
+    const existingPdf = certificateDocuments.find(doc => doc.tipo === 'Certificado PDF') || certificateDocuments.find(doc => doc.tipo === 'Certificado');
+    const existingWeb = certificateDocuments.find(doc => doc.tipo === 'Certificado Web');
+    if (existingPdf?.url && existingWeb?.url) {
+      const link = document.createElement('a');
+      link.href = existingPdf.url;
+      link.target = '_blank';
+      link.download = existingPdf.nombre || 'certificado.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      showToast(existingWeb ? 'Certificado existente descargado' : 'PDF del certificado existente descargado');
+      return;
+    }
+    setGeneratingCertificate(true);
+    showToast('Generando certificado...');
+    const originalImage = (currentObra.adjuntos || []).find(adjunto => adjunto?.typeCode === 'RW') || (currentObra.adjuntos || []).find(adjunto => adjunto?.mimeType?.includes('image') || /\.(jpg|jpeg|png|gif|webp)$/i.test(adjunto?.name || ''));
+    const certificateCategory = getCertificateCategory(currentObra.tags);
+    const certificatePayload = {
+      id: currentObra.id,
+      nombre_obra: currentObra.nombre_obra,
+      tipo_obra: certificateCategory || currentObra.tipo_obra,
+      categoria: certificateCategory,
+      provenance: comisiones.find(c => c.id === currentObra.provenance)?.provenance || currentObra.provenance,
+      autor: currentObra.autor,
+      clave: currentObra.clave,
+      alto: currentObra.alto,
+      ancho: currentObra.ancho,
+      largo: currentObra.largo,
+      adjuntos: originalImage ? [originalImage] : []
+    };
+    try {
+      const response = await fetch(CERTIFICATE_API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'certificado_generar',
+          data: certificatePayload
+        })
+      });
+      const result = await response.json();
+      if (!result.ok || !result.pdfUrl) throw new Error(result.message || 'El servidor no devolvió el PDF');
+      const actorId = getActorId();
+      const today = new Date().toISOString().split('T')[0];
+      const webDocument = {
+        id: 'cert_web_' + result.id,
+        tipo: 'Certificado Web',
+        nombre: `Certificado web - ${currentObra.nombre_obra || currentObra.clave || result.id}`,
+        url: result.certificateUrl,
+        fecha: today
+      };
+      const pdfDocument = {
+        id: 'cert_pdf_' + result.id,
+        tipo: 'Certificado PDF',
+        nombre: `Certificado - ${currentObra.nombre_obra || currentObra.clave || result.id}.pdf`,
+        url: result.pdfUrl,
+        fecha: today
+      };
+      const documentsToRegister = [webDocument, pdfDocument].filter(documento => documento.tipo === 'Certificado Web' ? !existingWeb?.url : !existingPdf?.url);
+      const registeredDocuments = [];
+      try {
+        if (actorId) {
+          for (const documento of documentsToRegister) {
+            const documentResponse = await fetch(API_URL, {
+              method: 'POST',
+              body: JSON.stringify({
+                action: 'registro_obra_documento_add',
+                data: {
+                  id_obra: currentObra.id,
+                  id_actor: actorId,
+                  documento
+                }
+              })
+            });
+            const documentResult = await documentResponse.json();
+            if (documentResult.result === 'success') registeredDocuments.push(documento);
+          }
+        }
+      } catch (error) {}
+      if (registeredDocuments.length > 0) {
+        const updatedDocuments = [...(currentObra.documentos || []), ...registeredDocuments];
+        const updatedObra = {
+          ...currentObra,
+          documentos: updatedDocuments
+        };
+        setCurrentObra(updatedObra);
+        setObras(prev => prev.map(obra => obra.id === currentObra.id ? updatedObra : obra));
+      }
+      const downloadLink = document.createElement('a');
+      downloadLink.href = result.pdfUrl;
+      downloadLink.download = pdfDocument.nombre;
+      downloadLink.target = '_blank';
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      showToast(registeredDocuments.length === documentsToRegister.length ? 'Certificado generado y registrado' : 'Certificado generado; no se registraron todos los enlaces');
+    } catch (error) {
+      showToast(error.message || 'Error al generar el certificado', 'error');
+    } finally {
+      setGeneratingCertificate(false);
+    }
+  };
+
+  // ===== MODAL DE IMAGEN: copiar / descargar =====
+  const openImageModal = adjunto => setImageModal({
+    open: true,
+    adjunto
+  });
+  const closeImageModal = () => {
+    if (!imageActionBusy) setImageModal({
+      open: false,
+      adjunto: null
+    });
+  };
+  const getImageCandidateUrls = adjunto => {
+    const urls = [];
+    if (adjunto?.id) {
+      urls.push(`https://lh3.googleusercontent.com/d/${adjunto.id}=w3000`);
+      urls.push(`https://drive.google.com/thumbnail?id=${adjunto.id}&sz=w3000`);
+    }
+    if (adjunto?.url) urls.push(adjunto.url);
+    return urls;
+  };
+  const fetchImageBlob = async adjunto => {
+    for (const url of getImageCandidateUrls(adjunto)) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) continue;
+        const blob = await res.blob();
+        if (blob.type.startsWith('image/')) return blob;
+      } catch (_) {}
+    }
+    throw new Error('No se pudo obtener la imagen');
+  };
+  const blobToPng = async blob => {
+    if (blob.type === 'image/png') return blob;
+    const bitmap = await createImageBitmap(blob);
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0);
+    return await new Promise((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('Conversión fallida')), 'image/png'));
+  };
+  const handleCopyImage = async () => {
+    const adjunto = imageModal.adjunto;
+    if (!adjunto || imageActionBusy) return;
+    setImageActionBusy(true);
+    try {
+      if (!navigator.clipboard || typeof ClipboardItem === 'undefined') {
+        throw new Error('Clipboard no disponible');
+      }
+      // Se pasa una promesa a ClipboardItem para mantener el gesto del usuario (Safari)
+      const pngPromise = fetchImageBlob(adjunto).then(blobToPng);
+      await navigator.clipboard.write([new ClipboardItem({
+        'image/png': pngPromise
+      })]);
+      showToast('Imagen copiada al portapapeles');
+      setImageModal({
+        open: false,
+        adjunto: null
+      });
+    } catch (e) {
+      showToast('No se pudo copiar la imagen. Prueba con Descargar.', 'error');
+    } finally {
+      setImageActionBusy(false);
+    }
+  };
+  const handleDownloadImage = async () => {
+    const adjunto = imageModal.adjunto;
+    if (!adjunto || imageActionBusy) return;
+    setImageActionBusy(true);
+    const filename = adjunto.name || `${currentObra?.clave || 'obra'}.jpg`;
+    try {
+      // Para descargar el original se usa el endpoint de descarga de Drive si el blob falla
+      const blob = await fetchImageBlob(adjunto);
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      showToast('Descargando imagen...');
+      setImageModal({
+        open: false,
+        adjunto: null
+      });
+    } catch (e) {
+      const fallbackUrl = adjunto.id ? `https://drive.google.com/uc?export=download&id=${adjunto.id}` : adjunto.url;
+      if (fallbackUrl) {
+        window.open(fallbackUrl, '_blank', 'noopener');
+        setImageModal({
+          open: false,
+          adjunto: null
+        });
+      } else {
+        showToast('No se pudo descargar la imagen', 'error');
+      }
+    } finally {
+      setImageActionBusy(false);
+    }
+  };
+  useEffect(() => {
+    if (!imageModal.open) return;
+    const onKey = e => {
+      if (e.key === 'Escape') closeImageModal();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [imageModal.open, imageActionBusy]);
+  const handleReportError = async () => {
+    if (!currentObra) return;
+    const obraUrl = `${window.location.origin}${window.location.pathname}#${currentObra.id}`;
+    const msg = `Hola, quiero reportar un error en la obra: ${currentObra.nombre_obra} - ${obraUrl}`;
+    const url = `https://bot-yy1q.onrender.com/send?number=5212202334062&message=${encodeURIComponent(msg)}`;
+    showToast("Enviando reporte...");
+    try {
+      await fetch(url, {
+        mode: 'no-cors'
+      });
+      showToast("Reporte enviado al Bot de WhatsApp exitosamente");
+    } catch (e) {
+      showToast("No se pudo contactar con el Bot", "error");
+    }
+  };
+  const tagsAsText = tags => Array.isArray(tags) ? tags.join(', ') : tags || '';
+  const uniqueValues = items => [...new Set(items.filter(Boolean).map(x => x.toString().trim()))].sort((a, b) => a.localeCompare(b, 'es-MX'));
+  const parseNumeric = value => {
+    const p = parseFloat(value);
+    return Number.isFinite(p) ? p : null;
+  };
+  const matchesPriceRange = (p, min, max) => {
+    if (min === null && max === null) return true;
+    if (p === null) return false;
+    if (min !== null && p < min) return false;
+    if (max !== null && p > max) return false;
+    return true;
+  };
+  const minPriceValue = parseNumeric(filterPriceMin);
+  const maxPriceValue = parseNumeric(filterPriceMax);
+  const statusOptions = useMemo(() => uniqueValues(obras.map(o => o.estatus)), [obras]);
+  const tipoOptions = useMemo(() => uniqueValues(obras.map(o => o.tipo_obra)), [obras]);
+  const provenanceOptions = useMemo(() => uniqueValues(obras.map(o => comisiones.find(c => c.id === o.provenance)?.provenance || o.provenance)), [obras, comisiones]);
+  const autorOptions = useMemo(() => uniqueValues(obras.map(o => o.autor)), [obras]);
+  const ubicacionOptions = useMemo(() => uniqueValues(obras.map(o => o.ubicacion)), [obras]);
+  const matchesObraFilters = o => {
+    const selectedPrice = parseNumeric(o.precio_venta) ?? parseNumeric(o.precio_lista);
+    return (!filterStatus || (o.estatus || '') === filterStatus) && (!filterTipo || (o.tipo_obra || '') === filterTipo) && (!filterProvenance || (comisiones.find(c => c.id === o.provenance)?.provenance || o.provenance || '') === filterProvenance) && (!filterAutor || (o.autor || '') === filterAutor) && (!filterUbicacion || (o.ubicacion || '') === filterUbicacion) && matchesPriceRange(selectedPrice, minPriceValue, maxPriceValue);
+  };
+  const filtered = [...obras].reverse().filter(o => ((o.nombre_obra || "").toLowerCase().includes(search.toLowerCase()) || (o.clave || "").toLowerCase().includes(search.toLowerCase())) && matchesObraFilters(o));
+  const catalogFiltered = [...obras].reverse().filter(matchesObraFilters);
+  const isMainTab = ['discover', 'list', 'settings'].includes(view);
+
+  // Helper para calcular la comisión efectiva de la obra actual
+  const getCurrentCommissionAmount = () => {
+    if (!currentObra) return 0;
+    const valor = parseFloat(currentObra.comision_valor) || 0;
+    const tipo = (currentObra.comision_tipo || 'porcentaje') === 'monto' ? 'monto' : 'porcentaje';
+    const precioLista = parseFloat(currentObra.precio_lista) || 0;
+    if (tipo === 'monto') return valor;
+    return precioLista * valor / 100;
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "app-container"
+  }, /*#__PURE__*/React.createElement("aside", {
+    className: "rtbrok-sidebar"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "rtbrok-sidebar-brand"
+  }, /*#__PURE__*/React.createElement("a", {
+    href: "https://diegoturijancontacto-sudo.github.io/homeScreenRtbrok/",
+    title: "Ir al inicio"
+  }, /*#__PURE__*/React.createElement("img", {
+    src: "logo-large-s.png",
+    alt: "RTBROK"
+  }))), /*#__PURE__*/React.createElement("nav", {
+    className: "rtbrok-sidebar-nav"
+  }, /*#__PURE__*/React.createElement("a", {
+    href: "https://diegoturijancontacto-sudo.github.io/homeScreenRtbrok/",
+    className: "rtbrok-sidebar-link",
+    title: "Inicio"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "icon-wrap"
+  }, /*#__PURE__*/React.createElement("i", {
+    "data-lucide": "house",
+    className: "w-5 h-5"
+  })), /*#__PURE__*/React.createElement("span", null, "Inicio")), /*#__PURE__*/React.createElement("div", {
+    className: "rtbrok-sidebar-link active",
+    title: "Obras",
+    style: {
+      cursor: 'default'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "icon-wrap"
+  }, /*#__PURE__*/React.createElement("i", {
+    "data-lucide": "images",
+    className: "w-5 h-5"
+  })), /*#__PURE__*/React.createElement("span", null, "Obras")), /*#__PURE__*/React.createElement("a", {
+    href: "https://diegoturijancontacto-sudo.github.io/homeScreenRtbrok/?tab=instagram",
+    className: "rtbrok-sidebar-link",
+    title: "Instagram"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "icon-wrap"
+  }, /*#__PURE__*/React.createElement("i", {
+    className: "fab fa-instagram",
+    style: {
+      fontSize: '18px'
+    }
+  })), /*#__PURE__*/React.createElement("span", null, "Instagram")), /*#__PURE__*/React.createElement("a", {
+    href: "https://frontline-zeta-ecru.vercel.app/movil/",
+    className: "rtbrok-sidebar-link",
+    title: "Cat\xE1logos PDF"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "icon-wrap"
+  }, /*#__PURE__*/React.createElement("i", {
+    "data-lucide": "book-open",
+    className: "w-5 h-5"
+  })), /*#__PURE__*/React.createElement("span", null, "Cat\xE1logos PDF")), /*#__PURE__*/React.createElement("a", {
+    href: "https://diegoturijancontacto-sudo.github.io/Certificados/",
+    className: "rtbrok-sidebar-link",
+    title: "Certificados"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "icon-wrap"
+  }, /*#__PURE__*/React.createElement("i", {
+    "data-lucide": "file-text",
+    className: "w-5 h-5"
+  })), /*#__PURE__*/React.createElement("span", null, "Certificados")), /*#__PURE__*/React.createElement("a", {
+    href: "https://client-jet-zeta-53.vercel.app/",
+    className: "rtbrok-sidebar-link",
+    title: "CRM"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "icon-wrap"
+  }, /*#__PURE__*/React.createElement("i", {
+    "data-lucide": "id-card",
+    className: "w-5 h-5"
+  })), /*#__PURE__*/React.createElement("span", null, "CRM")))), /*#__PURE__*/React.createElement("div", {
+    className: "rtbrok-sidebar-footer"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setView('settings'),
+    title: "Ajustes",
+    "aria-label": "Ajustes"
+  }, /*#__PURE__*/React.createElement("i", {
+    "data-lucide": "settings",
+    className: "w-4 h-4"
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setView('list'),
+    title: "Volver",
+    "aria-label": "Volver"
+  }, /*#__PURE__*/React.createElement("i", {
+    "data-lucide": "arrow-left",
+    className: "w-4 h-4"
+  })))), /*#__PURE__*/React.createElement("div", {
+    className: "app-main"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ps-topbar shrink-0"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ps-topbar-inner"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ps-topbar-brand"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "ps-topbar-dot"
+  }), "Gestor de Obras"), /*#__PURE__*/React.createElement("div", {
+    className: "ps-menu-group"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setView('discover'),
+    className: `ps-menu-item ${view === 'discover' ? 'active' : ''}`
+  }, /*#__PURE__*/React.createElement(IconCompass, {
+    className: "w-4 h-4"
+  }), /*#__PURE__*/React.createElement("span", null, "Cat\xE1logo")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setView('list'),
+    className: `ps-menu-item ${view === 'list' ? 'active' : ''}`
+  }, /*#__PURE__*/React.createElement(IconList, {
+    className: "w-4 h-4"
+  }), /*#__PURE__*/React.createElement("span", null, "Obras")), /*#__PURE__*/React.createElement("button", {
+    onClick: handleCreateNewObra,
+    disabled: !isDataLoaded,
+    title: !isDataLoaded ? 'Espera a que los datos carguen' : 'Crear nueva obra',
+    className: `ps-menu-item ${view === 'form' ? 'active' : ''} ${!isDataLoaded ? 'ps-menu-item-disabled' : ''}`
+  }, /*#__PURE__*/React.createElement(IconPlusCircle, {
+    className: "w-4 h-4"
+  }), /*#__PURE__*/React.createElement("span", null, "Crear"), !isDataLoaded && /*#__PURE__*/React.createElement("span", {
+    className: "text-[9px] text-amber-400"
+  }, "\u23F3")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setView('settings'),
+    className: `ps-menu-item ${view === 'settings' ? 'active' : ''}`
+  }, /*#__PURE__*/React.createElement(IconSettings, {
+    className: "w-4 h-4"
+  }), /*#__PURE__*/React.createElement("span", null, "Ajustes"))), /*#__PURE__*/React.createElement("div", {
+    className: "ps-topbar-spacer"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "ps-topbar-hint"
+  }, "Versi\xF3n de escritorio 1.4.7V"))), /*#__PURE__*/React.createElement("div", {
+    className: "app-content"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: `prov-modal-overlay ${showProvModal ? '' : 'hidden'}`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "prov-modal",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("h3", null, provModalMode === 'add' ? 'Añadir Provenance' : 'Editar Provenance'), /*#__PURE__*/React.createElement("p", {
+    className: "subtitle"
+  }, provModalMode === 'add' ? 'Registra una nueva fuente de origen para la obra.' : 'Modifica los datos del Provenance seleccionado.'), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", null, "Nombre del Provenance"), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    placeholder: "Ej: Galer\xEDa Norte",
+    value: newProvName,
+    onChange: e => {
+      setNewProvName(e.target.value);
+      setProvError('');
+    },
+    autoFocus: true
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", null, "Porcentaje de Comisi\xF3n (%)"), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    min: "0",
+    max: "100",
+    step: "0.01",
+    placeholder: "0.00",
+    value: newProvPercentage,
+    onChange: e => {
+      setNewProvPercentage(e.target.value);
+      setProvError('');
+    }
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", null, "Abreviatura (2-5 caracteres)"), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    placeholder: "Ej: GNT",
+    value: newProvAbrev,
+    onChange: e => {
+      setNewProvAbrev(e.target.value.toUpperCase());
+      setProvError('');
+    },
+    maxLength: 5
+  }), /*#__PURE__*/React.createElement("p", {
+    className: "hint-text"
+  }, "Se usar\xE1 en la generaci\xF3n del WORK ID")), /*#__PURE__*/React.createElement("div", {
+    className: `error-msg ${provError ? 'visible' : ''}`
+  }, provError)), /*#__PURE__*/React.createElement("div", {
+    className: "btn-row"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn-cancel",
+    onClick: () => {
+      setShowProvModal(false);
+      setNewProvName('');
+      setNewProvPercentage('');
+      setNewProvAbrev('');
+      setProvError('');
+    }
+  }, "Cancelar"), provModalMode === 'edit' && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn-danger",
+    onClick: handleDeleteProv,
+    disabled: savingProv
+  }, savingProv ? 'Eliminando...' : '🗑 Eliminar'), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn-save",
+    onClick: handleSaveProv,
+    disabled: savingProv
+  }, savingProv ? 'Guardando...' : provModalMode === 'add' ? 'Guardar' : 'Actualizar')))), /*#__PURE__*/React.createElement("div", {
+    className: `tec-modal-overlay ${showTecModal ? '' : 'hidden'}`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tec-modal",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("h3", null, tecModalMode === 'add' ? 'Añadir Técnica' : 'Editar Técnica'), /*#__PURE__*/React.createElement("p", {
+    className: "subtitle"
+  }, tecModalMode === 'add' ? 'Registra una nueva técnica artística.' : 'Modifica los datos de la técnica seleccionada.'), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", null, "Nombre de la T\xE9cnica"), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    placeholder: "Ej: \xD3leo sobre tela",
+    value: newTecName,
+    onChange: e => {
+      setNewTecName(e.target.value);
+      setTecError('');
+    },
+    autoFocus: true
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", null, "Abreviatura (2-5 caracteres)"), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    placeholder: "Ej: OLO",
+    value: newTecAbrev,
+    onChange: e => {
+      setNewTecAbrev(e.target.value.toUpperCase());
+      setTecError('');
+    },
+    maxLength: 5
+  }), /*#__PURE__*/React.createElement("p", {
+    className: "hint-text"
+  }, "Se usar\xE1 en la generaci\xF3n del WORK ID")), /*#__PURE__*/React.createElement("div", {
+    className: `error-msg ${tecError ? 'visible' : ''}`
+  }, tecError)), /*#__PURE__*/React.createElement("div", {
+    className: "btn-row"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn-cancel",
+    onClick: () => {
+      setShowTecModal(false);
+      setNewTecName('');
+      setNewTecAbrev('');
+      setTecError('');
+    }
+  }, "Cancelar"), tecModalMode === 'edit' && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn-danger",
+    onClick: handleDeleteTec,
+    disabled: savingTec
+  }, savingTec ? 'Eliminando...' : '🗑 Eliminar'), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn-save",
+    onClick: handleSaveTec,
+    disabled: savingTec
+  }, savingTec ? 'Guardando...' : tecModalMode === 'add' ? 'Guardar' : 'Actualizar')))), /*#__PURE__*/React.createElement("div", {
+    className: `autor-modal-overlay ${showAutorModal ? '' : 'hidden'}`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "autor-modal",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("h3", null, autorModalMode === 'add' ? 'Añadir Autor' : 'Editar Autor'), /*#__PURE__*/React.createElement("p", {
+    className: "subtitle"
+  }, autorModalMode === 'add' ? 'Registra un nuevo autor artístico.' : 'Modifica los datos del autor seleccionado.'), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", null, "Nombre del Autor"), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    placeholder: "Ej: Carlos Oviedo",
+    value: newAutorName,
+    onChange: e => {
+      setNewAutorName(e.target.value);
+      setAutorError('');
+    },
+    autoFocus: true
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", null, "Abreviatura (2-5 caracteres)"), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    placeholder: "Ej: COV",
+    value: newAutorAbrev,
+    onChange: e => {
+      setNewAutorAbrev(e.target.value.toUpperCase());
+      setAutorError('');
+    },
+    maxLength: 5
+  }), /*#__PURE__*/React.createElement("p", {
+    className: "hint-text"
+  }, "Se usar\xE1 en la generaci\xF3n del WORK ID")), /*#__PURE__*/React.createElement("div", {
+    className: `error-msg ${autorError ? 'visible' : ''}`
+  }, autorError)), /*#__PURE__*/React.createElement("div", {
+    className: "btn-row"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn-cancel",
+    onClick: () => {
+      setShowAutorModal(false);
+      setNewAutorName('');
+      setNewAutorAbrev('');
+      setAutorError('');
+    }
+  }, "Cancelar"), autorModalMode === 'edit' && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn-danger",
+    onClick: handleDeleteAutor,
+    disabled: savingAutor
+  }, savingAutor ? 'Eliminando...' : '🗑 Eliminar'), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn-save",
+    onClick: handleSaveAutor,
+    disabled: savingAutor
+  }, savingAutor ? 'Guardando...' : autorModalMode === 'add' ? 'Guardar' : 'Actualizar')))), /*#__PURE__*/React.createElement("div", {
+    className: `prov-modal-overlay ${directorModal.open ? '' : 'hidden'}`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "prov-modal",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("h3", null, "Se requiere un director"), /*#__PURE__*/React.createElement("p", {
+    className: "subtitle"
+  }, directorModal.action === 'delete' ? 'Para eliminar un comentario usa el usuario con rol de director que lo escribió.' : 'Los comentarios solo pueden dejarse con un usuario con rol de director. Selecciona el usuario para continuar.'), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", null, "Usuario director"), /*#__PURE__*/React.createElement("select", {
+    value: directorSeleccionadoId,
+    onChange: e => {
+      setDirectorSeleccionadoId(e.target.value);
+      setDirectorModalError('');
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Seleccionar director"), directores.map(d => /*#__PURE__*/React.createElement("option", {
+    key: d.id,
+    value: d.id
+  }, d.nombre))), directores.length === 0 && /*#__PURE__*/React.createElement("p", {
+    className: "hint-text"
+  }, "No hay usuarios con rol de director registrados en la hoja Responsables.")), /*#__PURE__*/React.createElement("div", {
+    className: `error-msg ${directorModalError ? 'visible' : ''}`
+  }, directorModalError)), /*#__PURE__*/React.createElement("div", {
+    className: "btn-row"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn-cancel",
+    onClick: closeDirectorModal
+  }, "Cancelar"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn-save",
+    onClick: confirmDirectorModal,
+    disabled: directores.length === 0
+  }, directorModal.action === 'delete' ? 'Eliminar comentario' : 'Enviar comentario')))), imageModal.open && imageModal.adjunto && /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4",
+    onClick: closeImageModal
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-zinc-950 border border-zinc-800 rounded-3xl p-4 w-full max-w-lg space-y-4 shadow-2xl",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-3"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs font-mono font-bold text-zinc-400 truncate"
+  }, imageModal.adjunto.name || 'Imagen'), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: closeImageModal,
+    className: "p-1 text-zinc-400 hover:text-white shrink-0",
+    "aria-label": "Cerrar"
+  }, /*#__PURE__*/React.createElement(IconClose, {
+    className: "w-5 h-5"
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "rounded-2xl overflow-hidden bg-zinc-900 flex items-center justify-center"
+  }, /*#__PURE__*/React.createElement("img", {
+    src: imageModal.adjunto.id ? `https://drive.google.com/thumbnail?id=${imageModal.adjunto.id}&sz=w1200` : imageModal.adjunto.url,
+    alt: imageModal.adjunto.name || 'Imagen de la obra',
+    className: "max-h-[60vh] w-auto max-w-full object-contain"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: handleCopyImage,
+    disabled: imageActionBusy,
+    className: "flex items-center justify-center gap-2 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700 rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
+  }, /*#__PURE__*/React.createElement(IconCopy, null), " ", imageActionBusy ? 'Procesando...' : 'Copiar'), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: handleDownloadImage,
+    disabled: imageActionBusy,
+    className: "flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
+  }, /*#__PURE__*/React.createElement(IconSave, null), " ", imageActionBusy ? 'Procesando...' : 'Descargar')))), view === "discover" && /*#__PURE__*/React.createElement("div", {
+    className: "animate-fade-in"
+  }, /*#__PURE__*/React.createElement("header", {
+    className: "px-4 pt-6 pb-2 flex items-center gap-5 overflow-x-auto"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "shrink-0"
+  }, /*#__PURE__*/React.createElement("h1", {
+    className: "text-2xl font-bold tracking-tight text-slate-900 dark:text-white"
+  }, "Catalogo"), /*#__PURE__*/React.createElement("p", {
+    className: "text-slate-500 dark:text-slate-400 text-sm mt-0.5"
+  }, "base de datos de obra")), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 shrink-0"
+  }, !selectionMode ? /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSelectionMode(true),
+    className: "px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold"
+  }, "Seleccionar") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
+    onClick: cancelCatalogSelection,
+    className: "px-3 py-2 bg-zinc-800 text-zinc-200 rounded-lg text-xs font-bold"
+  }, "Cancelar"), /*#__PURE__*/React.createElement("button", {
+    onClick: exportCatalogSelection,
+    disabled: selectedObraIds.size === 0,
+    className: "px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+  }, "Exportar (", selectedObraIds.size, ")"))), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 shrink-0"
+  }, /*#__PURE__*/React.createElement("select", {
+    className: "w-40 p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs outline-none text-zinc-200",
+    value: filterAutor,
+    onChange: e => setFilterAutor(e.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Autor: Todos"), autorOptions.map(v => /*#__PURE__*/React.createElement("option", {
+    key: v,
+    value: v
+  }, v))), /*#__PURE__*/React.createElement("select", {
+    className: "w-40 p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs outline-none text-zinc-200",
+    value: filterProvenance,
+    onChange: e => setFilterProvenance(e.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Provenance: Todas"), provenanceOptions.map(v => /*#__PURE__*/React.createElement("option", {
+    key: v,
+    value: v
+  }, v))), /*#__PURE__*/React.createElement("select", {
+    className: "w-40 p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs outline-none text-zinc-200",
+    value: filterUbicacion,
+    onChange: e => setFilterUbicacion(e.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Ubicaci\xF3n: Todas"), ubicacionOptions.map(v => /*#__PURE__*/React.createElement("option", {
+    key: v,
+    value: v
+  }, v))), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    placeholder: "Precio m\xEDnimo",
+    className: "w-32 p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs outline-none text-zinc-200",
+    value: filterPriceMin,
+    onChange: e => setFilterPriceMin(e.target.value)
+  }), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    placeholder: "Precio m\xE1ximo",
+    className: "w-32 p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs outline-none text-zinc-200",
+    value: filterPriceMax,
+    onChange: e => setFilterPriceMax(e.target.value)
+  }))), loading ? /*#__PURE__*/React.createElement(BoxLoader, {
+    message: "Cargando obras..."
+  }) : obras.length === 0 ? /*#__PURE__*/React.createElement("p", {
+    className: "text-center text-slate-500 mt-10"
+  }, "No hay obras registradas a\xFAn.") : /*#__PURE__*/React.createElement("div", {
+    className: "discover-grid"
+  }, catalogFiltered.map(obra => {
+    const imgUrl = getFirstImage(obra);
+    const price = obra.precio_venta || obra.precio_lista;
+    return /*#__PURE__*/React.createElement("div", {
+      key: obra.id,
+      className: `grid-item ${selectionMode && selectedObraIds.has(obra.id) ? 'ring-4 ring-inset ring-emerald-400' : ''}`,
+      onClick: () => selectionMode ? toggleObraSelection(obra.id) : openDetail(obra)
+    }, imgUrl ? /*#__PURE__*/React.createElement("img", {
+      src: imgUrl,
+      alt: obra.nombre_obra || 'Obra sin título',
+      loading: "lazy"
+    }) : /*#__PURE__*/React.createElement("div", {
+      className: "fallback-text"
+    }, obra.nombre_obra || 'Sin título'), /*#__PURE__*/React.createElement("div", {
+      className: "catalog-card-info"
+    }, selectionMode && /*#__PURE__*/React.createElement("span", {
+      className: `absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-black ${selectedObraIds.has(obra.id) ? 'bg-emerald-500 border-emerald-300 text-white' : 'bg-black/30 border-white text-transparent'}`
+    }, "\u2713"), /*#__PURE__*/React.createElement("p", {
+      className: "catalog-card-title"
+    }, obra.nombre_obra || 'Sin título'), /*#__PURE__*/React.createElement("p", {
+      className: "catalog-card-meta"
+    }, obra.autor || 'Autor desconocido', " \xB7 ", obra.tipo_obra || 'Técnica no definida'), /*#__PURE__*/React.createElement("p", {
+      className: "catalog-card-price"
+    }, formatCurrency(price, obra.tipo_moneda))));
+  }))), view === "list" && /*#__PURE__*/React.createElement("div", {
+    className: "animate-fade-in max-w-[1600px] mx-auto lg:flex lg:items-start lg:gap-6 lg:px-6 lg:pt-4"
+  }, /*#__PURE__*/React.createElement("aside", {
+    className: "lg:w-72 lg:shrink-0 lg:sticky lg:top-[68px]"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "sticky top-[52px] z-10 glass-header p-4 border-b lg:static lg:border lg:rounded-2xl bg-zinc-950/90 border-zinc-800 shadow-sm"
+  }, /*#__PURE__*/React.createElement("h1", {
+    className: "text-2xl font-bold text-slate-100 mb-4"
+  }, "Inventario de Obras"), /*#__PURE__*/React.createElement("div", {
+    className: "relative"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
+  }, /*#__PURE__*/React.createElement(IconSearch, null)), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    placeholder: "Buscar nombre o clave...",
+    className: "w-full pl-10 pr-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-zinc-100 placeholder-zinc-500",
+    value: search,
+    onChange: e => setSearch(e.target.value)
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowFilters(!showFilters),
+    className: "mt-3 w-full px-3 py-2 text-xs font-bold text-indigo-400 bg-indigo-900/30 rounded-xl transition-all"
+  }, showFilters ? "Ocultar filtros" : "Filtros avanzados"), showFilters && /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 lg:grid-cols-1 gap-2 mt-3 p-3 bg-zinc-900/50 rounded-xl border border-zinc-800/50"
+  }, /*#__PURE__*/React.createElement("select", {
+    className: "w-full p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs outline-none text-zinc-100",
+    value: filterStatus,
+    onChange: e => setFilterStatus(e.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Estatus: Todos"), statusOptions.map(v => /*#__PURE__*/React.createElement("option", {
+    key: v,
+    value: v
+  }, v))), /*#__PURE__*/React.createElement("select", {
+    className: "w-full p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs outline-none text-zinc-100",
+    value: filterTipo,
+    onChange: e => setFilterTipo(e.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Tipo: Todos"), tipoOptions.map(v => /*#__PURE__*/React.createElement("option", {
+    key: v,
+    value: v
+  }, v))), /*#__PURE__*/React.createElement("select", {
+    className: "w-full p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs outline-none text-zinc-100",
+    value: filterProvenance,
+    onChange: e => setFilterProvenance(e.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Provenance: Todas"), provenanceOptions.map(v => /*#__PURE__*/React.createElement("option", {
+    key: v,
+    value: v
+  }, v))), /*#__PURE__*/React.createElement("select", {
+    className: "w-full p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs outline-none text-zinc-100",
+    value: filterAutor,
+    onChange: e => setFilterAutor(e.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Autor: Todos"), autorOptions.map(v => /*#__PURE__*/React.createElement("option", {
+    key: v,
+    value: v
+  }, v))), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    placeholder: "Min $",
+    className: "w-full p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs outline-none text-zinc-100",
+    value: filterPriceMin,
+    onChange: e => setFilterPriceMin(e.target.value)
+  }), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    placeholder: "Max $",
+    className: "w-full p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs outline-none text-zinc-100",
+    value: filterPriceMax,
+    onChange: e => setFilterPriceMax(e.target.value)
+  })))), /*#__PURE__*/React.createElement("main", {
+    className: "flex-1 p-4 lg:p-0"
+  }, loading ? /*#__PURE__*/React.createElement(BoxLoader, {
+    message: "Cargando inventario..."
+  }) : /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+  }, filtered.map(o => {
+    const isNew = !viewedIds.includes(o.id);
+    return /*#__PURE__*/React.createElement("div", {
+      key: o.id,
+      onClick: () => openDetail(o),
+      className: "bg-zinc-950 p-4 rounded-2xl shadow-sm border border-zinc-800 active:scale-95 cursor-pointer transition-transform"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex justify-between items-start gap-3 mb-2"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-col gap-1 min-w-0"
+    }, /*#__PURE__*/React.createElement("h3", {
+      className: "font-bold text-slate-100 truncate"
+    }, o.nombre_obra), isNew && /*#__PURE__*/React.createElement("span", {
+      className: "inline-flex w-fit items-center gap-1 bg-amber-900/30 text-amber-400 px-1.5 py-0.5 rounded text-[9px] font-black uppercase"
+    }, /*#__PURE__*/React.createElement(IconUnseen, null), " Nueva")), /*#__PURE__*/React.createElement("span", {
+      className: "text-[10px] font-bold bg-indigo-900/30 text-indigo-400 px-2 py-1 rounded uppercase shrink-0"
+    }, o.estatus)), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center justify-between text-xs mt-3 pt-3 border-t border-zinc-800/60"
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "text-zinc-500 font-mono font-medium"
+    }, "#", o.clave || '-'), /*#__PURE__*/React.createElement("p", {
+      className: "font-semibold text-zinc-300"
+    }, formatCurrency(o.precio_venta || o.precio_lista, o.tipo_moneda))));
+  })))), view === "settings" && /*#__PURE__*/React.createElement("div", {
+    className: "animate-fade-in max-w-[1400px] mx-auto p-4 lg:p-6"
+  }, /*#__PURE__*/React.createElement("header", {
+    className: "pt-4 pb-2"
+  }, /*#__PURE__*/React.createElement("h1", {
+    className: "text-3xl font-black tracking-tight text-white"
+  }, "Ajustes")), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 lg:grid-cols-2 gap-6 items-start"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-zinc-950 border border-zinc-800 rounded-3xl p-6 space-y-6 shadow-sm"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between pb-4 border-b border-zinc-800"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+    className: "font-bold text-slate-100"
+  }, "Modo Oscuro"), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-zinc-500"
+  }, "Interfaz oscura permanente")), /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    className: "w-6 h-6 accent-indigo-600 rounded cursor-pointer",
+    checked: true,
+    disabled: true
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3 pb-2"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-bold text-slate-100"
+  }, "Visualizaci\xF3n de Medidas"), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-zinc-500"
+  }, "Activa si las piezas suelen rotarse."), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setUiSettings({
+      ...uiSettings,
+      rotateMeasures: !uiSettings.rotateMeasures
+    }),
+    className: `w-full py-3 rounded-xl font-bold border transition-colors ${uiSettings.rotateMeasures ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-zinc-800 border-zinc-700 text-zinc-300'}`
+  }, uiSettings.rotateMeasures ? "Medidas Rotadas (Activo)" : "Estándar (Inactivo)"))), /*#__PURE__*/React.createElement("div", {
+    className: "bg-zinc-950 border border-zinc-800 rounded-3xl p-6 shadow-sm"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between items-center mb-4"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-bold text-slate-100"
+  }, "Historial Reciente"), viewedIds.length > 0 && /*#__PURE__*/React.createElement("button", {
+    onClick: () => setViewedIds(clearViewedHistory()),
+    className: "text-xs text-red-400 font-bold"
+  }, "Limpiar")), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2 max-h-64 overflow-y-auto custom-scrollbar pr-2"
+  }, viewedIds.length === 0 ? /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-zinc-500 text-center py-4"
+  }, "No hay obras vistas recientemente.") : viewedIds.map(id => {
+    const o = obras.find(x => x.id === id);
+    if (!o) return null;
+    return /*#__PURE__*/React.createElement("div", {
+      key: id,
+      onClick: () => openDetail(o),
+      className: "flex justify-between items-center p-3 bg-zinc-900/40 rounded-xl active:scale-95 transition-transform cursor-pointer"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "min-w-0"
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "text-sm font-semibold text-slate-100 truncate"
+    }, o.nombre_obra), /*#__PURE__*/React.createElement("p", {
+      className: "text-[10px] text-zinc-500 font-mono"
+    }, "#", o.clave)), /*#__PURE__*/React.createElement(IconChevronRight, null));
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "bg-zinc-950 border border-zinc-800 rounded-3xl p-6 shadow-sm"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between items-center mb-4"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-bold text-slate-100"
+  }, "Gestionar Provenance"), /*#__PURE__*/React.createElement("button", {
+    onClick: handleOpenAddProv,
+    className: "flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95"
+  }, /*#__PURE__*/React.createElement(IconPlus, {
+    className: "w-4 h-4"
+  }), " Nuevo")), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-zinc-500 mb-4"
+  }, "Administra las fuentes de origen y sus abreviaturas."), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-2"
+  }, comisiones.length === 0 ? /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-zinc-500 text-center py-4"
+  }, "No hay Provenance registrados.") : comisiones.map(c => {
+    const abrev = abreviaturas.find(a => a.tipo === c.id);
+    return /*#__PURE__*/React.createElement("div", {
+      key: c.id,
+      className: "flex justify-between items-center p-3 bg-zinc-900/40 rounded-xl"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "min-w-0 flex-1"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-2"
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "text-sm font-semibold text-slate-200 truncate"
+    }, c.provenance), abrev && /*#__PURE__*/React.createElement("span", {
+      className: "text-[10px] font-mono font-bold text-indigo-400 bg-indigo-900/30 px-2 py-0.5 rounded"
+    }, abrev.abreviatura)), /*#__PURE__*/React.createElement("p", {
+      className: "text-xs text-zinc-500"
+    }, c.porcentaje, "% comisi\xF3n")), /*#__PURE__*/React.createElement("button", {
+      onClick: () => handleOpenEditProv(c),
+      className: "p-2 text-zinc-400 hover:text-indigo-400 transition-colors"
+    }, /*#__PURE__*/React.createElement(IconCog, {
+      className: "w-5 h-5"
+    })));
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "bg-zinc-950 border border-zinc-800 rounded-3xl p-6 shadow-sm"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between items-center mb-4"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-bold text-slate-100"
+  }, "Gestionar T\xE9cnicas"), /*#__PURE__*/React.createElement("button", {
+    onClick: handleOpenAddTec,
+    className: "flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95"
+  }, /*#__PURE__*/React.createElement(IconPlus, {
+    className: "w-4 h-4"
+  }), " Nueva")), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-zinc-500 mb-4"
+  }, "Administra las t\xE9cnicas art\xEDsticas y sus abreviaturas."), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-2"
+  }, tecnicas.length === 0 ? /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-zinc-500 text-center py-4"
+  }, "No hay t\xE9cnicas registradas.") : tecnicas.map(t => {
+    return /*#__PURE__*/React.createElement("div", {
+      key: t.id,
+      className: "flex justify-between items-center p-3 bg-zinc-900/40 rounded-xl"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "min-w-0 flex-1"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-2"
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "text-sm font-semibold text-slate-200 truncate"
+    }, t.nombre), /*#__PURE__*/React.createElement("span", {
+      className: "text-[10px] font-mono font-bold text-indigo-400 bg-indigo-900/30 px-2 py-0.5 rounded"
+    }, t.abreviatura))), /*#__PURE__*/React.createElement("button", {
+      onClick: () => handleOpenEditTec(t),
+      className: "p-2 text-zinc-400 hover:text-indigo-400 transition-colors"
+    }, /*#__PURE__*/React.createElement(IconCog, {
+      className: "w-5 h-5"
+    })));
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "bg-zinc-950 border border-zinc-800 rounded-3xl p-6 shadow-sm"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between items-center mb-4"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-bold text-slate-100"
+  }, "Gestionar Autores"), /*#__PURE__*/React.createElement("button", {
+    onClick: handleOpenAddAutor,
+    className: "flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95"
+  }, /*#__PURE__*/React.createElement(IconPlus, {
+    className: "w-4 h-4"
+  }), " Nuevo")), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-zinc-500 mb-4"
+  }, "Administra los autores art\xEDsticos y sus abreviaturas."), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-2"
+  }, autores.length === 0 ? /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-zinc-500 text-center py-4"
+  }, "No hay autores registrados.") : autores.map(a => {
+    return /*#__PURE__*/React.createElement("div", {
+      key: a.id,
+      className: "flex justify-between items-center p-3 bg-zinc-900/40 rounded-xl"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "min-w-0 flex-1"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-2"
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "text-sm font-semibold text-slate-200 truncate"
+    }, a.nombre), /*#__PURE__*/React.createElement("span", {
+      className: "text-[10px] font-mono font-bold text-indigo-400 bg-indigo-900/30 px-2 py-0.5 rounded"
+    }, a.abreviatura))), /*#__PURE__*/React.createElement("button", {
+      onClick: () => handleOpenEditAutor(a),
+      className: "p-2 text-zinc-400 hover:text-indigo-400 transition-colors"
+    }, /*#__PURE__*/React.createElement(IconCog, {
+      className: "w-5 h-5"
+    })));
+  }))))), view === "author" && /*#__PURE__*/React.createElement("div", {
+    className: "animate-fade-in max-w-xl mx-auto"
+  }, /*#__PURE__*/React.createElement("nav", {
+    className: "sticky top-[52px] bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800/50 p-4 flex justify-between items-center z-10"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setView("detail"),
+    className: "p-2 -ml-2 text-indigo-400 rounded-full hover:bg-zinc-800"
+  }, /*#__PURE__*/React.createElement(IconBack, null)), /*#__PURE__*/React.createElement("h2", {
+    className: "font-bold text-white truncate max-w-[200px] text-center"
+  }, currentAuthor || "Autor Desconocido"), /*#__PURE__*/React.createElement("div", {
+    className: "w-10"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "p-4"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-zinc-500 mb-4 uppercase tracking-widest font-bold text-center"
+  }, "Cat\xE1logo del autor"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-4 lg:grid-cols-6 gap-1.5 sm:gap-2"
+  }, obras.filter(o => o.autor === currentAuthor).map(obra => {
+    const imgUrl = getFirstImage(obra);
+    return /*#__PURE__*/React.createElement("div", {
+      key: obra.id,
+      onClick: () => openDetail(obra),
+      className: "relative aspect-square rounded-xl overflow-hidden cursor-pointer shadow-sm hover:shadow-md transition-all border border-zinc-800 bg-zinc-900"
+    }, imgUrl ? /*#__PURE__*/React.createElement("img", {
+      src: imgUrl,
+      className: "w-full h-full object-cover",
+      alt: obra.nombre_obra
+    }) : /*#__PURE__*/React.createElement("div", {
+      className: "w-full h-full bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center p-2 text-center"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "text-[9px] sm:text-xs text-white font-bold leading-tight line-clamp-3"
+    }, obra.nombre_obra)));
+  })))), view === "detail" && currentObra && /*#__PURE__*/React.createElement("div", {
+    className: "animate-fade-in pb-safe-nav",
+    style: {
+      background: '#070a0e'
+    }
+  }, /*#__PURE__*/React.createElement("nav", {
+    className: "sticky top-[52px] bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800/50 p-4 flex justify-between items-center z-10"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setView("discover"),
+    className: "p-2 -ml-2 text-indigo-400 rounded-full hover:bg-zinc-800"
+  }, /*#__PURE__*/React.createElement(IconBack, null)), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1 sm:gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: handleShare,
+    className: "p-2 text-indigo-400 hover:bg-indigo-900/30 rounded-full transition-colors"
+  }, /*#__PURE__*/React.createElement(IconShare, null)), /*#__PURE__*/React.createElement("button", {
+    onClick: handleCopyInfo,
+    className: "p-2 text-indigo-400 hover:bg-indigo-900/30 rounded-full transition-colors"
+  }, /*#__PURE__*/React.createElement(IconCopy, null)), /*#__PURE__*/React.createElement("button", {
+    onClick: handleGenerateCertificate,
+    disabled: generatingCertificate,
+    title: "Generar certificado",
+    "aria-label": "Generar certificado",
+    className: `p-2 text-indigo-400 hover:bg-indigo-900/30 rounded-full transition-colors ${generatingCertificate ? 'opacity-50 cursor-not-allowed' : ''}`
+  }, /*#__PURE__*/React.createElement(IconFileText, null)), /*#__PURE__*/React.createElement("button", {
+    onClick: () => handleEditObra(currentObra),
+    className: "p-2 text-indigo-400 hover:bg-indigo-900/30 rounded-full transition-colors"
+  }, /*#__PURE__*/React.createElement(IconEdit, null)))), /*#__PURE__*/React.createElement("div", {
+    className: "p-4 lg:p-6 max-w-[1400px] mx-auto lg:grid lg:grid-cols-[1.3fr_1fr] lg:gap-6 lg:items-start"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-zinc-950 p-6 rounded-3xl shadow-sm border border-zinc-800"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between items-start mb-4"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] font-mono font-bold text-zinc-500 uppercase"
+  }, currentObra.clave || "SIN WORK ID"), /*#__PURE__*/React.createElement("h1", {
+    className: "text-2xl font-black text-white leading-tight mt-1"
+  }, currentObra.nombre_obra || "Sin Nombre")), /*#__PURE__*/React.createElement("span", {
+    className: "bg-emerald-900/30 text-emerald-400 px-3 py-1 rounded-full text-[10px] font-bold uppercase shrink-0"
+  }, currentObra.estatus)), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-5 pt-4 border-t border-zinc-800"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    onClick: () => {
+      setCurrentAuthor(currentObra.autor);
+      setView("author");
+    },
+    className: "cursor-pointer group p-2 -m-2 rounded-xl hover:bg-zinc-800/50 transition-colors"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-zinc-500 font-bold uppercase"
+  }, "Autor"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold text-indigo-400 group-hover:underline flex items-center gap-1"
+  }, currentObra.autor || "-", currentObra.autor && /*#__PURE__*/React.createElement(IconChevronRight, {
+    className: "w-3 h-3 text-indigo-400"
+  }))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-zinc-500 font-bold uppercase"
+  }, "Tipo"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold text-zinc-200"
+  }, currentObra.tipo_obra || "-"))), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-4 bg-zinc-900/50 p-4 rounded-2xl"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-zinc-500 font-bold uppercase mb-1"
+  }, "Precio Lista"), /*#__PURE__*/React.createElement("p", {
+    className: "text-lg font-black text-zinc-300"
+  }, formatCurrency(currentObra.precio_lista, currentObra.tipo_moneda))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-zinc-500 font-bold uppercase mb-1"
+  }, "Precio Venta"), /*#__PURE__*/React.createElement("p", {
+    className: "text-lg font-black text-emerald-400"
+  }, formatCurrency(currentObra.precio_venta, currentObra.tipo_moneda)))), (parseFloat(currentObra.comision_valor) || 0) > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "bg-indigo-900/20 p-4 rounded-2xl border border-indigo-900/40"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-1"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-indigo-400 font-bold uppercase"
+  }, "Comisi\xF3n de la pieza"), /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] font-bold bg-indigo-600 text-white px-2 py-0.5 rounded"
+  }, currentObra.comision_tipo === 'monto' ? '$ Monto' : '% Porcentaje')), /*#__PURE__*/React.createElement("p", {
+    className: "text-lg font-black text-indigo-300"
+  }, currentObra.comision_tipo === 'monto' ? formatCurrency(currentObra.comision_valor, currentObra.tipo_moneda) : `${currentObra.comision_valor}% → ${formatCurrency(getCurrentCommissionAmount(), currentObra.tipo_moneda)}`)), (() => {
+    const m = getDisplayedMeasures(currentObra, uiSettings.rotateMeasures);
+    return /*#__PURE__*/React.createElement("div", {
+      className: "grid grid-cols-3 gap-2"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-center p-3 bg-zinc-900/50 rounded-xl"
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "text-[9px] text-zinc-500 font-bold uppercase"
+    }, "Ancho"), /*#__PURE__*/React.createElement("p", {
+      className: "text-sm font-bold text-zinc-200"
+    }, m.ancho || "-", " cm")), /*#__PURE__*/React.createElement("div", {
+      className: "text-center p-3 bg-zinc-900/50 rounded-xl"
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "text-[9px] text-zinc-500 font-bold uppercase"
+    }, "Alto"), /*#__PURE__*/React.createElement("p", {
+      className: "text-sm font-bold text-zinc-200"
+    }, m.alto || "-", " cm")), /*#__PURE__*/React.createElement("div", {
+      className: "text-center p-3 bg-zinc-900/50 rounded-xl"
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "text-[9px] text-zinc-500 font-bold uppercase"
+    }, "Largo"), /*#__PURE__*/React.createElement("p", {
+      className: "text-sm font-bold text-zinc-200"
+    }, m.largo || "-", " cm")));
+  })(), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between p-3 bg-zinc-900/50 rounded-xl border border-zinc-800"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-3"
+  }, currentObra.verificada ? /*#__PURE__*/React.createElement(IconVerified, {
+    className: "w-6 h-6 text-emerald-500"
+  }) : /*#__PURE__*/React.createElement(IconUnverified, {
+    className: "w-6 h-6 text-amber-500"
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold text-zinc-300"
+  }, currentObra.verificada ? '✅ Verificada' : '⏳ Pendiente de verificación'), /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-zinc-500"
+  }, currentObra.verificada ? 'Esta obra ha sido verificada y validada' : 'Esta obra aún no ha sido verificada'))), /*#__PURE__*/React.createElement("button", {
+    onClick: handleToggleVerification,
+    disabled: togglingVerification,
+    className: `px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${currentObra.verificada ? 'bg-amber-900/30 text-amber-400 hover:bg-amber-900/50' : 'bg-emerald-900/30 text-emerald-400 hover:bg-emerald-900/50'} ${togglingVerification ? 'opacity-50 cursor-not-allowed' : ''}`
+  }, togglingVerification ? /*#__PURE__*/React.createElement("span", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"
+  }), "Cambiando...") : currentObra.verificada ? '🔓 Desverificar' : '🔒 Verificar'))))), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4 mt-4 lg:mt-0"
+  }, currentObra.adjuntos?.some(a => a.mimeType?.includes('image') || a.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)) && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4"
+  }, "Adjuntos en Google Drive"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 sm:grid-cols-3 gap-2"
+  }, currentObra.adjuntos.filter(a => a.mimeType?.includes('image') || a.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)).map(a => /*#__PURE__*/React.createElement("button", {
+    key: a.id,
+    type: "button",
+    onClick: () => openImageModal(a),
+    className: "block w-full aspect-[3/4] overflow-hidden active:scale-95 transition-transform cursor-pointer"
+  }, /*#__PURE__*/React.createElement("img", {
+    src: `https://drive.google.com/thumbnail?id=${a.id}&sz=w400`,
+    className: "w-full h-full object-cover",
+    alt: a.name || 'Imagen de la obra'
+  }))))), (() => {
+    const certificados = (currentObra.documentos || []).filter(doc => doc && (doc.tipo === 'Certificado' || doc.tipo === 'Certificado Web' || doc.tipo === 'Certificado PDF'));
+    const web = certificados.find(doc => doc.tipo === 'Certificado Web');
+    const pdf = certificados.find(doc => doc.tipo === 'Certificado PDF') || certificados.find(doc => doc.tipo === 'Certificado');
+    if (!certificados.length) return null;
+    return /*#__PURE__*/React.createElement("div", {
+      className: "bg-zinc-950 p-6 rounded-3xl shadow-sm border border-indigo-900/50 space-y-3"
+    }, /*#__PURE__*/React.createElement("h3", {
+      className: "text-xs font-bold text-indigo-400 uppercase tracking-widest"
+    }, "Certificado"), /*#__PURE__*/React.createElement("div", {
+      className: "grid grid-cols-1 sm:grid-cols-2 gap-2"
+    }, web?.url && /*#__PURE__*/React.createElement("a", {
+      href: web.url,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      className: "text-center text-xs font-bold text-indigo-400 bg-indigo-900/30 px-3 py-2.5 rounded-xl"
+    }, "Ver certificado web"), pdf?.url && /*#__PURE__*/React.createElement("a", {
+      href: pdf.url,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      className: "text-center text-xs font-bold text-emerald-400 bg-emerald-900/30 px-3 py-2.5 rounded-xl"
+    }, "Descargar PDF")));
+  })(), currentObra.documentos && currentObra.documentos.filter(doc => !doc || !['Certificado', 'Certificado Web', 'Certificado PDF'].includes(doc.tipo)).length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "bg-zinc-950 p-6 rounded-3xl shadow-sm border border-zinc-800 space-y-3"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2"
+  }, "Documentos Legales y T\xE9cnicos"), currentObra.documentos.filter(doc => !doc || !['Certificado', 'Certificado Web', 'Certificado PDF'].includes(doc.tipo)).map(doc => /*#__PURE__*/React.createElement("div", {
+    key: doc.id,
+    className: "flex justify-between items-center p-3 bg-zinc-900/40 rounded-xl"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "min-w-0"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs font-bold text-zinc-200 truncate"
+  }, doc.nombre), /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-zinc-500"
+  }, doc.tipo || 'General', " ", doc.fecha ? `• ${doc.fecha}` : '')), doc.url && /*#__PURE__*/React.createElement("a", {
+    href: doc.url,
+    target: "_blank",
+    rel: "noopener noreferrer",
+    className: "text-xs font-bold text-indigo-400 bg-indigo-900/30 px-3 py-1.5 rounded-lg"
+  }, "Ver")))), /*#__PURE__*/React.createElement("div", {
+    className: "bg-zinc-950 p-6 rounded-3xl shadow-sm border border-zinc-800 space-y-4"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-xs font-bold text-zinc-500 uppercase tracking-widest"
+  }, "Informaci\xF3n de Ficha T\xE9cnica"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-4"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-zinc-500 font-bold uppercase"
+  }, "Ubicaci\xF3n"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-medium text-zinc-200"
+  }, currentObra.ubicacion || "-")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-zinc-500 font-bold uppercase"
+  }, "Peso"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-medium text-zinc-200"
+  }, currentObra.superficie ? `${currentObra.superficie}` : "-")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-zinc-500 font-bold uppercase"
+  }, "Provenance"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-medium text-zinc-200"
+  }, comisiones.find(c => c.id === currentObra.provenance)?.provenance || currentObra.provenance || "-"))), /*#__PURE__*/React.createElement("div", {
+    className: "border-t border-zinc-800 pt-4"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-zinc-500 font-bold uppercase"
+  }, "Tags"), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs font-medium text-indigo-400 mt-1"
+  }, tagsAsText(currentObra.tags) || "Sin etiquetas")), /*#__PURE__*/React.createElement("div", {
+    className: "border-t border-zinc-800 pt-4"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-zinc-500 font-bold uppercase"
+  }, "Observaciones"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm whitespace-pre-wrap mt-1 text-zinc-300"
+  }, currentObra.observaciones || "Sin observaciones."))), (() => {
+    const comentarios = currentObra.comentarios || [];
+    return /*#__PURE__*/React.createElement("div", {
+      className: "bg-zinc-950 p-6 rounded-3xl shadow-sm border border-zinc-800 space-y-4"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center justify-between"
+    }, /*#__PURE__*/React.createElement("h3", {
+      className: "text-xs font-bold text-zinc-500 uppercase tracking-widest"
+    }, "Comentarios"), /*#__PURE__*/React.createElement("span", {
+      className: "text-[10px] font-bold bg-indigo-900/30 text-indigo-400 px-2 py-0.5 rounded"
+    }, comentarios.length)), /*#__PURE__*/React.createElement("div", {
+      ref: comentariosListRef,
+      className: "space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-1"
+    }, comentarios.length === 0 ? /*#__PURE__*/React.createElement("p", {
+      className: "text-sm text-zinc-500 text-center py-4"
+    }, "A\xFAn no hay comentarios en esta obra.") : comentarios.map(m => {
+      const esMio = directorSeleccionadoId && String(m.id_autor) === String(directorSeleccionadoId);
+      return /*#__PURE__*/React.createElement("div", {
+        key: m.id,
+        className: `flex ${esMio ? 'justify-end' : 'justify-start'}`
+      }, /*#__PURE__*/React.createElement("div", {
+        className: `max-w-[85%] p-3 rounded-2xl border ${esMio ? 'bg-indigo-900/30 border-indigo-800/50 rounded-br-md' : 'bg-zinc-900/60 border-zinc-800 rounded-bl-md'}`
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "flex items-center justify-between gap-3 mb-1"
+      }, /*#__PURE__*/React.createElement("span", {
+        className: `text-[10px] font-bold uppercase truncate ${esMio ? 'text-indigo-300' : 'text-zinc-400'}`
+      }, m.autor || 'Usuario'), /*#__PURE__*/React.createElement("button", {
+        type: "button",
+        onClick: () => requestDeleteComentario(m.id),
+        disabled: eliminandoComentarioId === m.id,
+        title: "Eliminar comentario",
+        className: "text-zinc-500 hover:text-red-400 transition-colors shrink-0 disabled:opacity-50"
+      }, /*#__PURE__*/React.createElement(IconTrash, {
+        className: "w-3.5 h-3.5"
+      }))), /*#__PURE__*/React.createElement("p", {
+        className: "text-sm text-zinc-200 whitespace-pre-wrap break-words"
+      }, m.texto), /*#__PURE__*/React.createElement("p", {
+        className: "text-[9px] text-zinc-500 mt-1.5 text-right"
+      }, formatComentarioFecha(m.fecha))));
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-end gap-2 pt-3 border-t border-zinc-800"
+    }, /*#__PURE__*/React.createElement("textarea", {
+      rows: "2",
+      maxLength: 2000,
+      placeholder: "Escribe un comentario...",
+      className: "flex-1 p-3 bg-zinc-900/80 border border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-zinc-100 resize-none",
+      value: comentarioTexto,
+      onChange: e => setComentarioTexto(e.target.value),
+      onKeyDown: e => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          requestAddComentario();
+        }
+      }
+    }), /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      onClick: requestAddComentario,
+      disabled: enviandoComentario || !comentarioTexto.trim(),
+      className: "px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+    }, enviandoComentario ? 'Enviando...' : 'Enviar')), /*#__PURE__*/React.createElement("p", {
+      className: "text-[10px] text-zinc-600"
+    }, "Ctrl/\u2318 + Enter para enviar. Para comentar se requiere un usuario con rol de director."));
+  })()), /*#__PURE__*/React.createElement("div", {
+    className: "pt-4 pb-8 flex justify-center lg:col-span-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: handleReportError,
+    className: "flex items-center gap-2 text-xs font-bold text-red-400 hover:text-red-300 bg-red-950/30 hover:bg-red-900/50 px-5 py-2.5 rounded-full transition-all active:scale-95 border border-red-900/50 shadow-sm"
+  }, /*#__PURE__*/React.createElement(IconFlag, {
+    className: "w-4 h-4"
+  }), " Reportar problema con esta obra")))), view === "form" && currentObra && /*#__PURE__*/React.createElement("div", {
+    className: "animate-fade-in pb-safe-nav",
+    style: {
+      background: '#070a0e'
+    }
+  }, /*#__PURE__*/React.createElement("nav", {
+    className: "sticky top-[52px] bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800/50 p-4 flex justify-between items-center z-10"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => obras.find(o => o.id === currentObra.id) ? setView("detail") : setView("list"),
+    className: "font-semibold text-zinc-400 px-2 py-1"
+  }, "Cancelar"), /*#__PURE__*/React.createElement("h2", {
+    className: "font-bold text-zinc-200"
+  }, obras.find(o => o.id === currentObra.id) ? 'Editar Obra' : 'Nueva Obra'), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement("label", {
+    title: "Marcar obra como verificada",
+    className: `flex items-center gap-2 px-2.5 py-1.5 rounded-xl border cursor-pointer select-none transition-colors ${currentObra.verificada ? 'bg-emerald-900/20 border-emerald-800/50 text-emerald-400' : 'bg-amber-900/20 border-amber-800/50 text-amber-400'}`
+  }, currentObra.verificada ? /*#__PURE__*/React.createElement(IconVerified, {
+    className: "w-4 h-4 shrink-0"
+  }) : /*#__PURE__*/React.createElement(IconUnverified, {
+    className: "w-4 h-4 shrink-0"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "hidden sm:inline text-xs font-bold"
+  }, currentObra.verificada ? 'Verificada' : 'Pendiente'), /*#__PURE__*/React.createElement("span", {
+    className: "relative inline-flex items-center"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    className: "sr-only peer",
+    checked: currentObra.verificada === true,
+    onChange: e => handleFormChange('verificada', e.target.checked)
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "w-9 h-5 bg-zinc-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-600 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"
+  }))), /*#__PURE__*/React.createElement("button", {
+    disabled: saving,
+    type: "submit",
+    form: "obra-form",
+    className: "px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 disabled:opacity-50"
+  }, saving ? /*#__PURE__*/React.createElement("div", {
+    className: "w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+  }) : /*#__PURE__*/React.createElement(IconSave, {
+    className: "w-4 h-4"
+  }), "Guardar"))), /*#__PURE__*/React.createElement("form", {
+    id: "obra-form",
+    onSubmit: handleSave,
+    className: "p-4 lg:p-6 max-w-[1400px] mx-auto lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start space-y-6 lg:space-y-0"
+  }, /*#__PURE__*/React.createElement("section", {
+    className: "bg-zinc-950 p-6 rounded-3xl border border-zinc-800 shadow-sm space-y-4 lg:col-span-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-3"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-xs font-bold text-zinc-500 uppercase tracking-widest"
+  }, "Informaci\xF3n general"), /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] font-mono font-bold text-indigo-400 bg-indigo-900/30 px-3 py-1 rounded-full truncate max-w-[50%]"
+  }, currentObra.clave || 'SIN WORK ID')), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[10px] font-bold text-zinc-500 uppercase ml-1"
+  }, "Nombre de la obra *"), /*#__PURE__*/React.createElement("input", {
+    required: true,
+    type: "text",
+    className: "w-full p-4 bg-zinc-900/80 border border-zinc-700 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-zinc-100",
+    value: currentObra.nombre_obra || '',
+    onChange: e => handleFormChange('nombre_obra', e.target.value)
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 md:grid-cols-3 gap-4"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[10px] font-bold text-zinc-500 uppercase ml-1"
+  }, "Artista"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-2 items-end"
+  }, /*#__PURE__*/React.createElement("select", {
+    className: "w-full min-w-0 p-3 bg-zinc-900/80 border border-zinc-700 rounded-xl outline-none text-xs text-zinc-100",
+    value: currentObra.autor || '',
+    onChange: e => {
+      if (e.target.value === '__add_autor__') {
+        handleOpenAddAutor();
+        e.target.value = currentObra.autor || '';
+        return;
+      }
+      handleFormChange('autor', e.target.value);
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Seleccionar autor"), /*#__PURE__*/React.createElement("option", {
+    value: "__add_autor__"
+  }, "+ A\xF1adir Autor"), autores.map(a => /*#__PURE__*/React.createElement("option", {
+    key: a.id,
+    value: a.nombre
+  }, a.nombre, " [", a.abreviatura, "]"))), currentObra.autor && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => {
+      const autor = autores.find(a => a.nombre === currentObra.autor);
+      if (autor) handleOpenEditAutor(autor);
+    },
+    className: "w-full sm:w-auto p-3 bg-zinc-800 rounded-xl text-zinc-400 hover:text-indigo-400 transition-colors justify-center"
+  }, /*#__PURE__*/React.createElement(IconCog, {
+    className: "w-5 h-5"
+  })))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[10px] font-bold text-zinc-500 uppercase ml-1"
+  }, "T\xE9cnica"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-2 items-end"
+  }, /*#__PURE__*/React.createElement("select", {
+    className: "w-full min-w-0 p-3 bg-zinc-900/80 border border-zinc-700 rounded-xl outline-none text-xs text-zinc-100",
+    value: currentObra.tipo_obra || '',
+    onChange: e => {
+      if (e.target.value === '__add_tecnica__') {
+        handleOpenAddTec();
+        e.target.value = currentObra.tipo_obra || '';
+        return;
+      }
+      handleFormChange('tipo_obra', e.target.value);
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Seleccionar t\xE9cnica"), /*#__PURE__*/React.createElement("option", {
+    value: "__add_tecnica__"
+  }, "+ A\xF1adir T\xE9cnica"), tecnicas.map(t => /*#__PURE__*/React.createElement("option", {
+    key: t.id,
+    value: t.nombre
+  }, t.nombre, " [", t.abreviatura, "]"))), currentObra.tipo_obra && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => {
+      const tec = tecnicas.find(t => t.nombre === currentObra.tipo_obra);
+      if (tec) handleOpenEditTec(tec);
+    },
+    className: "w-full sm:w-auto p-3 bg-zinc-800 rounded-xl text-zinc-400 hover:text-indigo-400 transition-colors justify-center"
+  }, /*#__PURE__*/React.createElement(IconCog, {
+    className: "w-5 h-5"
+  })))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[10px] font-bold text-zinc-500 uppercase ml-1"
+  }, "Provenance"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-2 items-end"
+  }, /*#__PURE__*/React.createElement("select", {
+    className: "w-full min-w-0 p-3 bg-zinc-900/80 border border-zinc-700 rounded-xl outline-none text-xs text-zinc-100",
+    value: currentObra.provenance || '',
+    onChange: e => {
+      if (e.target.value === '__add_provenance__') {
+        handleOpenAddProv();
+        e.target.value = currentObra.provenance || '';
+        return;
+      }
+      handleFormChange('provenance', e.target.value);
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Sin Provenance"), /*#__PURE__*/React.createElement("option", {
+    value: "__add_provenance__"
+  }, "+ A\xF1adir Provenance"), comisiones.map(c => {
+    const abrev = abreviaturas.find(a => a.tipo === c.id);
+    return /*#__PURE__*/React.createElement("option", {
+      key: c.id,
+      value: c.id
+    }, c.provenance, " (", c.porcentaje, "%) ", abrev ? `[${abrev.abreviatura}]` : '');
+  })), currentObra.provenance && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => {
+      const prov = comisiones.find(c => c.id === currentObra.provenance);
+      if (prov) handleOpenEditProv(prov);
+    },
+    className: "w-full sm:w-auto p-3 bg-zinc-800 rounded-xl text-zinc-400 hover:text-indigo-400 transition-colors justify-center"
+  }, /*#__PURE__*/React.createElement(IconCog, {
+    className: "w-5 h-5"
+  })))))), /*#__PURE__*/React.createElement("section", {
+    className: "bg-zinc-950 p-6 rounded-3xl border border-zinc-800 shadow-sm space-y-4"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-xs font-bold text-zinc-500 uppercase tracking-widest"
+  }, "Valor comercial"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 md:grid-cols-3 gap-4"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[9px] font-bold text-zinc-500 uppercase ml-1"
+  }, "Moneda"), /*#__PURE__*/React.createElement("select", {
+    className: "w-full p-3 bg-zinc-900/80 border border-zinc-700 rounded-xl outline-none text-zinc-100",
+    value: currentObra.tipo_moneda || 'MXN',
+    onChange: e => handleFormChange('tipo_moneda', e.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "MXN"
+  }, "MXN"), /*#__PURE__*/React.createElement("option", {
+    value: "USD"
+  }, "USD"), /*#__PURE__*/React.createElement("option", {
+    value: "EUR"
+  }, "EUR"))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(PriceInput, {
+    label: "Precio de lista",
+    value: currentObra.precio_lista,
+    onChange: val => handleFormChange('precio_lista', val),
+    currency: currentObra.tipo_moneda || 'MXN'
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(PriceInput, {
+    label: "Precio de venta",
+    value: currentObra.precio_venta,
+    onChange: val => handleFormChange('precio_venta', val),
+    currency: currentObra.tipo_moneda || 'MXN'
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "border-t border-zinc-800 pt-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-3 flex-wrap gap-2"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h4", {
+    className: "text-xs font-bold text-zinc-400 uppercase tracking-widest"
+  }, "Comisi\xF3n de la pieza"), /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-zinc-500 mt-0.5"
+  }, "Monto fijo o porcentaje aplicado a esta obra individual.")), /*#__PURE__*/React.createElement("div", {
+    className: "commission-type-toggle"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => handleFormChange('comision_tipo', 'porcentaje'),
+    className: (currentObra.comision_tipo || 'porcentaje') === 'porcentaje' ? 'active' : ''
+  }, "% Porcentaje"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => handleFormChange('comision_tipo', 'monto'),
+    className: currentObra.comision_tipo === 'monto' ? 'active' : ''
+  }, "$ Monto"))), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 md:grid-cols-2 gap-4"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[9px] font-bold text-zinc-500 uppercase ml-1"
+  }, (currentObra.comision_tipo || 'porcentaje') === 'porcentaje' ? 'Valor de comisión (%)' : 'Valor de comisión (monto)'), /*#__PURE__*/React.createElement("div", {
+    className: "relative"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-500"
+  }, (currentObra.comision_tipo || 'porcentaje') === 'porcentaje' ? '%' : '$'), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    min: "0",
+    step: "0.01",
+    className: "w-full p-3 pl-10 bg-zinc-900/80 border border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-zinc-100",
+    value: currentObra.comision_valor ?? 0,
+    onChange: e => {
+      const raw = e.target.value;
+      const num = raw === '' ? 0 : parseFloat(raw);
+      handleFormChange('comision_valor', isNaN(num) || num < 0 ? 0 : num);
+    },
+    placeholder: "0.00"
+  }))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[9px] font-bold text-zinc-500 uppercase ml-1"
+  }, "Comisi\xF3n efectiva estimada"), /*#__PURE__*/React.createElement("div", {
+    className: "w-full p-3 bg-zinc-800 border border-zinc-700 rounded-xl font-bold text-emerald-400"
+  }, formatCurrency(getCurrentCommissionAmount(), currentObra.tipo_moneda || 'MXN')))), (currentObra.comision_tipo || 'porcentaje') === 'porcentaje' && (parseFloat(currentObra.comision_valor) || 0) > 0 && !(parseFloat(currentObra.precio_lista) > 0) && /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-amber-400 font-semibold mt-2"
+  }, "\u26A0\uFE0F Define un Precio de Lista para calcular el monto efectivo de la comisi\xF3n."))), /*#__PURE__*/React.createElement("section", {
+    className: "bg-zinc-950 p-6 rounded-3xl border border-zinc-800 shadow-sm space-y-4"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-xs font-bold text-zinc-500 uppercase tracking-widest"
+  }, "Dimensiones"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 md:grid-cols-4 gap-3"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[9px] font-bold text-zinc-500 uppercase ml-1"
+  }, "Alto"), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    step: "any",
+    className: "w-full p-3 bg-zinc-900/80 border border-zinc-700 rounded-xl outline-none text-zinc-100",
+    value: currentObra.alto || '',
+    onChange: e => handleFormChange('alto', e.target.value)
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[9px] font-bold text-zinc-500 uppercase ml-1"
+  }, "Largo"), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    step: "any",
+    className: "w-full p-3 bg-zinc-900/80 border border-zinc-700 rounded-xl outline-none text-zinc-100",
+    value: currentObra.largo || '',
+    onChange: e => handleFormChange('largo', e.target.value)
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[9px] font-bold text-zinc-500 uppercase ml-1"
+  }, "Ancho"), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    step: "any",
+    className: "w-full p-3 bg-zinc-900/80 border border-zinc-700 rounded-xl outline-none text-zinc-100",
+    value: currentObra.ancho || '',
+    onChange: e => handleFormChange('ancho', e.target.value)
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[9px] font-bold text-zinc-500 uppercase ml-1"
+  }, "Peso"), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    step: "any",
+    className: "w-full p-3 bg-zinc-900/80 border border-zinc-700 rounded-xl outline-none text-zinc-100",
+    value: currentObra.superficie || '',
+    onChange: e => handleFormChange('superficie', e.target.value)
+  })))), /*#__PURE__*/React.createElement("section", {
+    className: "bg-zinc-950 p-6 rounded-3xl border border-zinc-800 shadow-sm space-y-4"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-xs font-bold text-zinc-500 uppercase tracking-widest"
+  }, "Estado y ubicaci\xF3n"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 md:grid-cols-2 gap-4"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[10px] font-bold text-zinc-500 uppercase ml-1"
+  }, "Estatus *"), /*#__PURE__*/React.createElement("select", {
+    className: "w-full p-4 bg-zinc-900/80 border border-zinc-700 rounded-2xl outline-none text-zinc-100",
+    value: currentObra.estatus || 'Disponible',
+    onChange: e => handleFormChange('estatus', e.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "Disponible"
+  }, "Disponible"), /*#__PURE__*/React.createElement("option", {
+    value: "Vendida"
+  }, "Vendida"), /*#__PURE__*/React.createElement("option", {
+    value: "En Restauraci\xF3n"
+  }, "En Restauraci\xF3n"), /*#__PURE__*/React.createElement("option", {
+    value: "Apartada"
+  }, "Apartada"), /*#__PURE__*/React.createElement("option", {
+    value: "En mora"
+  }, "En mora"))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[10px] font-bold text-zinc-500 uppercase ml-1"
+  }, "Ubicaci\xF3n"), /*#__PURE__*/React.createElement("select", {
+    className: "w-full p-4 bg-zinc-900/80 border border-zinc-700 rounded-2xl outline-none text-zinc-100",
+    value: currentObra.ubicacion || '',
+    onChange: e => handleFormChange('ubicacion', e.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Seleccionar ubicaci\xF3n"), ubicacionOptions.map(opt => /*#__PURE__*/React.createElement("option", {
+    key: opt,
+    value: opt
+  }, opt))))), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 md:grid-cols-2 gap-4"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[10px] font-bold text-zinc-500 uppercase ml-1"
+  }, "Responsable"), /*#__PURE__*/React.createElement("select", {
+    className: "w-full p-3 bg-zinc-900/80 border border-zinc-700 rounded-xl outline-none text-xs text-zinc-100",
+    value: currentObra.id_responsable || '',
+    onChange: e => handleFormChange('id_responsable', e.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Sin Responsable"), responsables.map(r => /*#__PURE__*/React.createElement("option", {
+    key: r.id,
+    value: r.id
+  }, r.nombre)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[10px] font-bold text-zinc-500 uppercase ml-1"
+  }, "WORK ID (Autogenerado)"), /*#__PURE__*/React.createElement("input", {
+    readOnly: true,
+    type: "text",
+    className: "w-full p-4 bg-zinc-800 border-none rounded-2xl outline-none text-indigo-400 font-mono font-bold",
+    value: currentObra.clave || ''
+  })))), /*#__PURE__*/React.createElement("section", {
+    className: "bg-zinc-950 p-6 rounded-3xl border border-zinc-800 shadow-sm space-y-4"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-xs font-bold text-zinc-500 uppercase tracking-widest"
+  }, "Metadata"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "relative"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "text-[10px] font-bold text-zinc-500 uppercase ml-1"
+  }, "Tags"), /*#__PURE__*/React.createElement("input", {
+    ref: tagsInputRef,
+    type: "text",
+    placeholder: "abstracto, oleo, gran_formato",
+    className: "w-full p-3 bg-zinc-900/80 border border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-zinc-100",
+    value: currentObra.tags || '',
+    onChange: e => {
+      handleFormChange('tags', e.target.value);
+      const suggestions = getTagsSuggestions(e.target.value);
+      setTagsSuggestions(suggestions);
+    },
+    onFocus: e => {
+      const suggestions = getTagsSuggestions(e.target.value);
+      setTagsSuggestions(suggestions);
+    },
+    onBlur: () => {
+      setTimeout(() => setTagsSuggestions([]), 200);
+    }
+  }), tagsSuggestions.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "tags-suggestions"
+  }, tagsSuggestions.map(tag => /*#__PURE__*/React.createElement("div", {
+    key: tag,
+    className: "tags-suggestion-item",
+    onMouseDown: e => {
+      e.preventDefault();
+      addSuggestedTag(tag);
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "hash"
+  }, "#"), /*#__PURE__*/React.createElement("span", null, tag))))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[10px] font-bold text-zinc-500 uppercase ml-1"
+  }, "Observaciones"), /*#__PURE__*/React.createElement("textarea", {
+    rows: "3",
+    className: "w-full p-3 bg-zinc-900/80 border border-zinc-700 rounded-xl outline-none text-zinc-100",
+    value: currentObra.observaciones || '',
+    onChange: e => handleFormChange('observaciones', e.target.value)
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 md:grid-cols-2 gap-4 pt-2"
+  }))), /*#__PURE__*/React.createElement("section", {
+    className: "bg-zinc-950 p-6 rounded-3xl border border-zinc-800 shadow-sm space-y-4 lg:col-span-2"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-xs font-bold text-zinc-500 uppercase tracking-widest"
+  }, "Documentaci\xF3n"), /*#__PURE__*/React.createElement("div", {
+    className: "grid gap-4 lg:grid-cols-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-zinc-900/50 rounded-2xl p-4 border border-zinc-800 space-y-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-start justify-between gap-3"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs font-bold text-zinc-400 uppercase"
+  }, "Imagen Original"), /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-zinc-500 mt-1"
+  }, "Solo acepta un archivo y se bloquea despu\xE9s de subirlo.")), /*#__PURE__*/React.createElement(IconPaperclip, {
+    className: "w-5 h-5 text-zinc-400 shrink-0"
+  })), getImageOriginalAdjunto() && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, (() => {
+    const primaryAdjunto = getImageOriginalAdjunto();
+    if (!primaryAdjunto) return null;
+    return /*#__PURE__*/React.createElement("div", {
+      className: "flex justify-between items-center p-3 bg-zinc-800 rounded-xl text-xs border border-zinc-700"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "truncate font-mono font-medium min-w-0 pr-2 text-zinc-200"
+    }, primaryAdjunto.name || primaryAdjunto.id), /*#__PURE__*/React.createElement("span", {
+      className: "text-[10px] font-bold text-emerald-400 uppercase"
+    }, "Bloqueada"));
+  })()), isExistingObra() && getImageAdjuntos().length > 1 && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setShowCoverPicker(!showCoverPicker),
+    className: "w-full py-2.5 bg-zinc-800 border border-indigo-900/50 text-indigo-400 rounded-xl text-xs font-bold transition-colors hover:bg-indigo-900/20"
+  }, showCoverPicker ? 'Cerrar selección de portada' : 'Cambiar portada'), showCoverPicker && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2 max-h-64 overflow-y-auto rounded-xl border border-zinc-700 p-2 bg-zinc-950"
+  }, getImageAdjuntos().map(adjunto => {
+    const isCover = getImageOriginalAdjunto()?.id === adjunto.id;
+    const imageUrl = adjunto.id ? `https://drive.google.com/thumbnail?id=${adjunto.id}&sz=w400` : adjunto.url;
+    return /*#__PURE__*/React.createElement("button", {
+      key: adjunto.id,
+      type: "button",
+      onClick: () => handleChangeCover(adjunto.id),
+      className: `w-full flex items-center gap-3 p-2 rounded-xl text-left border transition-colors ${isCover ? 'border-emerald-500 bg-emerald-900/20' : 'border-transparent hover:border-indigo-800 hover:bg-zinc-800'}`
+    }, imageUrl ? /*#__PURE__*/React.createElement("img", {
+      src: imageUrl,
+      alt: adjunto.name || 'Adjunto',
+      className: "w-14 h-14 rounded-lg object-cover shrink-0"
+    }) : /*#__PURE__*/React.createElement("div", {
+      className: "w-14 h-14 rounded-lg bg-zinc-700 shrink-0"
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "min-w-0 flex-1"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "block truncate text-xs font-semibold text-zinc-200"
+    }, adjunto.name || adjunto.id), /*#__PURE__*/React.createElement("span", {
+      className: `block text-[10px] font-bold uppercase ${isCover ? 'text-emerald-400' : 'text-zinc-500'}`
+    }, isCover ? 'Portada actual' : 'Usar como portada')));
+  }))), getPrimaryPendingImageOriginal() && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between items-center p-3 bg-zinc-800 rounded-xl text-xs border border-zinc-700"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "truncate font-mono font-medium min-w-0 pr-2 text-zinc-200"
+  }, getPrimaryPendingImageOriginal().customName || getPrimaryPendingImageOriginal().name), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setPendingFiles(pendingFiles.filter(file => file !== getPrimaryPendingImageOriginal())),
+    className: "text-red-400 hover:text-red-300 p-1 shrink-0"
+  }, /*#__PURE__*/React.createElement(IconTrash, null)))), !hasImageOriginalAdjunto() && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("input", {
+    ref: imageInputRef,
+    type: "file",
+    accept: "image/*",
+    className: "hidden",
+    onChange: handleUploadImagenOriginal
+  }), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    disabled: uploadingAdj,
+    onClick: () => imageInputRef.current?.click(),
+    className: "w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-600 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex justify-center items-center gap-2 disabled:opacity-50"
+  }, uploadingAdj ? 'Subiendo...' : '⬆ Subir Imagen Original')), /*#__PURE__*/React.createElement("div", {
+    className: "rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-800 aspect-[4/3] relative"
+  }, portadaPreviewUrl ? /*#__PURE__*/React.createElement("img", {
+    src: portadaPreviewUrl,
+    alt: "Portada de la obra",
+    className: "absolute inset-0 w-full h-full object-cover"
+  }) : /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 flex flex-col items-center justify-center text-center p-4"
+  }, /*#__PURE__*/React.createElement(IconFileText, {
+    className: "w-10 h-10 text-zinc-500 mb-2"
+  }), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold text-zinc-400"
+  }, "Portada debajo de Imagen Original"), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-zinc-500 mt-1"
+  }, "Se mostrar\xE1 aqu\xED cuando subas la primera imagen."))), /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-zinc-500"
+  }, "La portada se toma autom\xE1ticamente de la Imagen Original.")), /*#__PURE__*/React.createElement("div", {
+    className: "bg-zinc-900/50 rounded-2xl p-4 border border-zinc-800 space-y-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-start justify-between gap-3"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs font-bold text-zinc-400 uppercase"
+  }, "Documentos t\xE9cnicos"), /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-zinc-500 mt-1"
+  }, hasImageOriginalAdjunto() ? 'Ya puedes subir los adjuntos posteriores al primero.' : 'Se desbloqueará después de subir la Imagen Original.')), /*#__PURE__*/React.createElement(IconFileText, {
+    className: "w-5 h-5 text-zinc-400 shrink-0"
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[10px] font-bold text-zinc-500 uppercase ml-1 mb-1 block"
+  }, "Nomenclatura"), /*#__PURE__*/React.createElement("select", {
+    className: "w-full p-3 bg-zinc-800 border border-zinc-700 rounded-xl outline-none text-xs font-semibold text-zinc-100",
+    value: selectedTechAdj,
+    onChange: e => setSelectedTechAdj(e.target.value),
+    disabled: !hasImageOriginalAdjunto()
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "RW"
+  }, "Imagen original RW"), /*#__PURE__*/React.createElement("option", {
+    value: "RD"
+  }, "Imagen Editada RD"), /*#__PURE__*/React.createElement("option", {
+    value: "FO"
+  }, "Foto de obra FO"), /*#__PURE__*/React.createElement("option", {
+    value: "VD"
+  }, "video VD"), /*#__PURE__*/React.createElement("option", {
+    value: "CER"
+  }, "Certificado CER"), /*#__PURE__*/React.createElement("option", {
+    value: "COT"
+  }, "Cotizaci\xF3n COT"))), getTechnicalPendingFiles().length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, getTechnicalPendingFiles().map((f, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "flex justify-between items-center p-3 bg-zinc-800 rounded-xl text-xs border border-zinc-700"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "truncate font-mono font-medium min-w-0 pr-2 text-zinc-200"
+  }, f.customName || f.name), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setPendingFiles(pendingFiles.filter(file => file !== f)),
+    className: "text-red-400 hover:text-red-300 p-1 shrink-0"
+  }, /*#__PURE__*/React.createElement(IconTrash, null))))), getTechnicalStoredAdjuntos().length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, getTechnicalStoredAdjuntos().map(adj => /*#__PURE__*/React.createElement("div", {
+    key: adj.id,
+    className: "flex justify-between items-center p-3 bg-zinc-800 rounded-xl text-xs border border-zinc-700"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "truncate font-mono font-medium min-w-0 pr-2 text-zinc-200"
+  }, adj.name || adj.id), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => handleDeleteAdjunto(adj.id),
+    className: "text-red-400 hover:text-red-300 p-1 shrink-0"
+  }, /*#__PURE__*/React.createElement(IconTrash, null))))), /*#__PURE__*/React.createElement("input", {
+    ref: techInputRef,
+    type: "file",
+    multiple: true,
+    className: "hidden",
+    onChange: handleUploadTecnicos
+  }), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    disabled: !hasImageOriginalAdjunto() || uploadingAdj,
+    onClick: () => techInputRef.current?.click(),
+    className: `w-full py-3 border rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex justify-center items-center gap-2 ${hasImageOriginalAdjunto() && !uploadingAdj ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600' : 'bg-zinc-700 text-zinc-500 border-zinc-600 cursor-not-allowed'}`
+  }, uploadingAdj ? 'Subiendo...' : '⬆ Subir Documentos técnicos'), !hasImageOriginalAdjunto() && /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] text-amber-400 font-semibold uppercase tracking-widest"
+  }, "Se desbloquear\xE1 despu\xE9s de subir la Imagen Original")))), obras.some(o => o.id === currentObra.id) && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: handleDeleteObra,
+    className: "w-full py-3 text-red-400 font-bold text-xs hover:underline text-center lg:col-span-2"
+  }, "Eliminar Registro de Obra"))), /*#__PURE__*/React.createElement(Toast, _extends({}, toast, {
+    onClose: () => setToast({
+      message: '',
+      type: ''
+    })
+  })))));
+}
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(/*#__PURE__*/React.createElement(App, null));
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(reg => console.log('Service Worker registrado con éxito:', reg.scope)).catch(err => console.log('Error al registrar el Service Worker:', err));
+  });
+}
+
+// Inicializar iconos de Lucide después de que React monte
+setTimeout(() => {
+  if (window.lucide) lucide.createIcons();
+}, 100);

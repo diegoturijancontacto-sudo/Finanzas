@@ -655,6 +655,10 @@ const { useState, useEffect, useMemo, useRef } = React;
       const [isDataLoaded, setIsDataLoaded] = useState(false);
       const [showCoverPicker, setShowCoverPicker] = useState(false);
 
+      // Modal de imagen (copiar / descargar)
+      const [imageModal, setImageModal] = useState({ open: false, adjunto: null });
+      const [imageActionBusy, setImageActionBusy] = useState(false);
+
       const imageInputRef = useRef(null);
       const techInputRef = useRef(null);
       const tagsInputRef = useRef(null);
@@ -2205,6 +2209,104 @@ const { useState, useEffect, useMemo, useRef } = React;
         }
       };
 
+      // ===== MODAL DE IMAGEN: copiar / descargar =====
+      const openImageModal = (adjunto) => setImageModal({ open: true, adjunto });
+      const closeImageModal = () => { if (!imageActionBusy) setImageModal({ open: false, adjunto: null }); };
+
+      const getImageCandidateUrls = (adjunto) => {
+        const urls = [];
+        if (adjunto?.id) {
+          urls.push(`https://lh3.googleusercontent.com/d/${adjunto.id}=w3000`);
+          urls.push(`https://drive.google.com/thumbnail?id=${adjunto.id}&sz=w3000`);
+        }
+        if (adjunto?.url) urls.push(adjunto.url);
+        return urls;
+      };
+
+      const fetchImageBlob = async (adjunto) => {
+        for (const url of getImageCandidateUrls(adjunto)) {
+          try {
+            const res = await fetch(url);
+            if (!res.ok) continue;
+            const blob = await res.blob();
+            if (blob.type.startsWith('image/')) return blob;
+          } catch (_) {}
+        }
+        throw new Error('No se pudo obtener la imagen');
+      };
+
+      const blobToPng = async (blob) => {
+        if (blob.type === 'image/png') return blob;
+        const bitmap = await createImageBitmap(blob);
+        const canvas = document.createElement('canvas');
+        canvas.width = bitmap.width;
+        canvas.height = bitmap.height;
+        canvas.getContext('2d').drawImage(bitmap, 0, 0);
+        return await new Promise((resolve, reject) =>
+          canvas.toBlob(b => (b ? resolve(b) : reject(new Error('Conversión fallida'))), 'image/png')
+        );
+      };
+
+      const handleCopyImage = async () => {
+        const adjunto = imageModal.adjunto;
+        if (!adjunto || imageActionBusy) return;
+        setImageActionBusy(true);
+        try {
+          if (!navigator.clipboard || typeof ClipboardItem === 'undefined') {
+            throw new Error('Clipboard no disponible');
+          }
+          // Se pasa una promesa a ClipboardItem para mantener el gesto del usuario (Safari)
+          const pngPromise = fetchImageBlob(adjunto).then(blobToPng);
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngPromise })]);
+          showToast('Imagen copiada al portapapeles');
+          setImageModal({ open: false, adjunto: null });
+        } catch (e) {
+          showToast('No se pudo copiar la imagen. Prueba con Descargar.', 'error');
+        } finally {
+          setImageActionBusy(false);
+        }
+      };
+
+      const handleDownloadImage = async () => {
+        const adjunto = imageModal.adjunto;
+        if (!adjunto || imageActionBusy) return;
+        setImageActionBusy(true);
+        const filename = adjunto.name || `${currentObra?.clave || 'obra'}.jpg`;
+        try {
+          // Para descargar el original se usa el endpoint de descarga de Drive si el blob falla
+          const blob = await fetchImageBlob(adjunto);
+          const blobUrl = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+          showToast('Descargando imagen...');
+          setImageModal({ open: false, adjunto: null });
+        } catch (e) {
+          const fallbackUrl = adjunto.id
+            ? `https://drive.google.com/uc?export=download&id=${adjunto.id}`
+            : adjunto.url;
+          if (fallbackUrl) {
+            window.open(fallbackUrl, '_blank', 'noopener');
+            setImageModal({ open: false, adjunto: null });
+          } else {
+            showToast('No se pudo descargar la imagen', 'error');
+          }
+        } finally {
+          setImageActionBusy(false);
+        }
+      };
+
+      useEffect(() => {
+        if (!imageModal.open) return;
+        const onKey = (e) => { if (e.key === 'Escape') closeImageModal(); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+      }, [imageModal.open, imageActionBusy]);
+
       const handleReportError = async () => {
         if (!currentObra) return;
         const obraUrl = `${window.location.origin}${window.location.pathname}#${currentObra.id}`;
@@ -2401,7 +2503,7 @@ const { useState, useEffect, useMemo, useRef } = React;
                   </button>
                 </div>
                 <div className="ps-topbar-spacer" />
-                <span className="ps-topbar-hint">Versión de escritorio 1.4.7V</span>
+                <span className="ps-topbar-hint">Versión de escritorio 1.4.12V</span>
               </div>
             </div>
 
@@ -2688,6 +2790,53 @@ const { useState, useEffect, useMemo, useRef } = React;
                   </div>
                 </div>
               </div>
+
+              {/* MODAL: IMAGEN (copiar / descargar) */}
+              {imageModal.open && imageModal.adjunto && (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+                  onClick={closeImageModal}
+                >
+                  <div
+                    className="bg-zinc-950 border border-zinc-800 rounded-3xl p-4 w-full max-w-lg space-y-4 shadow-2xl"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-mono font-bold text-zinc-400 truncate">{imageModal.adjunto.name || 'Imagen'}</p>
+                      <button type="button" onClick={closeImageModal} className="p-1 text-zinc-400 hover:text-white shrink-0" aria-label="Cerrar">
+                        <IconClose className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <div className="rounded-2xl overflow-hidden bg-zinc-900 flex items-center justify-center">
+                      <img
+                        src={imageModal.adjunto.id
+                          ? `https://drive.google.com/thumbnail?id=${imageModal.adjunto.id}&sz=w1200`
+                          : imageModal.adjunto.url}
+                        alt={imageModal.adjunto.name || 'Imagen de la obra'}
+                        className="max-h-[60vh] w-auto max-w-full object-contain"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={handleCopyImage}
+                        disabled={imageActionBusy}
+                        className="flex items-center justify-center gap-2 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700 rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        <IconCopy /> {imageActionBusy ? 'Procesando...' : 'Copiar'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDownloadImage}
+                        disabled={imageActionBusy}
+                        className="flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        <IconSave /> {imageActionBusy ? 'Procesando...' : 'Descargar'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* VISTA: DISCOVER */}
               {view === "discover" && (
@@ -3156,9 +3305,9 @@ const { useState, useEffect, useMemo, useRef } = React;
                           {currentObra.adjuntos.filter(a =>
                             a.mimeType?.includes('image') || a.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
                           ).map(a => (
-                            <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer" className="block aspect-[3/4] overflow-hidden active:scale-95 transition-transform">
+                            <button key={a.id} type="button" onClick={() => openImageModal(a)} className="block w-full aspect-[3/4] overflow-hidden active:scale-95 transition-transform cursor-pointer">
                               <img src={`https://drive.google.com/thumbnail?id=${a.id}&sz=w400`} className="w-full h-full object-cover" alt={a.name || 'Imagen de la obra'} />
-                            </a>
+                            </button>
                           ))}
                         </div>
                       </div>
